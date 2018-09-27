@@ -1,9 +1,10 @@
 #!/usr/bin/python
 
 
-sequence = 'CAAAGAA'
+sequence = 'CAGA'
 
 C_init = 1;
+C_init_BP = 0.2;
 l    = 0.5
 l_BP = 0.1
 N = len( sequence )
@@ -25,7 +26,7 @@ for i in range( N ):
 for i in range( N ): #length of fragment
     C_eff[ i ][ i ] = C_init
 
-for offset in range( 1, N+1 ): #length of subfragment
+for offset in range( 1, N ): #length of subfragment
     for i in range( N ): #index of subfragment
         j = (i + offset) % N;  # N cyclizes
 
@@ -34,17 +35,19 @@ for offset in range( 1, N+1 ): #length of subfragment
             print "FOUND BP"
 
         C_eff[ i ][ j ] = C_eff[i][ (j-1) % N] * l
-        C_eff[ i ][ j ] += C_init * Z[i][j] * l_BP/l
-        for k in range( i+1, j):
+        C_eff[ i ][ j ] += C_init_BP * Z[i][j]
+        for k in range( i+1, i+offset):
             C_eff[i][j] += C_eff[i][(k - 1 ) % N] * Z[k % N][j] * l_BP
 
 for i in range( N ):
+    for q in range( i ): print '         ',
     for j in range( N ):
-        print ' %8.3f' % C_eff[ i ][ j ],
+        print ' %8.3f' % C_eff[ i ][ (i + j) % N ],
     print
 
 print
 for i in range( N ):
+    for q in range( i ): print '         ',
     for j in range( N ):
-        print ' %8.3f' % Z[ i ][ j ],
+        print ' %8.3f' % Z[ i ][ (i + j) % N ],
     print
