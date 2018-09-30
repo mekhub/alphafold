@@ -48,11 +48,10 @@ def partition( sequence ):
 
 
     for i in range( N ):
-        for q in range( i ): print '         ',
+        for q in range( i ): print '         ', # padding to line up
         for j in range( N ):
             print ' %8.3f' % Z[ i ][ (i + j) % N ],
-        print ' %8.3f' % Z_final[ i ],
-        print
+        print '==> %8.3f' % Z_final[ i ] #
 
     # stringent test that partition function is correct:
     for i in range( 1, N ):
@@ -72,6 +71,8 @@ Z = partition( sequence )
 print 'sequence =', sequence
 print 'Z =',Z
 
+
+# test of sequences where we know the final partition function.
 if sequence == 'CAAAGAA':  # for testing
     Z_ref = C_init  * (l**7) * (1 + C_init_BP / Kd_BP ) / C_std
     print 'Z =',Z_ref,' [expected]'
