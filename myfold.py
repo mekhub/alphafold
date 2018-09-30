@@ -40,19 +40,17 @@ def partition( sequence, circle ):
             j = (i + offset) % N;  # N cyclizes
 
             if ( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ):
-                if not is_chainbreak[ (j-1) % N ]: Z_BP[i][j]     += ( 1.0 / Kd_BP ) * ( C_eff[i][ (j-1) % N] * l )
+                if not is_chainbreak[ (j-1) % N]: Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[i][(j-1) % N] * l )
                 for c in range( i, i+offset ):
-                    if is_chainbreak[ c % N ]: Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_linear[i][c % N] * Z_linear[(c+1) % N][j]
+                    if is_chainbreak[c % N]: Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_linear[i][c % N] * Z_linear[(c+1) % N][j]
 
-            if not is_chainbreak[ (j-1) % N ]: C_eff[ i ][ j ] += C_eff[i][ (j-1) % N] * l
-            C_eff[ i ][ j ] += C_init_BP * Z_BP[i][j]
-            for k in range( i+1, i+offset):
-                C_eff[ i ][ j ] += C_eff[i][(k - 1 ) % N] * Z_BP[k % N][j] * l_BP
+            if not is_chainbreak[(j-1) % N]: C_eff[i][j] += C_eff[i][(j-1) % N] * l
+            C_eff[i][j] += C_init_BP * Z_BP[i][j]
+            for k in range( i+1, i+offset): C_eff[i][j] += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
 
-            if not is_chainbreak[ (j-1) % N ]: Z_linear[ i ][ j ] += Z_linear[ i ][ (j - 1) % N]
-            Z_linear[ i ][ j ] += Z_BP[ i ][ j ]
-            for k in range( i+1, i+offset):
-                Z_linear[i][j] += Z_linear[i][(k - 1 ) % N] * Z_BP[k % N][j]
+            if not is_chainbreak[(j-1) % N]: Z_linear[i][j] += Z_linear[i][(j - 1) % N]
+            Z_linear[i][j] += Z_BP[i][j]
+            for k in range( i+1, i+offset): Z_linear[i][j] += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
 
     # get the answer (in N ways!)
     Z_final = []
@@ -60,28 +58,28 @@ def partition( sequence, circle ):
         Z_final.append( 0 )
         for c in range( i, i + N - 1):
             #any split segments, combined independently. connection does not affect boltzman weight.
-            if is_chainbreak[ c % N ]: Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][j] #any split segments, combined independently
+            if is_chainbreak[c % N]: Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][j] #any split segments, combined independently
 
-        if is_chainbreak[ (i + N - 1) % N ]:
-            Z_final[ i ] += Z_linear[ i ][ (i-1) % N]
+        if is_chainbreak[(i + N - 1) % N]:
+            Z_final[i] += Z_linear[i][(i-1) % N]
         else:
-            Z_close = C_eff[ i ][ (i - 1) % N] * l / Kd_lig
+            Z_close = C_eff[i][(i - 1) % N] * l / Kd_lig
             # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
             Z_close *= Kd_lig / C_std
-            Z_final[ i ] +=  Z_close
+            Z_final[i] +=  Z_close
 
     # base pair probability matrix
     bpp = initialize_zero_matrix( N );
     for i in range( N ):
         for j in range( N ):
-            bpp[ i ][ j ] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP * (l_BP / l) / Z_final[0]
+            bpp[i][j] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP * (l_BP / l) / Z_final[0]
 
     # output of Z_linear
     print "Z_linear"
     for i in range( N ):
         for q in range( i ): print '         ', # padding to line up
         for j in range( N ):
-            print ' %8.3f' % Z_linear[ i ][ (i + j) % N ],
+            print ' %8.3f' % Z_linear[i][(i+j) % N],
         print
 
     # output of Z_linear
@@ -89,7 +87,7 @@ def partition( sequence, circle ):
     for i in range( N ):
         for q in range( i ): print '         ', # padding to line up
         for j in range( N ):
-            print ' %8.3f' % Z_BP[ i ][ (i + j) % N ],
+            print ' %8.3f' % Z_BP[i][(i+j) % N],
         print
 
     # output of dynamic programming matrix
@@ -98,14 +96,14 @@ def partition( sequence, circle ):
     for i in range( N ):
         for q in range( i ): print '         ', # padding to line up
         for j in range( N ):
-            print ' %8.3f' % C_eff[ i ][ (i + j) % N ],
-        print '==> %8.3f' % Z_final[ i ]
+            print ' %8.3f' % C_eff[i][(i+j) % N],
+        print '==> %8.3f' % Z_final[i]
 
     print
     print "BPP"
     for i in range( N ):
         for j in range( N ):
-            print ' %8.3f' % bpp[ i ][ j ],
+            print ' %8.3f' % bpp[i][j],
         print
 
     # stringent test that partition function is correct:
