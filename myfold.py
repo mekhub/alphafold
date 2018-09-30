@@ -5,7 +5,7 @@ C_init = 1
 l    = 0.5
 l_BP = 0.1
 C_init_BP = C_init * (l_BP/l) # 0.2
-Kd = 0.001;
+Kd_BP = 0.001;
 C_std = 1; # 1 M
 Kd_lig = 1.0e-5 # drops out in final answer if connections/chainbreaks are predefined
 
@@ -32,7 +32,7 @@ def partition( sequence ):
             j = (i + offset) % N;  # N cyclizes
 
             if ( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ):
-                Z[i][j]     = ( 1.0 / Kd ) * ( C_eff[i][ (j-1) % N] * l )
+                Z[i][j]     = ( 1.0 / Kd_BP ) * ( C_eff[i][ (j-1) % N] * l )
 
             C_eff[ i ][ j ] = C_eff[i][ (j-1) % N] * l
             C_eff[ i ][ j ] += C_init_BP * Z[i][j]
@@ -69,4 +69,10 @@ parser.add_argument( "-s","-seq","--sequence", default='CAAAGAA',help="RNA seque
 args = parser.parse_args()
 sequence = args.sequence;
 Z = partition( sequence )
-print 'Z = ',Z
+print 'sequence =', sequence
+print 'Z =',Z
+
+if sequence == 'CAAAGAA':  # for testing
+    Z_ref = C_init  * (l**7) * (1 + C_init_BP / Kd_BP ) / C_std
+    print 'Z =',Z_ref,' [expected]'
+    assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
