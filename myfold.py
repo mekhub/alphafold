@@ -9,21 +9,22 @@ Kd_BP = 0.001;
 C_std = 1; # 1 M
 Kd_lig = 1.0e-5 # drops out in final answer if connections/chainbreaks are predefined
 
+def initialize_zero_matrix( N ):
+    X = []
+    for i in range( N ):
+        X.append( [] )
+        for j in range( N ): X[i].append( 0.0 )
+    return X
+
 def partition( sequence ):
     N = len( sequence )
     # Could also use numpy arrays, but
     # eventually I'd like to use linked lists to
     # simplify backtracking.
-    C_eff = [];
-    Z_BP = [];
+    C_eff = initialize_zero_matrix( N );
+    Z_BP  = initialize_zero_matrix( N );
 
     # initialize
-    for i in range( N ):
-        C_eff.append( [] )
-        Z_BP.append( [] )
-        for j in range( N ):
-            C_eff[ i ].append( 0.0 )
-            Z_BP[     i ].append(  0.0 )
     for i in range( N ): #length of fragment
         C_eff[ i ][ i ] = C_init
 
@@ -48,19 +49,30 @@ def partition( sequence ):
         Z_close *= Kd_lig / C_std
         Z_final.append( Z_close )
 
+    # base pair probability matrix
+    bpp = initialize_zero_matrix( N );
+    for i in range( N ):
+        for j in range( N ):
+            bpp[ i ][ j ] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP * (l_BP / l) / Z_final[0]
 
     # output of dynamic programming matrix
     for i in range( N ):
         for q in range( i ): print '         ', # padding to line up
         for j in range( N ):
             print ' %8.3f' % C_eff[ i ][ (i + j) % N ],
-        print '==> %8.3f' % Z_final[ i ] #
+        print '==> %8.3f' % Z_final[ i ]
+
+    print
+    for i in range( N ):
+        for j in range( N ):
+            print ' %8.3f' % bpp[ i ][ j ],
+        print
 
     # stringent test that partition function is correct:
     for i in range( 1, N ):
         assert( ( Z_final[i] - Z_final[0] ) / abs( Z_final[0] ) < 1.0e-5 )
 
-    return Z_final[0]
+    return ( Z_final[0], bpp )
 
 
 
@@ -70,7 +82,7 @@ parser = argparse.ArgumentParser( description = "Compute nearest neighbor model 
 parser.add_argument( "-s","-seq","--sequence", default='CAAAGAA',help="RNA sequence")
 args = parser.parse_args()
 sequence = args.sequence;
-Z = partition( sequence )
+(Z, bpp) = partition( sequence )
 print 'sequence =', sequence
 print 'Z =',Z
 
@@ -80,3 +92,10 @@ if sequence == 'CAAAGAA':  # for testing
     Z_ref = C_init  * (l**7) * (1 + C_init_BP / Kd_BP ) / C_std
     print 'Z =',Z_ref,' [expected]'
     assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
+
+    print
+    bpp_expected = (C_init**2 * (l**3) * l_BP/ Kd_BP) / ( C_init * (l**4) + C_init**2 * (l**3) * l_BP/ Kd_BP)
+    print 'bpp[0,4] = ',bpp[0][4]
+    print 'bpp[0,4] = ',bpp_expected,' [expected]'
+
+
