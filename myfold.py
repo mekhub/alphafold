@@ -134,6 +134,7 @@ if sequence == '': # run tests
     bpp_expected = (C_init**2 * (l**3) * l_BP/ Kd_BP) / ( C_init * (l**4) + C_init**2 * (l**3) * l_BP/ Kd_BP)
     print 'bpp[0,4] = ',bpp[0][4]
     print 'bpp[0,4] = ',bpp_expected,' [expected]'
+    assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
 
     # test of sequences where we know the final partition function.
     sequence = 'CAG'
@@ -145,8 +146,9 @@ if sequence == '': # run tests
     print 'Z =',Z_ref,' [expected]'
     assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
     print
-    bpp_expected = 0 ### Need to supply!
+    bpp_expected = (C_init * l**2/Kd_BP)/( 1 + C_init * l**2/Kd_BP )
     print 'bpp[0,2] = ',bpp[0][2]
     print 'bpp[0,2] = ',bpp_expected,' [expected]'
+    assert( abs( (bpp[0][2] - bpp_expected)/bpp_expected )  < 1e-5 )
 
 
