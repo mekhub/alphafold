@@ -15,30 +15,32 @@ def partition( sequence ):
     # eventually I'd like to use linked lists to
     # simplify backtracking.
     C_eff = [];
-    Z = [];
+    Z_BP = [];
 
     # initialize
     for i in range( N ):
         C_eff.append( [] )
-        Z.append( [] )
+        Z_BP.append( [] )
         for j in range( N ):
             C_eff[ i ].append( 0.0 )
-            Z[     i ].append(  0.0 )
+            Z_BP[     i ].append(  0.0 )
     for i in range( N ): #length of fragment
         C_eff[ i ][ i ] = C_init
 
+    # do the dynamic programming
     for offset in range( 1, N ): #length of subfragment
         for i in range( N ): #index of subfragment
             j = (i + offset) % N;  # N cyclizes
 
             if ( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ):
-                Z[i][j]     = ( 1.0 / Kd_BP ) * ( C_eff[i][ (j-1) % N] * l )
+                Z_BP[i][j]     = ( 1.0 / Kd_BP ) * ( C_eff[i][ (j-1) % N] * l )
 
             C_eff[ i ][ j ] = C_eff[i][ (j-1) % N] * l
-            C_eff[ i ][ j ] += C_init_BP * Z[i][j]
+            C_eff[ i ][ j ] += C_init_BP * Z_BP[i][j]
             for k in range( i+1, i+offset):
-                C_eff[i][j] += C_eff[i][(k - 1 ) % N] * Z[k % N][j] * l_BP
+                C_eff[i][j] += C_eff[i][(k - 1 ) % N] * Z_BP[k % N][j] * l_BP
 
+    # get the answer (in N ways!)
     Z_final = []
     for i in range( N ):
         Z_close = C_eff[ i ][ (i - 1) % N] * l / Kd_lig
@@ -47,10 +49,11 @@ def partition( sequence ):
         Z_final.append( Z_close )
 
 
+    # output of dynamic programming matrix
     for i in range( N ):
         for q in range( i ): print '         ', # padding to line up
         for j in range( N ):
-            print ' %8.3f' % Z[ i ][ (i + j) % N ],
+            print ' %8.3f' % C_eff[ i ][ (i + j) % N ],
         print '==> %8.3f' % Z_final[ i ] #
 
     # stringent test that partition function is correct:
