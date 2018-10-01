@@ -16,6 +16,26 @@ def initialize_zero_matrix( N ):
         for j in range( N ): X[i].append( 0.0 )
     return X
 
+def output_DP( tag, X, X_final = []):
+    N = len( X )
+    print
+    print "-----", tag, "-----"
+    for i in range( N ):
+        for q in range( i ): print '          ', # padding to line up
+        for j in range( N ):
+            print ' %9.3f' % X[i][(i+j) % N],
+        if len( X_final ) > 0: print '==> %9.3f' % X_final[i],
+        print
+
+def output_square( tag, X ):
+    N = len( X )
+    print
+    print "-----", tag, "-----"
+    for i in range( N ):
+        for j in range( N ):
+            print ' %9.3f' % X[i][j],
+        print
+
 def partition( sequence, circle ):
     N = len( sequence )
     # Could also use numpy arrays, but
@@ -51,7 +71,8 @@ def partition( sequence, circle ):
 
             if not is_chainbreak[(j-1) % N]: Z_linear[i][j] += Z_linear[i][(j - 1) % N]
             Z_linear[i][j] += Z_BP[i][j]
-            for k in range( i+1, i+offset): Z_linear[i][j] += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
+            for k in range( i+1, i+offset):
+                if not is_chainbreak[ (k-1) % N]: Z_linear[i][j] += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
 
     # get the answer (in N ways!)
     Z_final = []
@@ -60,7 +81,6 @@ def partition( sequence, circle ):
         for c in range( i, i + N - 1):
             #any split segments, combined independently. connection does not affect boltzman weight.
             if is_chainbreak[c % N]: Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] #any split segments, combined independently
-            if i == 1: print i, c, Z_final[i]
 
         if is_chainbreak[(i + N - 1) % N]:
             Z_final[i] += Z_linear[i][(i-1) % N]
@@ -76,41 +96,13 @@ def partition( sequence, circle ):
         for j in range( N ):
             bpp[i][j] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP * (l_BP / l) / Z_final[0]
 
-    # output of Z_linear
-    print "Z_linear"
-    for i in range( N ):
-        for q in range( i ): print '         ', # padding to line up
-        for j in range( N ):
-            print ' %8.3f' % Z_linear[i][(i+j) % N],
-        print
-
-    # output of Z_linear
-    print "Z_BP"
-    for i in range( N ):
-        for q in range( i ): print '         ', # padding to line up
-        for j in range( N ):
-            print ' %8.3f' % Z_BP[i][(i+j) % N],
-        print
-
-    # output of dynamic programming matrix
-    print
-    print "C_eff"
-    for i in range( N ):
-        for q in range( i ): print '         ', # padding to line up
-        for j in range( N ):
-            print ' %8.3f' % C_eff[i][(i+j) % N],
-        print '==> %8.3f' % Z_final[i]
-
-    print
-    print "BPP"
-    for i in range( N ):
-        for j in range( N ):
-            print ' %8.3f' % bpp[i][j],
-        print
+    output_DP( "Z_linear", Z_linear )
+    output_DP( "Z_BP", Z_BP )
+    output_DP( "C_eff", C_eff, Z_final )
+    output_square( "BPP", bpp );
 
     # stringent test that partition function is correct:
-    for i in range( 1, N ):
-        assert( ( Z_final[i] - Z_final[0] ) / abs( Z_final[0] ) < 1.0e-5 )
+    for i in range( N ): assert( abs( ( Z_final[i] - Z_final[0] ) / Z_final[0] ) < 1.0e-5 )
 
     print 'sequence =', sequence
     cutpoint = ''
