@@ -46,7 +46,8 @@ def partition( sequence, circle ):
 
             if not is_chainbreak[(j-1) % N]: C_eff[i][j] += C_eff[i][(j-1) % N] * l
             C_eff[i][j] += C_init_BP * Z_BP[i][j]
-            for k in range( i+1, i+offset): C_eff[i][j] += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
+            for k in range( i+1, i+offset):
+                if not is_chainbreak[ (k-1) % N]: C_eff[i][j] += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
 
             if not is_chainbreak[(j-1) % N]: Z_linear[i][j] += Z_linear[i][(j - 1) % N]
             Z_linear[i][j] += Z_BP[i][j]
@@ -58,7 +59,8 @@ def partition( sequence, circle ):
         Z_final.append( 0 )
         for c in range( i, i + N - 1):
             #any split segments, combined independently. connection does not affect boltzman weight.
-            if is_chainbreak[c % N]: Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][j] #any split segments, combined independently
+            if is_chainbreak[c % N]: Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] #any split segments, combined independently
+            if i == 1: print i, c, Z_final[i]
 
         if is_chainbreak[(i + N - 1) % N]:
             Z_final[i] += Z_linear[i][(i-1) % N]
@@ -110,6 +112,15 @@ def partition( sequence, circle ):
     for i in range( 1, N ):
         assert( ( Z_final[i] - Z_final[0] ) / abs( Z_final[0] ) < 1.0e-5 )
 
+    print 'sequence =', sequence
+    cutpoint = ''
+    for i in range( N ):
+        if is_chainbreak[ i ]: cutpoint += 'X'
+        else: cutpoint += ' '
+    print 'cutpoint =', cutpoint
+    print 'circle   = ', circle
+    print 'Z =',Z_final[0]
+
     return ( Z_final[0], bpp )
 
 
@@ -126,8 +137,6 @@ if sequence == '': # run tests
     sequence = 'CAAAGAA'
     (Z, bpp) = partition( sequence, circle = True )
     Z_ref = C_init  * (l**7) * (1 + C_init_BP / Kd_BP ) / C_std
-    print 'sequence =', sequence
-    print 'Z =',Z
     print 'Z =',Z_ref,' [expected]'
     assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
     print
@@ -141,8 +150,6 @@ if sequence == '': # run tests
     Z_ref = 1 + C_init * l**2 / Kd_BP
     print 'Z =',Z_ref,' [expected]'
     (Z, bpp) = partition( sequence, circle = False )
-    print 'sequence =', sequence
-    print 'Z =',Z
     print 'Z =',Z_ref,' [expected]'
     assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
     print
@@ -150,5 +157,7 @@ if sequence == '': # run tests
     print 'bpp[0,2] = ',bpp[0][2]
     print 'bpp[0,2] = ',bpp_expected,' [expected]'
     assert( abs( (bpp[0][2] - bpp_expected)/bpp_expected )  < 1e-5 )
+else:
+    (Z, bpp ) = partition( sequence, circle )
 
 
