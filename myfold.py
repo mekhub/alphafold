@@ -78,9 +78,9 @@ def partition( sequences, circle ):
         for i in range( N ): #index of subfragment
             j = (i + offset) % N;  # N cyclizes
 
-            if ( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ) and \
-                  ( any_cutpoint[i][j] or ( (j-i) % N + 1) > min_loop_length  ) and \
-                  ( any_cutpoint[j][i] or ( (i-j) % N + 1) > min_loop_length):
+            if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' )) and \
+                  ( any_cutpoint[i][j] or ( ((j-i-1) % N)) > min_loop_length  ) and \
+                  ( any_cutpoint[j][i] or ( ((i-j-1) % N)) > min_loop_length  ):
                 if not is_cutpoint[ (j-1) % N]: Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[i][(j-1) % N] * l )
                 for c in range( i, i+offset ):
                     if is_cutpoint[c % N]: Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_linear[i][c % N] * Z_linear[(c+1) % N][j]
