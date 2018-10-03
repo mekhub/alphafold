@@ -168,6 +168,17 @@ if sequences == None: # run tests
     output_test( Z, 1 + C_init * l**2 / Kd_BP, \
                  bpp, [0,2], (C_init * l**2/Kd_BP)/( 1 + C_init * l**2/Kd_BP ) )
 
+    sequences = ['C','G']
+    (Z, bpp) = partition( sequences, circle = False ) # note that Z sums over only base pair (not dissociated strands!)
+    output_test( Z, C_std * l / Kd_BP/l_BP, \
+                 bpp, [0,1], 1.0 )
+
+    sequences = ['GC','GC']
+    (Z, bpp) = partition( sequences, circle = False ) # note that Z sums over only base pair (not dissociated strands!)
+    output_test( Z, (C_std/Kd_BP)*(l/l_BP)*(2 + l*l_BP*C_init/Kd_BP ), \
+                 bpp, [0,3], (1 + l*l_BP*C_init/Kd_BP )/(2 + l*l_BP*C_init/Kd_BP ) )
+
+
 else:
     (Z, bpp ) = partition( sequences, circle )
 
