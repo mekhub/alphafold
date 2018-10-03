@@ -36,7 +36,11 @@ def output_square( tag, X ):
             print ' %9.3f' % X[i][j],
         print
 
-def partition( sequence, circle ):
+def partition( sequences, circle ):
+    if isinstance( sequences, str ): sequence = sequences
+    else:
+        sequence = ''
+        for i in range( len( sequences ) ): sequence += sequences[i]
     N = len( sequence )
     # Could also use numpy arrays, but
     # eventually I'd like to use linked lists to
@@ -52,14 +56,31 @@ def partition( sequence, circle ):
         Z_linear[ i ][ i ] = 1
 
     is_chainbreak = [False]*N
+    if isinstance( sequences, list ):
+        L = 0
+        for i in range( len(sequences)-1 ):
+            L = L + len( sequences[i] )
+            is_chainbreak[ L-1 ] = True
     if not circle: is_chainbreak[ N-1 ] = True
 
+    any_chainbreak = initialize_zero_matrix( N )
+    for i in range( N ): #index of subfragment
+        found_chainbreak = False
+        any_chainbreak[ i ][ i ] = False
+        for offset in range( N ): #length of subfragment
+            j = (i + offset) % N;  # N cyclizes
+            any_chainbreak[ i ][ j ] = found_chainbreak
+            if is_chainbreak[ j ]: found_chainbreak = True
+
     # do the dynamic programming
+    min_loop_length = 1
     for offset in range( 1, N ): #length of subfragment
         for i in range( N ): #index of subfragment
             j = (i + offset) % N;  # N cyclizes
 
-            if ( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ):
+            if ( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ) and \
+                  ( any_chainbreak[i][j] or ( (j-i) % N + 1) > min_loop_length  ) and \
+                  ( any_chainbreak[j][i] or ( (i-j) % N + 1) > min_loop_length):
                 if not is_chainbreak[ (j-1) % N]: Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[i][(j-1) % N] * l )
                 for c in range( i, i+offset ):
                     if is_chainbreak[c % N]: Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_linear[i][c % N] * Z_linear[(c+1) % N][j]
@@ -118,13 +139,13 @@ def partition( sequence, circle ):
 
 
 parser = argparse.ArgumentParser( description = "Compute nearest neighbor model partitition function for RNA sequence" )
-parser.add_argument( "-s","-seq","--sequence",default='',help="RNA sequence")
+parser.add_argument( "-s","-seq","--sequences",help="RNA sequences (separate by space)",nargs='*')
 parser.add_argument("--circle", action='store_true', default=False, help='Sequence is a circle')
 args     = parser.parse_args()
-sequence = args.sequence;
+sequences = args.sequences;
 circle   = args.circle;
 
-if sequence == '': # run tests
+if sequences == None: # run tests
     # test of sequences where we know the final partition function.
     sequence = 'CAAAGAA'
     (Z, bpp) = partition( sequence, circle = True )
@@ -150,6 +171,6 @@ if sequence == '': # run tests
     print 'bpp[0,2] = ',bpp_expected,' [expected]'
     assert( abs( (bpp[0][2] - bpp_expected)/bpp_expected )  < 1e-5 )
 else:
-    (Z, bpp ) = partition( sequence, circle )
+    (Z, bpp ) = partition( sequences, circle )
 
 
