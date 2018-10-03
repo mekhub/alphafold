@@ -99,9 +99,9 @@ def partition( sequences, circle ):
     Z_final = []
     for i in range( N ):
         Z_final.append( 0 )
-        for c in range( i, i + N - 1):
-            #any split segments, combined independently. connection does not affect boltzman weight.
-            if is_cutpoint[c % N]: Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] #any split segments, combined independently
+        if not is_cutpoint[(i + N - 1) % N]:
+            for c in range( i, i + N - 1):
+                if is_cutpoint[c % N]: Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] #any split segments, combined independently
 
         if is_cutpoint[(i + N - 1) % N]:
             Z_final[i] += Z_linear[i][(i-1) % N]
