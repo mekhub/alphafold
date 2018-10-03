@@ -7,7 +7,7 @@ l_BP = 0.1
 C_init_BP = C_init * (l_BP/l) # 0.2
 Kd_BP = 0.001;
 C_std = 1; # 1 M
-Kd_lig = 1.0e-5 # drops out in final answer if connections/chainbreaks are predefined
+Kd_lig = 1.0e-5 # drops out in final answer if connections/cutpoints are predefined
 
 def initialize_zero_matrix( N ):
     X = []
@@ -55,22 +55,22 @@ def partition( sequences, circle ):
         C_eff[ i ][ i ] = C_init
         Z_linear[ i ][ i ] = 1
 
-    is_chainbreak = [False]*N
+    is_cutpoint = [False]*N
     if isinstance( sequences, list ):
         L = 0
         for i in range( len(sequences)-1 ):
             L = L + len( sequences[i] )
-            is_chainbreak[ L-1 ] = True
-    if not circle: is_chainbreak[ N-1 ] = True
+            is_cutpoint[ L-1 ] = True
+    if not circle: is_cutpoint[ N-1 ] = True
 
-    any_chainbreak = initialize_zero_matrix( N )
+    any_cutpoint = initialize_zero_matrix( N )
     for i in range( N ): #index of subfragment
-        found_chainbreak = False
-        any_chainbreak[ i ][ i ] = False
+        found_cutpoint = False
+        any_cutpoint[ i ][ i ] = False
         for offset in range( N ): #length of subfragment
             j = (i + offset) % N;  # N cyclizes
-            any_chainbreak[ i ][ j ] = found_chainbreak
-            if is_chainbreak[ j ]: found_chainbreak = True
+            any_cutpoint[ i ][ j ] = found_cutpoint
+            if is_cutpoint[ j ]: found_cutpoint = True
 
     # do the dynamic programming
     min_loop_length = 1
@@ -79,21 +79,21 @@ def partition( sequences, circle ):
             j = (i + offset) % N;  # N cyclizes
 
             if ( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ) and \
-                  ( any_chainbreak[i][j] or ( (j-i) % N + 1) > min_loop_length  ) and \
-                  ( any_chainbreak[j][i] or ( (i-j) % N + 1) > min_loop_length):
-                if not is_chainbreak[ (j-1) % N]: Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[i][(j-1) % N] * l )
+                  ( any_cutpoint[i][j] or ( (j-i) % N + 1) > min_loop_length  ) and \
+                  ( any_cutpoint[j][i] or ( (i-j) % N + 1) > min_loop_length):
+                if not is_cutpoint[ (j-1) % N]: Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[i][(j-1) % N] * l )
                 for c in range( i, i+offset ):
-                    if is_chainbreak[c % N]: Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_linear[i][c % N] * Z_linear[(c+1) % N][j]
+                    if is_cutpoint[c % N]: Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_linear[i][c % N] * Z_linear[(c+1) % N][j]
 
-            if not is_chainbreak[(j-1) % N]: C_eff[i][j] += C_eff[i][(j-1) % N] * l
+            if not is_cutpoint[(j-1) % N]: C_eff[i][j] += C_eff[i][(j-1) % N] * l
             C_eff[i][j] += C_init_BP * Z_BP[i][j]
             for k in range( i+1, i+offset):
-                if not is_chainbreak[ (k-1) % N]: C_eff[i][j] += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
+                if not is_cutpoint[ (k-1) % N]: C_eff[i][j] += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
 
-            if not is_chainbreak[(j-1) % N]: Z_linear[i][j] += Z_linear[i][(j - 1) % N]
+            if not is_cutpoint[(j-1) % N]: Z_linear[i][j] += Z_linear[i][(j - 1) % N]
             Z_linear[i][j] += Z_BP[i][j]
             for k in range( i+1, i+offset):
-                if not is_chainbreak[ (k-1) % N]: Z_linear[i][j] += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
+                if not is_cutpoint[ (k-1) % N]: Z_linear[i][j] += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
 
     # get the answer (in N ways!)
     Z_final = []
@@ -101,9 +101,9 @@ def partition( sequences, circle ):
         Z_final.append( 0 )
         for c in range( i, i + N - 1):
             #any split segments, combined independently. connection does not affect boltzman weight.
-            if is_chainbreak[c % N]: Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] #any split segments, combined independently
+            if is_cutpoint[c % N]: Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] #any split segments, combined independently
 
-        if is_chainbreak[(i + N - 1) % N]:
+        if is_cutpoint[(i + N - 1) % N]:
             Z_final[i] += Z_linear[i][(i-1) % N]
         else:
             Z_close = C_eff[i][(i - 1) % N] * l / Kd_lig
@@ -128,7 +128,7 @@ def partition( sequences, circle ):
     print 'sequence =', sequence
     cutpoint = ''
     for i in range( N ):
-        if is_chainbreak[ i ]: cutpoint += 'X'
+        if is_cutpoint[ i ]: cutpoint += 'X'
         else: cutpoint += ' '
     print 'cutpoint =', cutpoint
     print 'circle   = ', circle
