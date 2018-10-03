@@ -79,8 +79,8 @@ def partition( sequences, circle ):
             j = (i + offset) % N;  # N cyclizes
 
             if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' )) and \
-                  ( any_cutpoint[i][j] or ( ((j-i-1) % N)) > min_loop_length  ) and \
-                  ( any_cutpoint[j][i] or ( ((i-j-1) % N)) > min_loop_length  ):
+                  ( any_cutpoint[i][j] or ( ((j-i-1) % N)) >= min_loop_length  ) and \
+                  ( any_cutpoint[j][i] or ( ((i-j-1) % N)) >= min_loop_length  ):
                 if not is_cutpoint[ (j-1) % N]: Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[i][(j-1) % N] * l )
                 for c in range( i, i+offset ):
                     if is_cutpoint[c % N]: Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_linear[i][c % N] * Z_linear[(c+1) % N][j]
@@ -145,31 +145,29 @@ args     = parser.parse_args()
 sequences = args.sequences;
 circle   = args.circle;
 
+def output_test( Z, Z_ref = 0, bpp = [], bpp_idx= [], bpp_expected = 0):
+    print 'Z =',Z_ref,' [expected]'
+    assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
+    print
+    print 'bpp[0,4] = ',bpp[ bpp_idx[0] ][ bpp_idx[1] ]
+    print 'bpp[0,4] = ',bpp_expected,' [expected]'
+    assert( abs( (bpp[ bpp_idx[0] ][ bpp_idx[1] ] - bpp_expected)/bpp[ bpp_idx[0] ][ bpp_idx[1] ] )  < 1e-5 )
+    print
+
+
 if sequences == None: # run tests
     # test of sequences where we know the final partition function.
     sequence = 'CAAAGAA'
     (Z, bpp) = partition( sequence, circle = True )
-    Z_ref = C_init  * (l**7) * (1 + C_init_BP / Kd_BP ) / C_std
-    print 'Z =',Z_ref,' [expected]'
-    assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
-    print
-    bpp_expected = (C_init**2 * (l**3) * l_BP/ Kd_BP) / ( C_init * (l**4) + C_init**2 * (l**3) * l_BP/ Kd_BP)
-    print 'bpp[0,4] = ',bpp[0][4]
-    print 'bpp[0,4] = ',bpp_expected,' [expected]'
-    assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
+    output_test( Z, C_init  * (l**7) * (1 + C_init_BP / Kd_BP ) / C_std, \
+                 bpp, [0,4], (C_init**2 * (l**3) * l_BP/ Kd_BP) / ( C_init * (l**4) + C_init**2 * (l**3) * l_BP/ Kd_BP) )
 
     # test of sequences where we know the final partition function.
     sequence = 'CAG'
-    Z_ref = 1 + C_init * l**2 / Kd_BP
-    print 'Z =',Z_ref,' [expected]'
     (Z, bpp) = partition( sequence, circle = False )
-    print 'Z =',Z_ref,' [expected]'
-    assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
-    print
-    bpp_expected = (C_init * l**2/Kd_BP)/( 1 + C_init * l**2/Kd_BP )
-    print 'bpp[0,2] = ',bpp[0][2]
-    print 'bpp[0,2] = ',bpp_expected,' [expected]'
-    assert( abs( (bpp[0][2] - bpp_expected)/bpp_expected )  < 1e-5 )
+    output_test( Z, 1 + C_init * l**2 / Kd_BP, \
+                 bpp, [0,2], (C_init * l**2/Kd_BP)/( 1 + C_init * l**2/Kd_BP ) )
+
 else:
     (Z, bpp ) = partition( sequences, circle )
 
