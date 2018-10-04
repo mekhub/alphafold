@@ -8,6 +8,7 @@ C_init_BP = C_init * (l_BP/l) # 0.2
 Kd_BP = 0.001;
 C_std = 1; # 1 M
 Kd_lig = 1.0e-5 # drops out in final answer if connections/cutpoints are predefined
+min_loop_length = 1
 
 def initialize_zero_matrix( N ):
     X = []
@@ -73,7 +74,6 @@ def partition( sequences, circle = False ):
             if is_cutpoint[ j ]: found_cutpoint = True
 
     # do the dynamic programming
-    min_loop_length = 1
     for offset in range( 1, N ): #length of subfragment
         for i in range( N ): #index of subfragment
             j = (i + offset) % N;  # N cyclizes
@@ -168,7 +168,6 @@ if sequences == None: # run tests
     output_test( Z, C_init  * (l**7) * (1 + C_init_BP / Kd_BP ) / C_std, \
                  bpp, [0,4], (C_init**2 * (l**3) * l_BP/ Kd_BP) / ( C_init * (l**4) + C_init**2 * (l**3) * l_BP/ Kd_BP) )
 
-    # test of sequences where we know the final partition function.
     sequence = 'CAG'
     (Z, bpp) = partition( sequence )
     output_test( Z, 1 + C_init * l**2 / Kd_BP, \
