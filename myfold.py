@@ -36,7 +36,7 @@ def output_square( tag, X ):
             print ' %9.3f' % X[i][j],
         print
 
-def partition( sequences, circle ):
+def partition( sequences, circle = False ):
     if isinstance( sequences, str ): sequence = sequences
     else:
         sequence = ''
@@ -85,11 +85,10 @@ def partition( sequences, circle ):
                     Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l)
                 for c in range( i, i+offset ):
                     if is_cutpoint[c % N]:
-                        if c == i: Z_linear_first = 1
-                        else:      Z_linear_first = Z_linear[i+1][c % N]
-                        if (c+1)%N == j: Z_linear_second = 1
-                        else:            Z_linear_second = Z_linear[(c+1) % N][j-1]
-                        Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_linear_first * Z_linear_second
+                        Z_product = 1
+                        if c != i : Z_product *= Z_linear[i+1][c % N]
+                        if (c+1)%N != j:  Z_product *= Z_linear[(c+1) % N][j-1]
+                        Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_product
 
             if not is_cutpoint[(j-1) % N]: C_eff[i][j] += C_eff[i][(j-1) % N] * l
             C_eff[i][j] += C_init_BP * Z_BP[i][j]
@@ -171,19 +170,25 @@ if sequences == None: # run tests
 
     # test of sequences where we know the final partition function.
     sequence = 'CAG'
-    (Z, bpp) = partition( sequence, circle = False )
+    (Z, bpp) = partition( sequence )
     output_test( Z, 1 + C_init * l**2 / Kd_BP, \
                  bpp, [0,2], (C_init * l**2/Kd_BP)/( 1 + C_init * l**2/Kd_BP ) )
 
     sequences = ['C','G']
-    (Z, bpp) = partition( sequences, circle = False ) # note that Z sums over only base pair (not dissociated strands!)
+    (Z, bpp) = partition( sequences ) # note that Z sums over only base pair (not dissociated strands!)
     output_test( Z, C_std * l / Kd_BP/l_BP, \
                  bpp, [0,1], 1.0 )
 
     sequences = ['GC','GC']
-    (Z, bpp) = partition( sequences, circle = False ) # note that Z sums over only base pair (not dissociated strands!)
+    (Z, bpp) = partition( sequences )
     output_test( Z, (C_std/Kd_BP)*(l/l_BP)*(2 + l*l_BP*C_init/Kd_BP ), \
                  bpp, [0,3], (1 + l*l_BP*C_init/Kd_BP )/(2 + l*l_BP*C_init/Kd_BP ) )
+
+    sequence = 'CAGGC'
+    (Z, bpp) = partition( sequence ) # note that Z sums over only base pair (not dissociated strands!)
+    output_test( Z, 1+C_init*l**2/Kd_BP * ( 2 + l ), \
+                 bpp, [0,2], C_init*l**2/Kd_BP /(  1+C_init*l**2/Kd_BP * ( 2 + l )) )
+
 
 
 else:
