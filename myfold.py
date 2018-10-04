@@ -84,7 +84,12 @@ def partition( sequences, circle ):
                 if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
                     Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l)
                 for c in range( i, i+offset ):
-                    if is_cutpoint[c % N]: Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_linear[i][c % N] * Z_linear[(c+1) % N][j]
+                    if is_cutpoint[c % N]:
+                        if c == i: Z_linear_first = 1
+                        else:      Z_linear_first = Z_linear[i+1][c % N]
+                        if (c+1)%N == j: Z_linear_second = 1
+                        else:            Z_linear_second = Z_linear[(c+1) % N][j-1]
+                        Z_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_linear_first * Z_linear_second
 
             if not is_cutpoint[(j-1) % N]: C_eff[i][j] += C_eff[i][(j-1) % N] * l
             C_eff[i][j] += C_init_BP * Z_BP[i][j]
@@ -95,6 +100,7 @@ def partition( sequences, circle ):
             Z_linear[i][j] += Z_BP[i][j]
             for k in range( i+1, i+offset):
                 if not is_cutpoint[ (k-1) % N]: Z_linear[i][j] += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
+                if i == 1 and j == 0: print 'Z_linear', Z_linear[i][j]
 
     # get the answer (in N ways!)
     Z_final = []
@@ -118,9 +124,9 @@ def partition( sequences, circle ):
         for j in range( N ):
             bpp[i][j] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP * (l_BP / l) / Z_final[0]
 
-    output_DP( "Z_linear", Z_linear )
     output_DP( "Z_BP", Z_BP )
     output_DP( "C_eff", C_eff, Z_final )
+    output_DP( "Z_linear", Z_linear )
     output_square( "BPP", bpp );
 
     # stringent test that partition function is correct:
