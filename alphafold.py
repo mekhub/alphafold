@@ -23,7 +23,6 @@ def partition( sequences, circle = False ):
     C_eff = initialize_zero_matrix( N );
     Z_BP  = initialize_zero_matrix( N );
     Z_linear = initialize_zero_matrix( N );
-    Z_cut    = initialize_zero_matrix( N );
 
     # initialize
     for i in range( N ): #length of fragment
