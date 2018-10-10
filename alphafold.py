@@ -162,6 +162,11 @@ if __name__=='__main__':
         output_test( Z, 1+C_init*l**2/Kd_BP * ( 2 + l ), \
                      bpp, [0,2], C_init*l**2/Kd_BP /(  1+C_init*l**2/Kd_BP * ( 2 + l )) )
 
+        sequence = 'CGACG'
+        (Z, bpp) = partition( sequence ) # note that Z sums over only base pair (not dissociated strands!)
+        output_test( Z, 1 + C_init*l**2/Kd_BP + C_init*l**4/Kd_BP  + C_init * (l_BP/l) * l**4 /Kd_BP /Kd_BP , \
+                     bpp, [0,4], ( C_init*l**4/Kd_BP  + C_init * (l_BP/l) * l**4 /Kd_BP /Kd_BP ) / ( 1 + C_init*l**2/Kd_BP + C_init*l**4/Kd_BP  + C_init * (l_BP/l) * l**4 /Kd_BP /Kd_BP )  )
+
 
 
     else:
