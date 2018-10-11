@@ -3,17 +3,21 @@ import argparse
 from util import *
 
 # Four parameter model
-C_init = 1          # a bit like a in multiloop
-l      = 0.5        # a bit like b in multiloop
-l_BP   = 0.1        # a bit like c in multiloop
 Kd_BP  = 0.001;
-
-C_init_BP = C_init * (l_BP/l) # 0.2
+C_init = 1          # a bit like exp(a) in multiloop
+l      = 0.5        # a bit like exp(b) in multiloop
+l_BP   = 0.1        # a bit like exp(c) in multiloop
+params_default = [ Kd_BP, C_init, l, l_BP ]
 C_std = 1; # 1 M. drops out in end (up to overall scale factor).
-Kd_lig = 1.0e-5 # drops out in final answer if connections/cutpoints are predefined
-min_loop_length = 1
 
-def partition( sequences, circle = False ):
+def partition( sequences, params = params_default, circle = False ):
+    Kd_BP  = params[0]
+    C_init = params[1]
+    l      = params[2]
+    l_BP   = params[3]
+    C_init_BP = C_init * (l_BP/l) # 0.2
+    min_loop_length = 1
+
     if isinstance( sequences, str ): sequence = sequences
     else:
         sequence = ''
@@ -27,7 +31,7 @@ def partition( sequences, circle = False ):
     Z_linear = initialize_zero_matrix( N );
 
     # first calculate derivatives with respect to Kd_BP
-    dC_eff = initialize_zero_matrix( N );
+    dC_eff    = initialize_zero_matrix( N );
     dZ_BP     = initialize_zero_matrix( N );
     dZ_linear = initialize_zero_matrix( N );
 
@@ -162,9 +166,7 @@ def partition( sequences, circle = False ):
     print 'circle   = ', circle
     print 'Z =',Z_final[0]
 
-    return ( Z_final[0], bpp )
-
-
+    return ( Z_final[0], bpp, dZ_final[0] )
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser( description = "Compute nearest neighbor model partitition function for RNA sequence" )
@@ -187,36 +189,44 @@ if __name__=='__main__':
     if sequences == None: # run tests
         # test of sequences where we know the final partition function.
         sequence = 'CAAAGAA'
-        (Z, bpp) = partition( sequence, circle = True )
-        output_test( Z, C_init  * (l**7) * (1 + C_init_BP / Kd_BP ) / C_std, \
+        (Z, bpp, dZ) = partition( sequence, circle = True )
+        output_test( Z, C_init  * (l**7) * (1 + (C_init * l_BP/l) / Kd_BP ) / C_std, \
                      bpp, [0,4], (C_init**2 * (l**3) * l_BP/ Kd_BP) / ( C_init * (l**4) + C_init**2 * (l**3) * l_BP/ Kd_BP) )
 
         sequence = 'CAG'
-        (Z, bpp) = partition( sequence )
+        (Z, bpp, dZ) = partition( sequence )
         output_test( Z, 1 + C_init * l**2 / Kd_BP, \
                      bpp, [0,2], (C_init * l**2/Kd_BP)/( 1 + C_init * l**2/Kd_BP ) )
 
         sequences = ['C','G']
-        (Z, bpp) = partition( sequences ) # note that Z sums over only base pair (not dissociated strands!)
+        (Z, bpp, dZ) = partition( sequences ) # note that Z sums over only base pair (not dissociated strands!)
         output_test( Z, C_std * l / Kd_BP/l_BP, \
                      bpp, [0,1], 1.0 )
 
         sequences = ['GC','GC']
-        (Z, bpp) = partition( sequences )
+        (Z, bpp, dZ) = partition( sequences )
         output_test( Z, (C_std/Kd_BP)*(l/l_BP)*(2 + l*l_BP*C_init/Kd_BP ), \
                      bpp, [0,3], (1 + l*l_BP*C_init/Kd_BP )/(2 + l*l_BP*C_init/Kd_BP ) )
 
         sequence = 'CAGGC'
-        (Z, bpp) = partition( sequence ) # note that Z sums over only base pair (not dissociated strands!)
+        (Z, bpp, dZ) = partition( sequence ) # note that Z sums over only base pair (not dissociated strands!)
         output_test( Z, 1+C_init*l**2/Kd_BP * ( 2 + l ), \
                      bpp, [0,2], C_init*l**2/Kd_BP /(  1+C_init*l**2/Kd_BP * ( 2 + l )) )
 
         sequence = 'CGACG'
-        (Z, bpp) = partition( sequence ) # note that Z sums over only base pair (not dissociated strands!)
+        (Z, bpp, dZ) = partition( sequence ) # note that Z sums over only base pair (not dissociated strands!)
         output_test( Z, 1 + C_init*l**2/Kd_BP + C_init*l**4/Kd_BP  + C_init * (l_BP/l) * l**4 /Kd_BP /Kd_BP , \
                      bpp, [0,4], ( C_init*l**4/Kd_BP  + C_init * (l_BP/l) * l**4 /Kd_BP /Kd_BP ) / ( 1 + C_init*l**2/Kd_BP + C_init*l**4/Kd_BP  + C_init * (l_BP/l) * l**4 /Kd_BP /Kd_BP )  )
 
-
+        #################################################
+        # let's do a numerical vs. analytic deriv test
+        #################################################
+        params = params_default
+        delta = 1.0e-12
+        params[0] += delta
+        (Z_perturb, bpp_perturb, dZ_perturb) = partition( sequence, params ) # note that Z sums over only base pair (not dissociated strands!)
+        dZ_numerical = (Z_perturb-Z)/delta
+        print "dZ_dKd (numerical) =",dZ_numerical, ";  dZ_dKd (analytic) =",dZ
 
     else:
         (Z, bpp ) = partition( sequences, circle )
