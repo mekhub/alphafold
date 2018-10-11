@@ -10,7 +10,9 @@ l_BP   = 0.1        # a bit like exp(c) in multiloop
 params_default = [ Kd_BP, C_init, l, l_BP ]
 C_std = 1; # 1 M. drops out in end (up to overall scale factor).
 
-def partition( sequences, params = params_default, circle = False ):
+def partition( sequences, params = params_default, verbose = False, circle = False ):
+
+    # unwrap the parameters of the model
     Kd_BP  = params[0]
     C_init = params[1]
     l      = params[2]
@@ -18,11 +20,22 @@ def partition( sequences, params = params_default, circle = False ):
     C_init_BP = C_init * (l_BP/l) # 0.2
     min_loop_length = 1
 
+    # initialize sequence and cutpoint info
     if isinstance( sequences, str ): sequence = sequences
     else:
         sequence = ''
         for i in range( len( sequences ) ): sequence += sequences[i]
     N = len( sequence )
+
+    is_cutpoint = [False]*N
+    if isinstance( sequences, list ):
+        L = 0
+        for i in range( len(sequences)-1 ):
+            L = L + len( sequences[i] )
+            is_cutpoint[ L-1 ] = True
+    if not circle: is_cutpoint[ N-1 ] = True
+
+    # initialize dynamic programming matrices
     # Could also use numpy arrays, but
     # eventually I'd like to use linked lists to
     # simplify backtracking.
@@ -35,27 +48,11 @@ def partition( sequences, params = params_default, circle = False ):
     dZ_BP     = initialize_zero_matrix( N );
     dZ_linear = initialize_zero_matrix( N );
 
-    # initialize
     for i in range( N ): #length of fragment
         C_eff[ i ][ i ] = C_init
         Z_linear[ i ][ i ] = 1
 
-    is_cutpoint = [False]*N
-    if isinstance( sequences, list ):
-        L = 0
-        for i in range( len(sequences)-1 ):
-            L = L + len( sequences[i] )
-            is_cutpoint[ L-1 ] = True
-    if not circle: is_cutpoint[ N-1 ] = True
-
-    any_cutpoint = initialize_zero_matrix( N )
-    for i in range( N ): #index of subfragment
-        found_cutpoint = False
-        any_cutpoint[ i ][ i ] = False
-        for offset in range( N ): #length of subfragment
-            j = (i + offset) % N;  # N cyclizes
-            any_cutpoint[ i ][ j ] = found_cutpoint
-            if is_cutpoint[ j ]: found_cutpoint = True
+    any_cutpoint = initialize_any_cutpoint( is_cutpoint )
 
     # do the dynamic programming
     for offset in range( 1, N ): #length of subfragment
@@ -141,10 +138,11 @@ def partition( sequences, params = params_default, circle = False ):
             bpp[i][j] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP * (l_BP / l) / Z_final[0]
             bpp_tot += bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
 
-    output_DP( "Z_BP", Z_BP )
-    output_DP( "C_eff", C_eff, Z_final )
-    output_DP( "Z_linear", Z_linear )
-    output_square( "BPP", bpp );
+    if verbose:
+        output_DP( "Z_BP", Z_BP )
+        output_DP( "C_eff", C_eff, Z_final )
+        output_DP( "Z_linear", Z_linear )
+        output_square( "BPP", bpp );
 
 
     # stringent test that partition function is correct:
@@ -175,16 +173,6 @@ if __name__=='__main__':
     args     = parser.parse_args()
     sequences = args.sequences;
     circle   = args.circle;
-
-    def output_test( Z, Z_ref = 0, bpp = [], bpp_idx= [], bpp_expected = 0):
-        print 'Z =',Z_ref,' [expected]'
-        assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
-        print
-        print 'bpp[0,4] = ',bpp[ bpp_idx[0] ][ bpp_idx[1] ]
-        print 'bpp[0,4] = ',bpp_expected,' [expected]'
-        assert( abs( (bpp[ bpp_idx[0] ][ bpp_idx[1] ] - bpp_expected)/bpp[ bpp_idx[0] ][ bpp_idx[1] ] )  < 1e-5 )
-        print
-
 
     if sequences == None: # run tests
         # test of sequences where we know the final partition function.
