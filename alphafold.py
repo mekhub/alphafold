@@ -4,7 +4,7 @@ from util import *
 
 # Four parameter model
 Kd_BP  = 0.001;
-C_init = 1          # a bit like exp(a) in multiloop
+C_init = 2          # a bit like exp(a) in multiloop
 l      = 0.5        # a bit like exp(b) in multiloop
 l_BP   = 0.1        # a bit like exp(c) in multiloop
 params_default = [ Kd_BP, C_init, l, l_BP ]
@@ -204,8 +204,8 @@ if __name__=='__main__':
 
         sequence = 'CGACG'
         (Z, bpp, dZ) = partition( sequence ) # note that Z sums over only base pair (not dissociated strands!)
-        output_test( Z, 1 + C_init*l**2/Kd_BP + C_init*l**4/Kd_BP  + C_init * (l_BP/l) * l**4 /Kd_BP /Kd_BP , \
-                     bpp, [0,4], ( C_init*l**4/Kd_BP  + C_init * (l_BP/l) * l**4 /Kd_BP /Kd_BP ) / ( 1 + C_init*l**2/Kd_BP + C_init*l**4/Kd_BP  + C_init * (l_BP/l) * l**4 /Kd_BP /Kd_BP )  )
+        output_test( Z, 1 + C_init*l**2/Kd_BP + C_init*l**4/Kd_BP  + C_init**2 * (l_BP/l) * l**4 /Kd_BP /Kd_BP , \
+                     bpp, [0,4], ( C_init*l**4/Kd_BP  + C_init**2 * (l_BP/l) * l**4 /Kd_BP /Kd_BP ) / ( 1 + C_init*l**2/Kd_BP + C_init*l**4/Kd_BP  + C_init**2 * (l_BP/l) * l**4 /Kd_BP /Kd_BP )  )
 
         #################################################
         # let's do a numerical vs. analytic deriv test
