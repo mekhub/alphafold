@@ -53,7 +53,7 @@ class Partition:
         '''
         Do the dynamic programming to fill partition function matrices
         '''
-        initialize_sequence_information( self ) # N, sequence, is_cutpoint, any_cutpoint
+        initialize_sequence_information( self ) # N, sequence, is_cutpoint, any_intervening_cutpoint
         initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, dZ_BP, dC_eff, dZ_linear )
 
         # do the dynamic programming
@@ -98,13 +98,13 @@ def update_Z_BP( self, i, j ):
     TODO:  Will soon generalize to arbitrary number of base pairs beyond C-G
     '''
     (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     # Residues that are base paired must *not* bring together contiguous loop with length less than min_loop length
     if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' )) and \
-          ( any_cutpoint[i][j] or ( ((j-i-1) % N)) >= min_loop_length  ) and \
-          ( any_cutpoint[j][i] or ( ((i-j-1) % N)) >= min_loop_length  ):
+          ( any_intervening_cutpoint[i][j] or ( ((j-i-1) % N)) >= min_loop_length  ) and \
+          ( any_intervening_cutpoint[j][i] or ( ((i-j-1) % N)) >= min_loop_length  ):
 
         # base pair closes a loop
         if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
@@ -149,7 +149,7 @@ def update_C_eff( self, i, j ):
     offset = ( j - i ) % self.N
 
     (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
     if not is_cutpoint[(j-1) % N]:
@@ -177,7 +177,7 @@ def update_Z_linear( self, i, j ):
     offset = ( j - i ) % self.N
 
     (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
     if not is_cutpoint[(j-1) % N]:
@@ -203,7 +203,7 @@ def get_Z_final( self ):
     dZ_final = []
 
     (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     for i in range( N ):
         Z_final.append( 0 )
         dZ_final.append( 0 )
@@ -268,7 +268,7 @@ def initialize_sequence_information( self ):
     OUTPUT:
     sequence     = concatenated sequence (string, length N)
     is_cutpoint  = is cut ('nick','chainbreak') or not (Array of bool, length N)
-    any_cutpoint = any cutpoint exists between i and j (N X N)
+    any_intervening_cutpoint = any cutpoint exists between i and j (N X N)
     '''
     # initialize sequence
     if isinstance( self.sequences, str ): self.sequence = self.sequences
@@ -286,7 +286,7 @@ def initialize_sequence_information( self ):
             self.is_cutpoint[ L-1 ] = True
     if not self.circle: self.is_cutpoint[ self.N-1 ] = True
 
-    self.any_cutpoint = initialize_any_cutpoint( self.is_cutpoint )
+    self.any_intervening_cutpoint = initialize_any_intervening_cutpoint( self.is_cutpoint )
 
 ##################################################################################################
 def initialize_dynamic_programming_matrices( self ):
@@ -320,6 +320,6 @@ def unpack_variables( self ):
     '''
     return (self.params.Kd_BP, self.params.C_init, self.params.l, self.params.l_BP, self.params.C_std, \
             self.params.min_loop_length, \
-            self.N, self.sequence, self.is_cutpoint, self.any_cutpoint,  \
+            self.N, self.sequence, self.is_cutpoint, self.any_intervening_cutpoint,  \
             self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear )
 
