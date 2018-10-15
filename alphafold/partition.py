@@ -8,10 +8,10 @@ class AlphaFoldParams:
     '''
     def __init__( self ):
         # Four parameter model
-        self.Kd_BP  = 0.0002;
-        self.C_init = 1          # a bit like exp(a) in multiloop
-        self.l      = 0.5        # a bit like exp(b) in multiloop
-        self.l_BP   = 0.2        # a bit like exp(c) in multiloop
+        self.Kd_BP  = 0.0002;    # Kd for forming base pair (units of M )
+        self.C_init = 1          # Effective molarity for starting each loop (units of M)
+        self.l      = 0.5        # counts number of linkages in loop
+        self.l_BP   = 0.2        # counts number of base pairs in loop
         self.C_std = 1; # 1 M. drops out in end (up to overall scale factor).
         self.min_loop_length = 1
 
