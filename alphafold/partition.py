@@ -1,8 +1,11 @@
 from partition_helpers import *
 
+##################################################################################################
 class AlphaFoldParams:
+    '''
+    Define the statistical mechanical model for RNA folding
+    '''
     def __init__( self ):
-        # default
         # Four parameter model
         self.Kd_BP  = 0.001;
         self.C_init = 1          # a bit like exp(a) in multiloop
@@ -15,27 +18,44 @@ class AlphaFoldParams:
     def get_variables( self ):
         return ( self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_std, self.C_init_BP, self.min_loop_length )
 
+##################################################################################################
 def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False ):
+    '''
+    Wrapper function into Partition() class
+    '''
     p = Partition( sequences, params )
     p.circle  = circle
-    p.verbose = verbose
     p.run()
+    if verbose: p.show_matrices()
     p.show_results()
     return ( p.Z_final[0], p.bpp, p.dZ_final[0] )
 
+##################################################################################################
 class Partition:
+    '''
+    Actual implementation of statistical mechanical model for RNA folding
+    '''
     def __init__( self, sequences, params ):
+        '''
+        Required user input.
+        sequences = string with sequence, or array of strings (sequences of interacting strands)
+        params    = AlphaFoldParams object
+        '''
         self.sequences = sequences
         self.params = params
-        self.verbose = False
-        self.circle = False
+        self.verbose = False # user can update later --> full matrix output
+        self.circle = False  # user can update later --> circularize sequence
+        return
 
     def run( self ):
-
+        '''
+        Do the dynamic programming to fill partition function matrices
+        '''
         initialize_sequence_information( self ) # N, sequence, is_cutpoint, any_cutpoint
         initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, dZ_BP, dC_eff, dZ_linear )
 
-        (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+        (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+         sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
 
         # do the dynamic programming
         # deriv calculations are making this long and messy; this should be simplifiable
@@ -46,54 +66,10 @@ class Partition:
                 update_C_eff( self, i, j )
                 update_Z_linear( self, i, j )
 
-        # get the answer (in N ways!)
-        Z_final  = []
-        dZ_final = []
-        for i in range( N ):
-            Z_final.append( 0 )
-            dZ_final.append( 0 )
-
-            if self.is_cutpoint[(i + N - 1) % N]:
-                Z_final[i]  += Z_linear[i][(i-1) % N]
-                dZ_final[i] += dZ_linear[i][(i-1) % N]
-            else:
-                # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
-                Z_final[i]  += C_eff[i][(i - 1) % N] * l / C_std
-                dZ_final[i] += dC_eff[i][(i - 1) % N] * l / C_std
-
-                for c in range( i, i + N - 1):
-                    if self.is_cutpoint[c % N]:
-                        #any split segments, combined independently
-                        Z_final[i]  += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ]
-                        dZ_final[i] += ( dZ_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] + Z_linear[i][c % N] * dZ_linear[(c+1) % N][ i - 1 ] )
-
-
-        # base pair probability matrix
-        bpp = initialize_zero_matrix( N );
-        bpp_tot = 0.0
-        for i in range( N ):
-            for j in range( N ):
-                bpp[i][j] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP * (l_BP / l) / Z_final[0]
-                bpp_tot += bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
-
-        if self.verbose:
-            output_DP( "Z_BP", Z_BP )
-            output_DP( "C_eff", C_eff, Z_final )
-            output_DP( "Z_linear", Z_linear )
-            output_square( "BPP", bpp );
-
-        # stringent test that partition function is correct -- all the Z(i,i) agree.
-        for i in range( N ):
-            assert( abs( ( Z_final[i] - Z_final[0] ) / Z_final[0] ) < 1.0e-5 )
-            assert( abs( ( dZ_final[i] - dZ_final[0] ) / dZ_final[0] ) < 1.0e-5 )
-
-        # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
-        bpp_tot_based_on_deriv = -dZ_final[0] * Kd_BP / Z_final[0]
-        assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
-
-        self.Z_final = Z_final
-        self.bpp = bpp
-        self.dZ_final = dZ_final
+        get_Z_final( self )    # (Z, dZ_final)
+        get_bpp_matrix( self ) # fill base pair probability matrix
+        run_cross_checks( self ) # cross-check
+        return
 
     def show_results( self ):
         print 'sequence =', self.sequence
@@ -104,44 +80,12 @@ class Partition:
         print 'cutpoint =', cutpoint
         print 'circle   = ', self.circle
         print 'Z =',self.Z_final[0]
+        return
 
-def initialize_sequence_information( self ):
-    # initialize sequence
-    if isinstance( self.sequences, str ): self.sequence = self.sequences
-    else:
-        self.sequence = ''
-        for i in range( len( self.sequences ) ): self.sequence += self.sequences[i]
-    self.N = len( self.sequence )
-
-    # initialize cutpoint information
-    self.is_cutpoint = [False] * self.N
-    if isinstance( self.sequences, list ):
-        L = 0
-        for i in range( len(self.sequences)-1 ):
-            L = L + len( self.sequences[i] )
-            self.is_cutpoint[ L-1 ] = True
-    if not self.circle: self.is_cutpoint[ self.N-1 ] = True
-
-    self.any_cutpoint = initialize_any_cutpoint( self.is_cutpoint )
-
-def initialize_dynamic_programming_matrices( self ):
-    N = self.N
-    # initialize dynamic programming matrices
-    self.C_eff    = initialize_zero_matrix( N );
-    self.Z_BP     = initialize_zero_matrix( N );
-    self.Z_linear = initialize_zero_matrix( N );
-    for i in range( N ): #length of fragment
-        self.C_eff[ i ][ i ] = self.params.C_init
-        self.Z_linear[ i ][ i ] = 1
-
-    # first calculate derivatives with respect to Kd_BP
-    self.dC_eff    = initialize_zero_matrix( N );
-    self.dZ_BP     = initialize_zero_matrix( N );
-    self.dZ_linear = initialize_zero_matrix( N );
-
-
+##################################################################################################
 def update_Z_BP( self, i, j ):
-    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' )) and \
@@ -169,8 +113,10 @@ def update_Z_BP( self, i, j ):
                 dZ_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * dZ_product
     return
 
+##################################################################################################
 def update_C_eff( self, i, j ):
-    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     # key 'special sauce' for derivative w.r.t. Kd_BP
@@ -188,8 +134,10 @@ def update_C_eff( self, i, j ):
             C_eff[i][j]  += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
             dC_eff[i][j] += ( dC_eff[i][(k-1) % N] * Z_BP[k % N][j] + C_eff[i][(k-1) % N] * dZ_BP[k % N][j] ) * l_BP
 
+##################################################################################################
 def update_Z_linear( self, i, j ):
-    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     if not is_cutpoint[(j-1) % N]:
@@ -204,6 +152,126 @@ def update_Z_linear( self, i, j ):
             Z_linear[i][j]  += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
             dZ_linear[i][j] += ( dZ_linear[i][(k-1) % N] * Z_BP[k % N][j] + Z_linear[i][(k-1) % N] * dZ_BP[k % N][j] )
 
+##################################################################################################
+def get_Z_final( self ):
+    # Z_final is total partition function, and is computed at end of filling dynamic programming arrays
+    # Get the answer (in N ways!) --> so final output is actually Z_final(i), an array.
+    # Equality of the array is tested in run_cross_checks()
+    Z_final  = []
+    dZ_final = []
+
+    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    for i in range( N ):
+        Z_final.append( 0 )
+        dZ_final.append( 0 )
+
+        if self.is_cutpoint[(i + N - 1) % N]:
+            Z_final[i]  += Z_linear[i][(i-1) % N]
+            dZ_final[i] += dZ_linear[i][(i-1) % N]
+        else:
+            # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
+            Z_final[i]  += C_eff[i][(i - 1) % N] * l / C_std
+            dZ_final[i] += dC_eff[i][(i - 1) % N] * l / C_std
+
+            for c in range( i, i + N - 1):
+                if self.is_cutpoint[c % N]:
+                    #any split segments, combined independently
+                    Z_final[i]  += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ]
+                    dZ_final[i] += ( dZ_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] + Z_linear[i][c % N] * dZ_linear[(c+1) % N][ i - 1 ] )
+
+    self.Z_final = Z_final
+    self.dZ_final = dZ_final
+
+##################################################################################################
+def get_bpp_matrix( self ):
+    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+
+    # base pair probability matrix
+    self.bpp = initialize_zero_matrix( N );
+    for i in range( N ):
+        for j in range( N ):
+            self.bpp[i][j] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP * (l_BP / l) / self.Z_final[0]
+
+##################################################################################################
+def show_matrices( self ):
+        output_DP( "Z_BP", self.Z_BP )
+        output_DP( "C_eff", C_eff, self.Z_final )
+        output_DP( "Z_linear", self.Z_linear )
+        output_square( "BPP", self.bpp );
+
+##################################################################################################
+def run_cross_checks( self ):
+    # stringent test that partition function is correct -- all the Z(i,i) agree.
+    for i in range( self.N ):
+        assert( abs( ( self.Z_final[i] - self.Z_final[0] ) / self.Z_final[0] ) < 1.0e-5 )
+        assert( abs( ( self.dZ_final[i] - self.dZ_final[0] ) / self.dZ_final[0] ) < 1.0e-5 )
+
+    # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
+    bpp_tot = 0.0
+    for i in range( self.N ):
+        for j in range( self.N ):
+            bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
+    bpp_tot_based_on_deriv = -self.dZ_final[0] * self.params.Kd_BP / self.Z_final[0]
+    assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
+
+
+##################################################################################################
+def initialize_sequence_information( self ):
+    '''
+    Create sequence information from sequences of strands:
+    INPUT:
+    sequences = sequences of interacting strands (array of strings)
+    circle    = user asks for nucleotides N and 1 to be ligated ('circularized') (bool)
+    OUTPUT:
+    sequence     = concatenated sequence (string, length N)
+    is_cutpoint  = is cut ('nick','chainbreak') or not (Array of bool, length N)
+    any_cutpoint = any cutpoint exists between i and j (N X N)
+    '''
+    # initialize sequence
+    if isinstance( self.sequences, str ): self.sequence = self.sequences
+    else:
+        self.sequence = ''
+        for i in range( len( self.sequences ) ): self.sequence += self.sequences[i]
+    self.N = len( self.sequence )
+
+    # initialize cutpoint information
+    self.is_cutpoint = [False] * self.N
+    if isinstance( self.sequences, list ):
+        L = 0
+        for i in range( len(self.sequences)-1 ):
+            L = L + len( self.sequences[i] )
+            self.is_cutpoint[ L-1 ] = True
+    if not self.circle: self.is_cutpoint[ self.N-1 ] = True
+
+    self.any_cutpoint = initialize_any_cutpoint( self.is_cutpoint )
+
+##################################################################################################
+def initialize_dynamic_programming_matrices( self ):
+    '''
+    A bunch of zero matrices. Only non-trivial thing is
+    initialization of (i,i) [diagonal]:
+         Z_BP(i,i)     = 0
+         C_eff(i,i)    = C_init (units of M)
+         Z_linear(i,i) = 1
+    '''
+    N = self.N
+    # initialize dynamic programming matrices
+    self.C_eff    = initialize_zero_matrix( N );
+    self.Z_BP     = initialize_zero_matrix( N );
+    self.Z_linear = initialize_zero_matrix( N );
+    for i in range( N ): #length of fragment
+        self.C_eff[ i ][ i ] = self.params.C_init
+        self.Z_linear[ i ][ i ] = 1
+
+    # first calculate derivatives with respect to Kd_BP
+    self.dC_eff    = initialize_zero_matrix( N );
+    self.dZ_BP     = initialize_zero_matrix( N );
+    self.dZ_linear = initialize_zero_matrix( N );
+
+
+##################################################################################################
 def unpack_variables( self ):
     '''
     This helper function just lets me write out equations without
