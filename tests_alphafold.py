@@ -43,6 +43,7 @@ def test_alphafold():
         (Z_perturb, bpp_perturb, dZ_perturb) = partition( sequence, params ) # note that Z sums over only base pair (not dissociated strands!)
         dZ_numerical = (Z_perturb-Z)/delta
         print "dZ_dKd (numerical) =",dZ_numerical, ";  dZ_dKd (analytic) =",dZ
+        assert( abs( dZ_numerical - dZ )/ dZ < 1.0e-5 )
 
 if __name__=='__main__':
     test_alphafold()

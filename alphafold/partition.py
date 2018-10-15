@@ -8,12 +8,20 @@ l_BP   = 0.1        # a bit like exp(c) in multiloop
 params_default = [ Kd_BP, C_init, l, l_BP ]
 C_std = 1; # 1 M. drops out in end (up to overall scale factor).
 
+def partition( sequences, params = params_default, circle = False, verbose = False ):
+    p = Partition( sequences, params, verbose, circle )
+    p.circle  = circle
+    p.verbose = verbose
+    p.run()
+    p.show_results()
+    return ( p.Z_final[0], p.bpp, p.dZ_final[0] )
+
 class Partition:
     def __init__( self, sequences, params, verbose, circle ):
         self.sequences = sequences
         self.params = params
-        self.verbose = verbose
-        self.circle = circle
+        self.verbose = False
+        self.circle = False
 
     def run( self ):
         # unwrap the parameters of the model
@@ -26,14 +34,8 @@ class Partition:
 
         initialize_sequence_information( self ) # N, sequence, is_cutpoint, any_cutpoint
         initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, dZ_BP, dC_eff, dZ_linear )
-        N = self.N
 
-        Z_BP = self.Z_BP
-        dZ_BP = self.dZ_BP
-        C_eff = self.C_eff
-        dC_eff = self.dC_eff
-        Z_linear = self.Z_linear
-        dZ_linear = self.dZ_linear
+        (Kd_BP, C_init, l, l_BP, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
 
         # do the dynamic programming
         # deriv calculations are making this long and messy; this should be simplifiable
@@ -41,30 +43,8 @@ class Partition:
             for i in range( N ): #index of subfragment
                 j = (i + offset) % N;  # N cyclizes
                 update_Z_BP( self, i, j )
-
-                if not self.is_cutpoint[(j-1) % N]:
-                    C_eff[i][j]  += C_eff[i][(j-1) % N] * l
-                    dC_eff[i][j] += dC_eff[i][(j-1) % N] * l
-
-                C_eff[i][j]  += self.C_init_BP * Z_BP[i][j]
-                dC_eff[i][j] += self.C_init_BP * dZ_BP[i][j]
-
-                for k in range( i+1, i+offset):
-                    if not self.is_cutpoint[ (k-1) % N]:
-                        C_eff[i][j]  += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
-                        dC_eff[i][j] += ( dC_eff[i][(k-1) % N] * Z_BP[k % N][j] + C_eff[i][(k-1) % N] * dZ_BP[k % N][j] ) * l_BP
-
-                if not self.is_cutpoint[(j-1) % N]:
-                    Z_linear[i][j]  += Z_linear[i][(j - 1) % N]
-                    dZ_linear[i][j] += dZ_linear[i][(j - 1) % N]
-
-                Z_linear[i][j]  += Z_BP[i][j]
-                dZ_linear[i][j] += dZ_BP[i][j]
-
-                for k in range( i+1, i+offset):
-                    if not self.is_cutpoint[ (k-1) % N]:
-                        Z_linear[i][j]  += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
-                        dZ_linear[i][j] += ( dZ_linear[i][(k-1) % N] * Z_BP[k % N][j] + Z_linear[i][(k-1) % N] * dZ_BP[k % N][j] )
+                update_C_eff( self, i, j )
+                update_Z_linear( self, i, j )
 
         # get the answer (in N ways!)
         Z_final  = []
@@ -111,18 +91,19 @@ class Partition:
         bpp_tot_based_on_deriv = -dZ_final[0] * Kd_BP / Z_final[0]
         assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
 
+        self.Z_final = Z_final
+        self.bpp = bpp
+        self.dZ_final = dZ_final
+
+    def show_results( self ):
         print 'sequence =', self.sequence
         cutpoint = ''
-        for i in range( N ):
+        for i in range( self.N ):
             if self.is_cutpoint[ i ]: cutpoint += 'X'
             else: cutpoint += '-'
         print 'cutpoint =', cutpoint
         print 'circle   = ', self.circle
-        print 'Z =',Z_final[0]
-
-        self.Z_final = Z_final
-        self.bpp = bpp
-        self.dZ_final = dZ_final
+        print 'Z =',self.Z_final[0]
 
 def initialize_sequence_information( self ):
     # initialize sequence
@@ -159,25 +140,18 @@ def initialize_dynamic_programming_matrices( self ):
     self.dZ_linear = initialize_zero_matrix( N );
 
 
-def  update_Z_BP( self, i, j ):
-    # for readability:
-    N = self.N
-    Z_BP = self.Z_BP
-    dZ_BP = self.dZ_BP
-    C_eff = self.C_eff
-    dC_eff = self.dC_eff
-    Z_linear = self.Z_linear
-    dZ_linear = self.dZ_linear
+def update_Z_BP( self, i, j ):
+    (Kd_BP, C_init, l, l_BP, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
-    if (( self.sequence[i] == 'C' and self.sequence[j] == 'G' ) or ( self.sequence[i] == 'G' and self.sequence[j] == 'C' )) and \
-          ( self.any_cutpoint[i][j] or ( ((j-i-1) % N)) >= self.min_loop_length  ) and \
-          ( self.any_cutpoint[j][i] or ( ((i-j-1) % N)) >= self.min_loop_length  ):
-        if (not self.is_cutpoint[ i ]) and (not self.is_cutpoint[ (j-1) % N]):
+    if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' )) and \
+          ( any_cutpoint[i][j] or ( ((j-i-1) % N)) >= min_loop_length  ) and \
+          ( any_cutpoint[j][i] or ( ((i-j-1) % N)) >= min_loop_length  ):
+        if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
             Z_BP[i][j]  += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l)
             dZ_BP[i][j] += (1.0/Kd_BP ) * ( dC_eff[(i+1) % N][(j-1) % N] * l * l)
         for c in range( i, i+offset ):
-            if self.is_cutpoint[c % N]:
+            if is_cutpoint[c % N]:
                 Z_comp1 = 1
                 Z_comp2 = 1
                 dZ_comp1 = 0
@@ -193,12 +167,50 @@ def  update_Z_BP( self, i, j ):
 
                 Z_BP[i][j]  += (C_std/Kd_BP) * (l/l_BP) * Z_product
                 dZ_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * dZ_product
+    return
 
-        # key 'special sauce' for derivative w.r.t. Kd_BP
-        dZ_BP[i][j] += -(1.0/Kd_BP) * Z_BP[i][j]
+def update_C_eff( self, i, j ):
+    (Kd_BP, C_init, l, l_BP, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    offset = ( j - i ) % N
 
-def partition( sequences, params = params_default, verbose = False, circle = False ):
-    p = Partition( sequences, params, verbose, circle )
-    p.run()
-    return ( p.Z_final[0], p.bpp, p.dZ_final[0] )
+    # key 'special sauce' for derivative w.r.t. Kd_BP
+    dZ_BP[i][j] += -(1.0/Kd_BP) * Z_BP[i][j]
+
+    if not is_cutpoint[(j-1) % N]:
+        C_eff[i][j]  += C_eff[i][(j-1) % N] * l
+        dC_eff[i][j] += dC_eff[i][(j-1) % N] * l
+
+    C_eff[i][j]  += C_init_BP * Z_BP[i][j]
+    dC_eff[i][j] += C_init_BP * dZ_BP[i][j]
+
+    for k in range( i+1, i+offset):
+        if not is_cutpoint[ (k-1) % N]:
+            C_eff[i][j]  += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
+            dC_eff[i][j] += ( dC_eff[i][(k-1) % N] * Z_BP[k % N][j] + C_eff[i][(k-1) % N] * dZ_BP[k % N][j] ) * l_BP
+
+def update_Z_linear( self, i, j ):
+    (Kd_BP, C_init, l, l_BP, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    offset = ( j - i ) % N
+
+    if not is_cutpoint[(j-1) % N]:
+        Z_linear[i][j]  += Z_linear[i][(j - 1) % N]
+        dZ_linear[i][j] += dZ_linear[i][(j - 1) % N]
+
+    Z_linear[i][j]  += Z_BP[i][j]
+    dZ_linear[i][j] += dZ_BP[i][j]
+
+    for k in range( i+1, i+offset):
+        if not is_cutpoint[ (k-1) % N]:
+            Z_linear[i][j]  += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
+            dZ_linear[i][j] += ( dZ_linear[i][(k-1) % N] * Z_BP[k % N][j] + Z_linear[i][(k-1) % N] * dZ_BP[k % N][j] )
+
+def unpack_variables( self ):
+    '''
+    This helper function just lets me write out equations without
+    using "self" which obscures connection to my handwritten equations
+    '''
+    return (self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_init_BP, \
+            self.min_loop_length, \
+            self.N, self.sequence, self.is_cutpoint, self.any_cutpoint,  \
+            self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear )
 
