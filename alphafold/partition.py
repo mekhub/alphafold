@@ -27,33 +27,7 @@ def partition( sequences, params = params_default, verbose = False, circle = Fal
     for offset in range( 1, N ): #length of subfragment
         for i in range( N ): #index of subfragment
             j = (i + offset) % N;  # N cyclizes
-
-            if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' )) and \
-                  ( any_cutpoint[i][j] or ( ((j-i-1) % N)) >= min_loop_length  ) and \
-                  ( any_cutpoint[j][i] or ( ((i-j-1) % N)) >= min_loop_length  ):
-                if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
-                    Z_BP[i][j]  += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l)
-                    dZ_BP[i][j] += (1.0/Kd_BP ) * ( dC_eff[(i+1) % N][(j-1) % N] * l * l)
-                for c in range( i, i+offset ):
-                    if is_cutpoint[c % N]:
-                        Z_comp1 = 1
-                        Z_comp2 = 1
-                        dZ_comp1 = 0
-                        dZ_comp2 = 0
-                        if c != i :
-                            Z_comp1  = Z_linear[i+1][c % N]
-                            dZ_comp1 = dZ_linear[i+1][c % N]
-                        if (c+1)%N != j:
-                            Z_comp2 = Z_linear[(c+1) % N][j-1]
-                            dZ_comp2 = dZ_linear[(c+1) % N][j-1]
-                        Z_product  = Z_comp1 * Z_comp2
-                        dZ_product = dZ_comp1 * Z_comp2 + Z_comp1 * dZ_comp2
-
-                        Z_BP[i][j]  += (C_std/Kd_BP) * (l/l_BP) * Z_product
-                        dZ_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * dZ_product
-
-                # key 'special sauce' for derivative w.r.t. Kd_BP
-                dZ_BP[i][j] += -(1.0/Kd_BP) * Z_BP[i][j]
+            update_Z_BP( (i,j), sequence, C_std, l, l_BP, Kd_BP, is_cutpoint, any_cutpoint, min_loop_length, Z_BP, C_eff, Z_linear, dZ_BP, dC_eff, dZ_linear )
 
             if not is_cutpoint[(j-1) % N]:
                 C_eff[i][j]  += C_eff[i][(j-1) % N] * l
