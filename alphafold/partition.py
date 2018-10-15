@@ -4,20 +4,19 @@ from output_helpers import *
 ##################################################################################################
 class AlphaFoldParams:
     '''
-    Paramters that Define the statistical mechanical model for RNA folding
+    Parameters that Define the statistical mechanical model for RNA folding
     '''
     def __init__( self ):
         # Four parameter model
-        self.Kd_BP  = 0.001;
+        self.Kd_BP  = 0.0002;
         self.C_init = 1          # a bit like exp(a) in multiloop
         self.l      = 0.5        # a bit like exp(b) in multiloop
-        self.l_BP   = 0.1        # a bit like exp(c) in multiloop
+        self.l_BP   = 0.2        # a bit like exp(c) in multiloop
         self.C_std = 1; # 1 M. drops out in end (up to overall scale factor).
-        self.C_init_BP = self.C_init * (self.l_BP/self.l) # 0.2
         self.min_loop_length = 1
 
     def get_variables( self ):
-        return ( self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_std, self.C_init_BP, self.min_loop_length )
+        return ( self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_std, self.min_loop_length )
 
 ##################################################################################################
 def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False ):
@@ -57,13 +56,10 @@ class Partition:
         initialize_sequence_information( self ) # N, sequence, is_cutpoint, any_cutpoint
         initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, dZ_BP, dC_eff, dZ_linear )
 
-        (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
-         sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
-
         # do the dynamic programming
-        for offset in range( 1, N ): #length of subfragment
-            for i in range( N ): #index of subfragment
-                j = (i + offset) % N;  # N cyclizes
+        for offset in range( 1, self.N ): #length of subfragment
+            for i in range( self.N ):     #index of subfragment
+                j = (i + offset) % self.N;  # N cyclizes
                 update_Z_BP( self, i, j )
                 update_C_eff( self, i, j )
                 update_Z_linear( self, i, j )
@@ -92,7 +88,6 @@ class Partition:
         output_DP( "Z_linear", self.Z_linear )
         output_square( "BPP", self.bpp );
 
-
 ##################################################################################################
 # Following three functions hold ALL THE GOOD STUFF.
 ##################################################################################################
@@ -102,7 +97,7 @@ def update_Z_BP( self, i, j ):
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
     TODO:  Will soon generalize to arbitrary number of base pairs beyond C-G
     '''
-    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+    (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
@@ -113,8 +108,8 @@ def update_Z_BP( self, i, j ):
 
         # base pair closes a loop
         if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
-            Z_BP[i][j]  += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l)
-            dZ_BP[i][j] += (1.0/Kd_BP ) * ( dC_eff[(i+1) % N][(j-1) % N] * l * l)
+            Z_BP[i][j]  += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l * l_BP)
+            dZ_BP[i][j] += (1.0/Kd_BP ) * ( dC_eff[(i+1) % N][(j-1) % N] * l * l * l_BP)
 
         # base pair brings together two strands that were previously disconnected
         for c in range( i, i+offset ):
@@ -131,8 +126,8 @@ def update_Z_BP( self, i, j ):
                 Z_product  = Z_comp1 * Z_comp2
                 dZ_product = dZ_comp1 * Z_comp2 + Z_comp1 * dZ_comp2
 
-                Z_BP [i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_product
-                dZ_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * dZ_product
+                Z_BP [i][j] += (C_std/Kd_BP) * Z_product
+                dZ_BP[i][j] += (C_std/Kd_BP) * dZ_product
 
     # key 'special sauce' for derivative w.r.t. Kd_BP
     dZ_BP[i][j] += -(1.0/Kd_BP) * Z_BP[i][j]
@@ -153,7 +148,7 @@ def update_C_eff( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+    (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
@@ -162,14 +157,14 @@ def update_C_eff( self, i, j ):
         dC_eff[i][j] += dC_eff[i][(j-1) % N] * l
 
     # j is base paired, and its partner is i
-    C_eff[i][j]  += C_init_BP * Z_BP[i][j]
-    dC_eff[i][j] += C_init_BP * dZ_BP[i][j]
+    C_eff[i][j]  += C_init * Z_BP[i][j] * l_BP
+    dC_eff[i][j] += C_init * dZ_BP[i][j] * l_BP
 
     # j is base paired, and its partner is k > i
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
-            C_eff[i][j]  += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
-            dC_eff[i][j] += ( dC_eff[i][(k-1) % N] * Z_BP[k % N][j] + C_eff[i][(k-1) % N] * dZ_BP[k % N][j] ) * l_BP
+            C_eff[i][j]  += C_eff[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP
+            dC_eff[i][j] += ( dC_eff[i][(k-1) % N] * Z_BP[k % N][j] + C_eff[i][(k-1) % N] * dZ_BP[k % N][j] ) * l * l_BP
 
 
 ##################################################################################################
@@ -181,7 +176,7 @@ def update_Z_linear( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+    (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
@@ -207,7 +202,7 @@ def get_Z_final( self ):
     Z_final  = []
     dZ_final = []
 
-    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+    (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     for i in range( N ):
         Z_final.append( 0 )
@@ -243,7 +238,7 @@ def get_bpp_matrix( self ):
     self.bpp = initialize_zero_matrix( self.N );
     for i in range( self.N ):
         for j in range( self.N ):
-            self.bpp[i][j] = self.Z_BP[i][j] * self.Z_BP[j][i] * self.params.Kd_BP * (self.params.l_BP / self.params.l) / self.Z_final[0]
+            self.bpp[i][j] = self.Z_BP[i][j] * self.Z_BP[j][i] * self.params.Kd_BP / self.Z_final[0]
 
 
 ##################################################################################################
@@ -323,7 +318,7 @@ def unpack_variables( self ):
     This helper function just lets me write out equations without
     using "self" which obscures connection to my handwritten equations
     '''
-    return (self.params.Kd_BP, self.params.C_init, self.params.l, self.params.l_BP, self.params.C_std, self.params.C_init_BP, \
+    return (self.params.Kd_BP, self.params.C_init, self.params.l, self.params.l_BP, self.params.C_std, \
             self.params.min_loop_length, \
             self.N, self.sequence, self.is_cutpoint, self.any_cutpoint,  \
             self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear )
