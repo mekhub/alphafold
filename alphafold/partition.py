@@ -1,15 +1,22 @@
 from partition_helpers import *
 
-# Four parameter model
-Kd_BP  = 0.001;
-C_init = 2          # a bit like exp(a) in multiloop
-l      = 0.5        # a bit like exp(b) in multiloop
-l_BP   = 0.1        # a bit like exp(c) in multiloop
-params_default = [ Kd_BP, C_init, l, l_BP ]
-C_std = 1; # 1 M. drops out in end (up to overall scale factor).
+class AlphaFoldParams:
+    def __init__( self ):
+        # default
+        # Four parameter model
+        self.Kd_BP  = 0.001;
+        self.C_init = 1          # a bit like exp(a) in multiloop
+        self.l      = 0.5        # a bit like exp(b) in multiloop
+        self.l_BP   = 0.1        # a bit like exp(c) in multiloop
+        self.C_std = 1; # 1 M. drops out in end (up to overall scale factor).
+        self.C_init_BP = self.C_init * (self.l_BP/self.l) # 0.2
+        self.min_loop_length = 1
 
-def partition( sequences, params = params_default, circle = False, verbose = False ):
-    p = Partition( sequences, params, verbose, circle )
+    def get_variables( self ):
+        return ( self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_std, self.C_init_BP, self.min_loop_length )
+
+def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False ):
+    p = Partition( sequences, params )
     p.circle  = circle
     p.verbose = verbose
     p.run()
@@ -17,25 +24,18 @@ def partition( sequences, params = params_default, circle = False, verbose = Fal
     return ( p.Z_final[0], p.bpp, p.dZ_final[0] )
 
 class Partition:
-    def __init__( self, sequences, params, verbose, circle ):
+    def __init__( self, sequences, params ):
         self.sequences = sequences
         self.params = params
         self.verbose = False
         self.circle = False
 
     def run( self ):
-        # unwrap the parameters of the model
-        self.Kd_BP  = self.params[0]
-        self.C_init = self.params[1]
-        self.l      = self.params[2]
-        self.l_BP   = self.params[3]
-        self.C_init_BP = self.C_init * (self.l_BP/self.l) # 0.2
-        self.min_loop_length = 1
 
         initialize_sequence_information( self ) # N, sequence, is_cutpoint, any_cutpoint
         initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, dZ_BP, dC_eff, dZ_linear )
 
-        (Kd_BP, C_init, l, l_BP, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+        (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
 
         # do the dynamic programming
         # deriv calculations are making this long and messy; this should be simplifiable
@@ -131,7 +131,7 @@ def initialize_dynamic_programming_matrices( self ):
     self.Z_BP     = initialize_zero_matrix( N );
     self.Z_linear = initialize_zero_matrix( N );
     for i in range( N ): #length of fragment
-        self.C_eff[ i ][ i ] = self.C_init
+        self.C_eff[ i ][ i ] = self.params.C_init
         self.Z_linear[ i ][ i ] = 1
 
     # first calculate derivatives with respect to Kd_BP
@@ -141,7 +141,7 @@ def initialize_dynamic_programming_matrices( self ):
 
 
 def update_Z_BP( self, i, j ):
-    (Kd_BP, C_init, l, l_BP, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' )) and \
@@ -170,7 +170,7 @@ def update_Z_BP( self, i, j ):
     return
 
 def update_C_eff( self, i, j ):
-    (Kd_BP, C_init, l, l_BP, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     # key 'special sauce' for derivative w.r.t. Kd_BP
@@ -189,7 +189,7 @@ def update_C_eff( self, i, j ):
             dC_eff[i][j] += ( dC_eff[i][(k-1) % N] * Z_BP[k % N][j] + C_eff[i][(k-1) % N] * dZ_BP[k % N][j] ) * l_BP
 
 def update_Z_linear( self, i, j ):
-    (Kd_BP, C_init, l, l_BP, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     if not is_cutpoint[(j-1) % N]:
@@ -209,8 +209,8 @@ def unpack_variables( self ):
     This helper function just lets me write out equations without
     using "self" which obscures connection to my handwritten equations
     '''
-    return (self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_init_BP, \
-            self.min_loop_length, \
+    return (self.params.Kd_BP, self.params.C_init, self.params.l, self.params.l_BP, self.params.C_std, self.params.C_init_BP, \
+            self.params.min_loop_length, \
             self.N, self.sequence, self.is_cutpoint, self.any_cutpoint,  \
             self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear )
 
