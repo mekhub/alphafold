@@ -44,7 +44,6 @@ class Partition:
         '''
         self.sequences = sequences
         self.params = params
-        self.verbose = False # user can update later --> full matrix output
         self.circle = False  # user can update later --> circularize sequence
         return
 
