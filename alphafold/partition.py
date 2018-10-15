@@ -4,7 +4,7 @@ from output_helpers import *
 ##################################################################################################
 class AlphaFoldParams:
     '''
-    Define the statistical mechanical model for RNA folding
+    Paramters that Define the statistical mechanical model for RNA folding
     '''
     def __init__( self ):
         # Four parameter model
@@ -34,7 +34,8 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
 ##################################################################################################
 class Partition:
     '''
-    Actual implementation of statistical mechanical model for RNA folding
+    Statistical mechanical model for RNA folding, testing a bunch of extensions and with lots of cross-checks
+    (C) R. Das, Stanford University, 2018
     '''
     def __init__( self, sequences, params ):
         '''
@@ -91,53 +92,80 @@ class Partition:
         output_DP( "Z_linear", self.Z_linear )
         output_square( "BPP", self.bpp );
 
+
+##################################################################################################
+# Following three functions hold ALL THE GOOD STUFF.
 ##################################################################################################
 def update_Z_BP( self, i, j ):
+    '''
+    Z_BP is the partition function for all structures that base pair i and j.
+    Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
+    TODO:  Will soon generalize to arbitrary number of base pairs beyond C-G
+    '''
     (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
      sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
+    # Residues that are base paired must *not* bring together contiguous loop with length less than min_loop length
     if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' )) and \
           ( any_cutpoint[i][j] or ( ((j-i-1) % N)) >= min_loop_length  ) and \
           ( any_cutpoint[j][i] or ( ((i-j-1) % N)) >= min_loop_length  ):
+
+        # base pair closes a loop
         if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
             Z_BP[i][j]  += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l)
             dZ_BP[i][j] += (1.0/Kd_BP ) * ( dC_eff[(i+1) % N][(j-1) % N] * l * l)
+
+        # base pair brings together two strands that were previously disconnected
         for c in range( i, i+offset ):
             if is_cutpoint[c % N]:
-                Z_comp1 = 1
-                Z_comp2 = 1
-                dZ_comp1 = 0
-                dZ_comp2 = 0
+                # strand 1  (i --> c), strand 2  (c+1 -- > j)
+                Z_comp1  = Z_comp2  = 1
+                dZ_comp1 = dZ_comp2 = 0
                 if c != i :
-                    Z_comp1  = Z_linear[i+1][c % N]
-                    dZ_comp1 = dZ_linear[i+1][c % N]
+                    Z_comp1  = Z_linear [(i+1) % N][c % N]
+                    dZ_comp1 = dZ_linear[(i+1) % N][c % N]
                 if (c+1)%N != j:
-                    Z_comp2 = Z_linear[(c+1) % N][j-1]
-                    dZ_comp2 = dZ_linear[(c+1) % N][j-1]
+                    Z_comp2  = Z_linear [(c+1) % N][(j-1) % N]
+                    dZ_comp2 = dZ_linear[(c+1) % N][(j-1) % N]
                 Z_product  = Z_comp1 * Z_comp2
                 dZ_product = dZ_comp1 * Z_comp2 + Z_comp1 * dZ_comp2
 
-                Z_BP[i][j]  += (C_std/Kd_BP) * (l/l_BP) * Z_product
+                Z_BP [i][j] += (C_std/Kd_BP) * (l/l_BP) * Z_product
                 dZ_BP[i][j] += (C_std/Kd_BP) * (l/l_BP) * dZ_product
-    return
-
-##################################################################################################
-def update_C_eff( self, i, j ):
-    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
-     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
-    offset = ( j - i ) % N
 
     # key 'special sauce' for derivative w.r.t. Kd_BP
     dZ_BP[i][j] += -(1.0/Kd_BP) * Z_BP[i][j]
 
+    return
+
+##################################################################################################
+def update_C_eff( self, i, j ):
+    '''
+    C_eff tracks the effective molarity of a loop starting at i and ending at j
+    Assumes a model where each additional element multiplicatively reduces the effective molarity, by
+      the variables l, l_BP, etc.
+    Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
+    Relies on Z_BP being already filled out for i,j
+    TODO: In near future, will include possibility of multiple C_eff terms, which combined together will
+      allow for free energy costs of loop closure to scale apprpoximately log-linearly rather than
+      linearly with loop size.
+    '''
+    offset = ( j - i ) % self.N
+
+    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
+     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+
+    # j is not base paired: Extension by one residue from j-1 to j.
     if not is_cutpoint[(j-1) % N]:
         C_eff[i][j]  += C_eff[i][(j-1) % N] * l
         dC_eff[i][j] += dC_eff[i][(j-1) % N] * l
 
+    # j is base paired, and its partner is i
     C_eff[i][j]  += C_init_BP * Z_BP[i][j]
     dC_eff[i][j] += C_init_BP * dZ_BP[i][j]
 
+    # j is base paired, and its partner is k > i
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
             C_eff[i][j]  += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
@@ -146,17 +174,26 @@ def update_C_eff( self, i, j ):
 
 ##################################################################################################
 def update_Z_linear( self, i, j ):
+    '''
+    Z_linear tracks the total partition function from i to j, assuming all intervening residues are covalently connected (or base-paired).
+    Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
+    Relies on Z_BP being already filled out for i,j
+    '''
+    offset = ( j - i ) % self.N
+
     (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
      sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
-    offset = ( j - i ) % N
 
+    # j is not base paired: Extension by one residue from j-1 to j.
     if not is_cutpoint[(j-1) % N]:
         Z_linear[i][j]  += Z_linear[i][(j - 1) % N]
         dZ_linear[i][j] += dZ_linear[i][(j - 1) % N]
 
+    # j is base paired, and its partner is i
     Z_linear[i][j]  += Z_BP[i][j]
     dZ_linear[i][j] += dZ_BP[i][j]
 
+    # j is base paired, and its partner is k > i
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
             Z_linear[i][j]  += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
@@ -195,14 +232,18 @@ def get_Z_final( self ):
 
 ##################################################################################################
 def get_bpp_matrix( self ):
-    (Kd_BP, C_init, l, l_BP, C_std, C_init_BP, min_loop_length, N, \
-     sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    '''
+    Getting base pair probability matrix.
+    Gets carried out pretty fast since we've already computed the sum over structures in i..j encapsulated by a pair (i,j), as well
+      as structures in j..i encapsulated by those pairs.
+    So: it becomes easy to calculate partition function over all structures with base pair (i,j), and then divide by total Z.
+    '''
 
     # base pair probability matrix
-    self.bpp = initialize_zero_matrix( N );
-    for i in range( N ):
-        for j in range( N ):
-            self.bpp[i][j] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP * (l_BP / l) / self.Z_final[0]
+    self.bpp = initialize_zero_matrix( self.N );
+    for i in range( self.N ):
+        for j in range( self.N ):
+            self.bpp[i][j] = self.Z_BP[i][j] * self.Z_BP[j][i] * self.params.Kd_BP * (self.params.l_BP / self.params.l) / self.Z_final[0]
 
 
 ##################################################################################################
@@ -220,14 +261,15 @@ def run_cross_checks( self ):
     bpp_tot_based_on_deriv = -self.dZ_final[0] * self.params.Kd_BP / self.Z_final[0]
     assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
 
-
 ##################################################################################################
 def initialize_sequence_information( self ):
     '''
     Create sequence information from sequences of strands:
+
     INPUT:
     sequences = sequences of interacting strands (array of strings)
     circle    = user asks for nucleotides N and 1 to be ligated ('circularized') (bool)
+
     OUTPUT:
     sequence     = concatenated sequence (string, length N)
     is_cutpoint  = is cut ('nick','chainbreak') or not (Array of bool, length N)
