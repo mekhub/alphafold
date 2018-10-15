@@ -33,7 +33,8 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
 ##################################################################################################
 class Partition:
     '''
-    Statistical mechanical model for RNA folding, testing a bunch of extensions and with lots of cross-checks
+    Statistical mechanical model for RNA folding, testing a bunch of extensions and with lots of cross-checks.
+    TODO: complete expressions for derivatives (only doing derivatives w.r.t. Kd_BP right now)
     (C) R. Das, Stanford University, 2018
     '''
     def __init__( self, sequences, params ):

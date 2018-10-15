@@ -69,4 +69,61 @@ Still, the most \'91discriminating\'92 sequence is \'91seq 9\'92, the 10th seque
 That useful 10th sequence has a bop plot that has a lot of competitors and suppresses bpp(MS2) to ~1%.\
 \pard\pardeftab720\sl280\partightenfactor0
 \cf4 {{\NeXTGraphic 3__#$!@%!#__unknown.png \width6072 \height5145
-}¬}}
+}¬}\
+\
+\
+\ul Profiling\
+\ulnone Some modest optimization in code speed might be useful. From command-line\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\fs22 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 \outl0\strokewidth0 python -m cProfile alphafold.py -s CCGCGCCGCGCGCGCGCGCGCGCGCGCGGCGGCCGCGCCCGCGGCGCCCGCGCCGCGCGCGCGCGCGCGCGCGCGGCGGCCGCGCCCGCGGCGC\
+\
+gives\
+\'85\
+sequence = CCGCGCCGCGCGCGCGCGCGCGCGCGCGGCGGCCGCGCCCGCGGCGCCCGCGCCGCGCGCGCGCGCGCGCGCGCGGCGGCCGCGCCCGCGGCGC\
+cutpoint = ---------------------------------------------------------------------------------------------X\
+circle   =  False\
+Z = 1.99174433298e+79\
+         148690 function calls (148663 primitive calls) in 1.617 seconds\
+\
+   Ordered by: standard name\
+\
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\
+       12    0.000    0.000    0.000    0.000 UserDict.py:103(__contains__)\
+        7    0.000    0.000    0.000    0.000 UserDict.py:35(__getitem__)\
+...\
+        6    0.000    0.000    0.000    0.000 locale.py:365(normalize)\
+        1    0.000    0.000    0.000    0.000 output_helpers.py:1(<module>)\
+        1    0.001    0.001    0.001    0.001 partition.py:1(<module>)\
+     8742    0.760    0.000    0.775    0.000 partition.py:137(update_C_eff)\
+     8742    0.682    0.000    0.697    0.000 partition.py:170(update_Z_linear)\
+        1    0.002    0.002    0.002    0.002 partition.py:197(get_Z_final)\
+        1    0.000    0.000    1.606    1.606 partition.py:22(partition)\
+        1    0.006    0.006    0.009    0.009 partition.py:228(get_bpp_matrix)\
+        1    0.002    0.002    0.003    0.003 partition.py:244(run_cross_checks)\
+        1    0.000    0.000    0.008    0.008 partition.py:259(initialize_sequence_information)\
+        1    0.000    0.000    0.020    0.020 partition.py:291(initialize_dynamic_programming_matrices)\
+    26227    0.031    0.000    0.031    0.000 partition.py:315(unpack_variables)\
+        1    0.000    0.000    0.000    0.000 partition.py:34(Partition)\
+        1    0.000    0.000    0.000    0.000 partition.py:39(__init__)\
+        1    0.000    0.000    0.000    0.000 partition.py:5(AlphaFoldParams)\
+        1    0.011    0.011    1.606    1.606 partition.py:51(run)\
+        1    0.000    0.000    0.000    0.000 partition.py:72(show_results)\
+        1    0.000    0.000    0.000    0.000 partition.py:9(__init__)\
+     8742    0.069    0.000    0.082    0.000 partition.py:93(update_Z_BP)\
+        1    0.000    0.000    0.000    0.000 partition_helpers.py:1(<module>)\
+\
+...\
+Cool. As hoped for, unpack_variables gives just a little overhead.\
+The things that cost the most are the N^3 math.\
+\
+Could probably accelerate by ~2x if we didn\'92t ask for derivatives. (and note that when we extend derivatives to full parameter set, we\'92ll probably take a big hit.) yes, get 2x speedup:\
+        1    0.001    0.001    0.001    0.001 partition.py:1(<module>)\
+     8742    0.375    0.000    0.390    0.000 partition.py:137(update_C_eff)\
+     8742    0.340    0.000    0.356    0.000 partition.py:170(update_Z_linear)\
+        1    0.002    0.002    0.002    0.002 partition.py:197(get_Z_final)\
+\
+Could get another ~2x speedup if we strategically only calculate the Z_BP needed for bpp(MS2) calc.\
+\
+}
