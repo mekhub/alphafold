@@ -1,4 +1,5 @@
 from partition_helpers import *
+from output_helpers import *
 
 ##################################################################################################
 class AlphaFoldParams:
@@ -47,6 +48,7 @@ class Partition:
         self.circle = False  # user can update later --> circularize sequence
         return
 
+    ##############################################################################################
     def run( self ):
         '''
         Do the dynamic programming to fill partition function matrices
@@ -58,7 +60,6 @@ class Partition:
          sequence, is_cutpoint, any_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
 
         # do the dynamic programming
-        # deriv calculations are making this long and messy; this should be simplifiable
         for offset in range( 1, N ): #length of subfragment
             for i in range( N ): #index of subfragment
                 j = (i + offset) % N;  # N cyclizes
@@ -71,6 +72,7 @@ class Partition:
         run_cross_checks( self ) # cross-check
         return
 
+    ##############################################################################################
     def show_results( self ):
         print 'sequence =', self.sequence
         cutpoint = ''
@@ -81,6 +83,13 @@ class Partition:
         print 'circle   = ', self.circle
         print 'Z =',self.Z_final[0]
         return
+
+    ##################################################################################################
+    def show_matrices( self ):
+        output_DP( "Z_BP", self.Z_BP )
+        output_DP( "C_eff", self.C_eff, self.Z_final )
+        output_DP( "Z_linear", self.Z_linear )
+        output_square( "BPP", self.bpp );
 
 ##################################################################################################
 def update_Z_BP( self, i, j ):
@@ -133,6 +142,7 @@ def update_C_eff( self, i, j ):
         if not is_cutpoint[ (k-1) % N]:
             C_eff[i][j]  += C_eff[i][(k-1) % N] * Z_BP[k % N][j] * l_BP
             dC_eff[i][j] += ( dC_eff[i][(k-1) % N] * Z_BP[k % N][j] + C_eff[i][(k-1) % N] * dZ_BP[k % N][j] ) * l_BP
+
 
 ##################################################################################################
 def update_Z_linear( self, i, j ):
@@ -194,12 +204,6 @@ def get_bpp_matrix( self ):
         for j in range( N ):
             self.bpp[i][j] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP * (l_BP / l) / self.Z_final[0]
 
-##################################################################################################
-def show_matrices( self ):
-        output_DP( "Z_BP", self.Z_BP )
-        output_DP( "C_eff", C_eff, self.Z_final )
-        output_DP( "Z_linear", self.Z_linear )
-        output_square( "BPP", self.bpp );
 
 ##################################################################################################
 def run_cross_checks( self ):
