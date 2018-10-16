@@ -12,11 +12,12 @@ class AlphaFoldParams:
         self.C_init = 1          # Effective molarity for starting each loop (units of M)
         self.l      = 0.5        # counts number of linkages in loop
         self.l_BP   = 0.2        # counts number of base pairs in loop
+        self.C_eff_stacked_pair = 0 # units of M
         self.C_std = 1; # 1 M. drops out in end (up to overall scale factor).
         self.min_loop_length = 1
 
     def get_variables( self ):
-        return ( self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_std, self.min_loop_length )
+        return ( self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_eff_stacked_pair, self.C_std, self.min_loop_length )
 
 ##################################################################################################
 def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False ):
@@ -28,6 +29,8 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
     p.run()
     if verbose: p.show_matrices()
     p.show_results()
+    p.run_cross_checks()
+
     return ( p.Z_final[0], p.bpp, p.dZ_final[0] )
 
 ##################################################################################################
@@ -66,7 +69,6 @@ class Partition:
 
         get_Z_final( self )    # (Z, dZ_final)
         get_bpp_matrix( self ) # fill base pair probability matrix
-        run_cross_checks( self ) # cross-check
         return
 
     ##############################################################################################
@@ -88,6 +90,21 @@ class Partition:
         output_DP( "Z_linear", self.Z_linear )
         output_square( "BPP", self.bpp );
 
+    ##################################################################################################
+    def run_cross_checks( self ):
+        # stringent test that partition function is correct -- all the Z(i,i) agree.
+        for i in range( self.N ):
+            assert( abs( ( self.Z_final[i] - self.Z_final[0] ) / self.Z_final[0] ) < 1.0e-5 )
+            assert( abs( ( self.dZ_final[i] - self.dZ_final[0] ) / self.dZ_final[0] ) < 1.0e-5 )
+
+        # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
+        bpp_tot = 0.0
+        for i in range( self.N ):
+            for j in range( self.N ):
+                bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
+        bpp_tot_based_on_deriv = -self.dZ_final[0] * self.params.Kd_BP / self.Z_final[0]
+        assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
+
 ##################################################################################################
 # Following three functions hold ALL THE GOOD STUFF.
 ##################################################################################################
@@ -97,7 +114,7 @@ def update_Z_BP( self, i, j ):
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
     TODO:  Will soon generalize to arbitrary number of base pairs beyond C-G
     '''
-    (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
+    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     offset = ( j - i ) % N
 
@@ -106,10 +123,13 @@ def update_Z_BP( self, i, j ):
           ( any_intervening_cutpoint[i][j] or ( ((j-i-1) % N)) >= min_loop_length  ) and \
           ( any_intervening_cutpoint[j][i] or ( ((i-j-1) % N)) >= min_loop_length  ):
 
-        # base pair closes a loop
         if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
+            # base pair closes a loop
             Z_BP[i][j]  += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l * l_BP)
             dZ_BP[i][j] += (1.0/Kd_BP ) * ( dC_eff[(i+1) % N][(j-1) % N] * l * l * l_BP)
+
+            # base pair forms a stacked pair with previous pair
+            Z_BP[i][j]  += (1.0/Kd_BP ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N]
 
         # base pair brings together two strands that were previously disconnected
         for c in range( i, i+offset ):
@@ -139,7 +159,7 @@ def update_C_eff( self, i, j ):
     '''
     C_eff tracks the effective molarity of a loop starting at i and ending at j
     Assumes a model where each additional element multiplicatively reduces the effective molarity, by
-      the variables l, l_BP, etc.
+      the variables l, l_BP, C_eff_stacked_pair, etc.
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
     Relies on Z_BP being already filled out for i,j
     TODO: In near future, will include possibility of multiple C_eff terms, which combined together will
@@ -148,7 +168,7 @@ def update_C_eff( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
+    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
@@ -161,6 +181,7 @@ def update_C_eff( self, i, j ):
     dC_eff[i][j] += C_init * dZ_BP[i][j] * l_BP
 
     # j is base paired, and its partner is k > i
+    # probably could be accelerated through numpy
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
             C_eff[i][j]  += C_eff[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP
@@ -176,7 +197,7 @@ def update_Z_linear( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
+    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
@@ -189,6 +210,7 @@ def update_Z_linear( self, i, j ):
     dZ_linear[i][j] += dZ_BP[i][j]
 
     # j is base paired, and its partner is k > i
+    # probably could be accelerated through numpy
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
             Z_linear[i][j]  += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
@@ -202,7 +224,7 @@ def get_Z_final( self ):
     Z_final  = []
     dZ_final = []
 
-    (Kd_BP, C_init, l, l_BP, C_std, min_loop_length, N, \
+    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
     for i in range( N ):
         Z_final.append( 0 )
@@ -241,20 +263,6 @@ def get_bpp_matrix( self ):
             self.bpp[i][j] = self.Z_BP[i][j] * self.Z_BP[j][i] * self.params.Kd_BP / self.Z_final[0]
 
 
-##################################################################################################
-def run_cross_checks( self ):
-    # stringent test that partition function is correct -- all the Z(i,i) agree.
-    for i in range( self.N ):
-        assert( abs( ( self.Z_final[i] - self.Z_final[0] ) / self.Z_final[0] ) < 1.0e-5 )
-        assert( abs( ( self.dZ_final[i] - self.dZ_final[0] ) / self.dZ_final[0] ) < 1.0e-5 )
-
-    # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
-    bpp_tot = 0.0
-    for i in range( self.N ):
-        for j in range( self.N ):
-            bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
-    bpp_tot_based_on_deriv = -self.dZ_final[0] * self.params.Kd_BP / self.Z_final[0]
-    assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
 
 ##################################################################################################
 def initialize_sequence_information( self ):
@@ -318,7 +326,7 @@ def unpack_variables( self ):
     This helper function just lets me write out equations without
     using "self" which obscures connection to my handwritten equations
     '''
-    return (self.params.Kd_BP, self.params.C_init, self.params.l, self.params.l_BP, self.params.C_std, \
+    return (self.params.Kd_BP, self.params.C_init, self.params.l, self.params.l_BP, self.params.C_eff_stacked_pair, self.params.C_std, \
             self.params.min_loop_length, \
             self.N, self.sequence, self.is_cutpoint, self.any_intervening_cutpoint,  \
             self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear )
