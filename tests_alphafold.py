@@ -22,9 +22,9 @@ def test_alphafold():
                  bpp, [0,1], 1.0 )
 
     sequences = ['GC','GC']
-    (Z, bpp, dZ) = partition( sequences, verbose = True )
-    output_test( Z, (C_std/Kd_BP)*(2 + l**2 * l_BP**2 *C_init/Kd_BP ), \
-                 bpp, [0,3], (1 + l**2 * l_BP**2 * C_init/Kd_BP )/(2 + l**2 * l_BP**2 *C_init/Kd_BP ) )
+    (Z, bpp, dZ) = partition( sequences )
+    output_test( Z, (C_std/Kd_BP)*(2 + l**2 * l_BP**2 *C_init/Kd_BP + C_eff_stacked_pair/Kd_BP ), \
+                 bpp, [0,3], (1 + l**2 * l_BP**2 * C_init/Kd_BP + C_eff_stacked_pair/Kd_BP )/(2 + l**2 * l_BP**2 *C_init/Kd_BP + C_eff_stacked_pair/Kd_BP ) )
 
     sequence = 'CAGGC'
     (Z, bpp, dZ) = partition( sequence ) # note that Z sums over only base pair (not dissociated strands!)
@@ -33,8 +33,11 @@ def test_alphafold():
 
     sequence = 'CGACG'
     (Z, bpp, dZ) = partition( sequence ) # note that Z sums over only base pair (not dissociated strands!)
-    output_test( Z, 1 + C_init*l**2*l_BP/Kd_BP + C_init*l**4*l_BP/Kd_BP  + C_init**2 * (l_BP**3) * l**4 /Kd_BP /Kd_BP , \
-                 bpp, [0,4], ( C_init*l**4*l_BP/Kd_BP  + C_init**2 * (l_BP**3) * l**4 /Kd_BP /Kd_BP ) / ( 1 + C_init*l**2*l_BP/Kd_BP + C_init*l**4*l_BP/Kd_BP  + C_init**2 * (l_BP**3) * l**4 /Kd_BP /Kd_BP )  )
+    output_test( Z, 1 + C_init*l**2*l_BP/Kd_BP +
+                 C_init*l**4*l_BP/Kd_BP  +
+                 C_init**2 * (l_BP**3) * l**4 /Kd_BP /Kd_BP +
+                 C_init * l_BP * l**2 * C_eff_stacked_pair/Kd_BP /Kd_BP , \
+                 bpp, [0,4], ( C_init*l**4*l_BP/Kd_BP  + C_init**2 * (l_BP**3) * l**4 /Kd_BP /Kd_BP  + C_init * l_BP * l**2 * C_eff_stacked_pair/Kd_BP /Kd_BP) / ( 1 + C_init*l**2*l_BP/Kd_BP + C_init*l**4*l_BP/Kd_BP  + C_init**2 * (l_BP**3) * l**4 /Kd_BP /Kd_BP + C_init * l_BP * l**2 * C_eff_stacked_pair/Kd_BP /Kd_BP )  )
 
     #################################################
     # let's do a numerical vs. analytic deriv test

@@ -12,7 +12,7 @@ class AlphaFoldParams:
         self.C_init = 1          # Effective molarity for starting each loop (units of M)
         self.l      = 0.5        # counts number of linkages in loop
         self.l_BP   = 0.2        # counts number of base pairs in loop
-        self.C_eff_stacked_pair = 0 # units of M
+        self.C_eff_stacked_pair = 1e-5  # units of M
         self.C_std = 1; # 1 M. drops out in end (up to overall scale factor).
         self.min_loop_length = 1
 
@@ -130,6 +130,7 @@ def update_Z_BP( self, i, j ):
 
             # base pair forms a stacked pair with previous pair
             Z_BP[i][j]  += (1.0/Kd_BP ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N]
+            dZ_BP[i][j] += (1.0/Kd_BP ) * C_eff_stacked_pair * dZ_BP[(i+1) % N][(j-1) % N]
 
         # base pair brings together two strands that were previously disconnected
         for c in range( i, i+offset ):
@@ -237,6 +238,11 @@ def get_Z_final( self ):
             # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
             Z_final[i]  += C_eff[i][(i - 1) % N] * l / C_std
             dZ_final[i] += dC_eff[i][(i - 1) % N] * l / C_std
+
+            # base pair forms a stacked pair with previous pair
+            for j in range( i+1, (i + N - 1) ):
+                Z_final[i]  += C_eff_stacked_pair * Z_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N]
+                dZ_final[i] += C_eff_stacked_pair * (dZ_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N] + Z_BP[i % N][j % N] * dZ_BP[(j+1) % N][(i - 1) % N] )
 
             for c in range( i, i + N - 1):
                 if self.is_cutpoint[c % N]:
