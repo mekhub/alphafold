@@ -13,11 +13,12 @@ class AlphaFoldParams:
         self.l      = 0.5        # counts number of linkages in loop
         self.l_BP   = 0.2        # counts number of base pairs in loop
         self.C_eff_stacked_pair = 1e-5  # units of M
+        self.K_coax = 0; # coax bonus for contiguous helices
         self.C_std = 1; # 1 M. drops out in end (up to overall scale factor).
         self.min_loop_length = 1
 
     def get_variables( self ):
-        return ( self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_eff_stacked_pair, self.C_std, self.min_loop_length )
+        return ( self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.C_std, self.min_loop_length )
 
 ##################################################################################################
 def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False ):
@@ -57,13 +58,14 @@ class Partition:
         Do the dynamic programming to fill partition function matrices
         '''
         initialize_sequence_information( self ) # N, sequence, is_cutpoint, any_intervening_cutpoint
-        initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, dZ_BP, dC_eff, dZ_linear )
+        initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, dZ_BP, dC_eff, dZ_linear, Z_coax, dZ_coax )
 
         # do the dynamic programming
         for offset in range( 1, self.N ): #length of subfragment
             for i in range( self.N ):     #index of subfragment
                 j = (i + offset) % self.N;  # N cyclizes
                 update_Z_BP( self, i, j )
+                update_Z_coax( self, i, j )
                 update_C_eff( self, i, j )
                 update_Z_linear( self, i, j )
 
@@ -114,8 +116,8 @@ def update_Z_BP( self, i, j ):
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
     TODO:  Will soon generalize to arbitrary number of base pairs beyond C-G
     '''
-    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     # Residues that are base paired must *not* bring together contiguous loop with length less than min_loop length
@@ -131,6 +133,18 @@ def update_Z_BP( self, i, j ):
             # base pair forms a stacked pair with previous pair
             Z_BP[i][j]  += (1.0/Kd_BP ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N]
             dZ_BP[i][j] += (1.0/Kd_BP ) * C_eff_stacked_pair * dZ_BP[(i+1) % N][(j-1) % N]
+
+        if not is_cutpoint[ i ]: # allow coaxial stack on i side.
+            if is_cutpoint[ (j-1) % N ]:
+                Z_BP[i][j] += (1.0/Kd_BP ) * ( Z_BP[(i+1) % N][(j-1) % N] * l * l * l_BP) * C_init * K_coax
+            for k in range( i+2, i+offset-1 ):
+                Z_BP[i][j] += (1.0/Kd_BP ) * ( Z_BP[(i+1) % N][k % N] * l * l * l * l_BP ) * C_eff[ (k+1) % N ][(j-1) % N] * K_coax
+
+        if not is_cutpoint[ j-1 ]: # allow coaxial stack on j side.
+            if is_cutpoint[ i % N ]:
+                Z_BP[i][j] += (1.0/Kd_BP ) * ( Z_BP[(i+1) % N][(j-1) % N] * l * l * l_BP) * C_init * K_coax
+            for k in range( i+2, i+offset-1 ):
+                Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(k-1) % N] * l * l * l * l_BP ) * Z_BP[ k % N ][(j-1) % N] * K_coax
 
         # base pair brings together two strands that were previously disconnected
         for c in range( i, i+offset ):
@@ -150,17 +164,35 @@ def update_Z_BP( self, i, j ):
                 Z_BP [i][j] += (C_std/Kd_BP) * Z_product
                 dZ_BP[i][j] += (C_std/Kd_BP) * dZ_product
 
+                # TODO add coax terms!!
+
     # key 'special sauce' for derivative w.r.t. Kd_BP
     dZ_BP[i][j] += -(1.0/Kd_BP) * Z_BP[i][j]
 
     return
+
+def update_Z_coax( self, i, j ):
+    '''
+    Z_coax(i,j) is the partition function for all structures that form coaxial stacks between (i,k) and (k+1,j) for some k
+    '''
+    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_coax, dZ_coax ) = unpack_variables( self )
+    offset = ( j - i ) % N
+
+    for k in range( i+1, i+offset ):
+        if is_cutpoint[ k % N ]:
+            # Uh wait a minute, need a 1/Kd(coax) or similar.
+            Z_coax[ i ][ j ] += Z_BP[ i ][ k % N ] * Z_BP[ (k+1) % N][ j ] * K_coax * C_std
+        else: # darn, still think I have all the l, l_BP wrong. :(
+            Z_coax[ i ][ j ] += Z_BP[ i ][ k % N ] * Z_BP[ (k+1) % N][ j ] * l * l_BP * l_BP * K_coax * C_init
+
 
 ##################################################################################################
 def update_C_eff( self, i, j ):
     '''
     C_eff tracks the effective molarity of a loop starting at i and ending at j
     Assumes a model where each additional element multiplicatively reduces the effective molarity, by
-      the variables l, l_BP, C_eff_stacked_pair, etc.
+      the variables l, l_BP, C_eff_stacked_pair, K_coax, etc.
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
     Relies on Z_BP being already filled out for i,j
     TODO: In near future, will include possibility of multiple C_eff terms, which combined together will
@@ -169,10 +201,10 @@ def update_C_eff( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_coax, dZ_coax ) = unpack_variables( self )
 
-    # j is not base paired: Extension by one residue from j-1 to j.
+    # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
     if not is_cutpoint[(j-1) % N]:
         C_eff[i][j]  += C_eff[i][(j-1) % N] * l
         dC_eff[i][j] += dC_eff[i][(j-1) % N] * l
@@ -188,6 +220,14 @@ def update_C_eff( self, i, j ):
             C_eff[i][j]  += C_eff[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP
             dC_eff[i][j] += ( dC_eff[i][(k-1) % N] * Z_BP[k % N][j] + C_eff[i][(k-1) % N] * dZ_BP[k % N][j] ) * l * l_BP
 
+    # j is coax-stacked, and its partner is i. TODO: create l_coax. Add derivatives
+    C_eff[i][j]  += C_init * Z_coax[i][j] * l_BP
+
+    # j is coax-stacked, and its partner is k > i. TODO: create l_coax. Add derivatives.
+    for k in range( i+1, i+offset):
+        if not is_cutpoint[ (k-1) % N]:
+            C_eff[i][j]  += C_eff[i][(k-1) % N] * l * Z_coax[k % N][j] * l_BP
+
 
 ##################################################################################################
 def update_Z_linear( self, i, j ):
@@ -198,8 +238,8 @@ def update_Z_linear( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_coax, dZ_coax ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
     if not is_cutpoint[(j-1) % N]:
@@ -225,8 +265,8 @@ def get_Z_final( self ):
     Z_final  = []
     dZ_final = []
 
-    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear ) = unpack_variables( self )
+    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_coax, dZ_coax ) = unpack_variables( self )
     for i in range( N ):
         Z_final.append( 0 )
         dZ_final.append( 0 )
@@ -316,6 +356,7 @@ def initialize_dynamic_programming_matrices( self ):
     self.C_eff    = initialize_zero_matrix( N );
     self.Z_BP     = initialize_zero_matrix( N );
     self.Z_linear = initialize_zero_matrix( N );
+    self.Z_coax = initialize_zero_matrix( N );
     for i in range( N ): #length of fragment
         self.C_eff[ i ][ i ] = self.params.C_init
         self.Z_linear[ i ][ i ] = 1
@@ -324,6 +365,7 @@ def initialize_dynamic_programming_matrices( self ):
     self.dC_eff    = initialize_zero_matrix( N );
     self.dZ_BP     = initialize_zero_matrix( N );
     self.dZ_linear = initialize_zero_matrix( N );
+    self.dZ_coax = initialize_zero_matrix( N );
 
 
 ##################################################################################################
@@ -332,8 +374,8 @@ def unpack_variables( self ):
     This helper function just lets me write out equations without
     using "self" which obscures connection to my handwritten equations
     '''
-    return (self.params.Kd_BP, self.params.C_init, self.params.l, self.params.l_BP, self.params.C_eff_stacked_pair, self.params.C_std, \
+    return (self.params.Kd_BP, self.params.C_init, self.params.l, self.params.l_BP, self.params.C_eff_stacked_pair, self.params.K_coax, self.params.C_std, \
             self.params.min_loop_length, \
             self.N, self.sequence, self.is_cutpoint, self.any_intervening_cutpoint,  \
-            self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear )
+            self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear, self.Z_coax, self.dZ_coax )
 
