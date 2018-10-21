@@ -58,12 +58,13 @@ class Partition:
         Do the dynamic programming to fill partition function matrices
         '''
         initialize_sequence_information( self ) # N, sequence, is_cutpoint, any_intervening_cutpoint
-        initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, dZ_BP, dC_eff, dZ_linear, Z_coax, dZ_coax )
+        initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, Z_cut, Z_coax; dZ_BP, dC_eff, dZ_linear, dZ_cut, dZ_coax )
 
         # do the dynamic programming
         for offset in range( 1, self.N ): #length of subfragment
             for i in range( self.N ):     #index of subfragment
                 j = (i + offset) % self.N;  # N cyclizes
+                update_Z_cut( self, i, j )
                 update_Z_BP( self, i, j )
                 update_Z_coax( self, i, j )
                 update_C_eff( self, i, j )
@@ -108,7 +109,31 @@ class Partition:
         assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
 
 ##################################################################################################
-# Following three functions hold ALL THE GOOD STUFF.
+# Following four functions hold ALL THE GOOD STUFF.
+##################################################################################################
+def update_Z_cut( self, i, j ):
+    '''
+    Z_cut is the partition function for independently combining one contiguous/bonded segment emerging out of i to a cutpoint c, and another segment that goes from c+1 to j.
+    Useful for Z_BP and Z_final calcs below.
+    Analogous to 'exterior' Z in Mathews calc & Dirks multistrand calc.
+    '''
+    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
+    offset = ( j - i ) % N
+    for c in range( i, i+offset ):
+        if is_cutpoint[c % N]:
+            # strand 1  (i --> c), strand 2  (c+1 -- > j)
+            Z_seg1  = Z_seg2  = 1
+            dZ_seg1 = dZ_seg2 = 0
+            if c != i :
+                Z_seg1  = Z_linear [(i+1) % N][c % N]
+                dZ_seg1 = dZ_linear[(i+1) % N][c % N]
+            if (c+1)%N != j:
+                Z_seg2  = Z_linear [(c+1) % N][(j-1) % N]
+                dZ_seg2 = dZ_linear[(c+1) % N][(j-1) % N]
+            Z_cut [i][j] += Z_seg1 * Z_seg2
+            dZ_cut[i][j] += dZ_seg1 * Z_seg2 + Z_seg1 * dZ_seg2
+
 ##################################################################################################
 def update_Z_BP( self, i, j ):
     '''
@@ -117,7 +142,7 @@ def update_Z_BP( self, i, j ):
     TODO:  Will soon generalize to arbitrary number of base pairs beyond C-G
     '''
     (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_coax, dZ_coax ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     # Residues that are base paired must *not* bring together contiguous loop with length less than min_loop length
@@ -147,36 +172,23 @@ def update_Z_BP( self, i, j ):
                 Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(k-1) % N] * l * l * l * l_BP ) * Z_BP[ k % N ][(j-1) % N] * K_coax
 
         # base pair brings together two strands that were previously disconnected
-        for c in range( i, i+offset ):
-            if is_cutpoint[c % N]:
-                # strand 1  (i --> c), strand 2  (c+1 -- > j)
-                Z_comp1  = Z_comp2  = 1
-                dZ_comp1 = dZ_comp2 = 0
-                if c != i :
-                    Z_comp1  = Z_linear [(i+1) % N][c % N]
-                    dZ_comp1 = dZ_linear[(i+1) % N][c % N]
-                if (c+1)%N != j:
-                    Z_comp2  = Z_linear [(c+1) % N][(j-1) % N]
-                    dZ_comp2 = dZ_linear[(c+1) % N][(j-1) % N]
-                Z_product  = Z_comp1 * Z_comp2
-                dZ_product = dZ_comp1 * Z_comp2 + Z_comp1 * dZ_comp2
+        Z_BP [i][j] += (C_std/Kd_BP) * Z_cut[i][j]
+        dZ_BP[i][j] += (C_std/Kd_BP) * dZ_cut[i][j]
 
-                Z_BP [i][j] += (C_std/Kd_BP) * Z_product
-                dZ_BP[i][j] += (C_std/Kd_BP) * dZ_product
-
-                # TODO add coax terms!!
+        # TODO add coax terms!!
 
     # key 'special sauce' for derivative w.r.t. Kd_BP
     dZ_BP[i][j] += -(1.0/Kd_BP) * Z_BP[i][j]
 
     return
 
+##################################################################################################
 def update_Z_coax( self, i, j ):
     '''
     Z_coax(i,j) is the partition function for all structures that form coaxial stacks between (i,k) and (k+1,j) for some k
     '''
     (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_coax, dZ_coax ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     for k in range( i+1, i+offset ):
@@ -202,7 +214,7 @@ def update_C_eff( self, i, j ):
     offset = ( j - i ) % self.N
 
     (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_coax, dZ_coax ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
 
     # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
     if not is_cutpoint[(j-1) % N]:
@@ -239,7 +251,7 @@ def update_Z_linear( self, i, j ):
     offset = ( j - i ) % self.N
 
     (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_coax, dZ_coax ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
     if not is_cutpoint[(j-1) % N]:
@@ -266,7 +278,7 @@ def get_Z_final( self ):
     dZ_final = []
 
     (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_coax, dZ_coax ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     for i in range( N ):
         Z_final.append( 0 )
         dZ_final.append( 0 )
@@ -281,8 +293,9 @@ def get_Z_final( self ):
 
             # base pair forms a stacked pair with previous pair
             for j in range( i+1, (i + N - 1) ):
-                Z_final[i]  += C_eff_stacked_pair * Z_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N]
-                dZ_final[i] += C_eff_stacked_pair * (dZ_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N] + Z_BP[i % N][j % N] * dZ_BP[(j+1) % N][(i - 1) % N] )
+                if not is_cutpoint[ j % N ]:
+                    Z_final[i]  += C_eff_stacked_pair * Z_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N]
+                    dZ_final[i] += C_eff_stacked_pair * (dZ_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N] + Z_BP[i % N][j % N] * dZ_BP[(j+1) % N][(i - 1) % N] )
 
             for c in range( i, i + N - 1):
                 if self.is_cutpoint[c % N]:
@@ -356,6 +369,7 @@ def initialize_dynamic_programming_matrices( self ):
     self.C_eff    = initialize_zero_matrix( N );
     self.Z_BP     = initialize_zero_matrix( N );
     self.Z_linear = initialize_zero_matrix( N );
+    self.Z_cut = initialize_zero_matrix( N );
     self.Z_coax = initialize_zero_matrix( N );
     for i in range( N ): #length of fragment
         self.C_eff[ i ][ i ] = self.params.C_init
@@ -365,6 +379,7 @@ def initialize_dynamic_programming_matrices( self ):
     self.dC_eff    = initialize_zero_matrix( N );
     self.dZ_BP     = initialize_zero_matrix( N );
     self.dZ_linear = initialize_zero_matrix( N );
+    self.dZ_cut = initialize_zero_matrix( N );
     self.dZ_coax = initialize_zero_matrix( N );
 
 
@@ -377,5 +392,5 @@ def unpack_variables( self ):
     return (self.params.Kd_BP, self.params.C_init, self.params.l, self.params.l_BP, self.params.C_eff_stacked_pair, self.params.K_coax, self.params.C_std, \
             self.params.min_loop_length, \
             self.N, self.sequence, self.is_cutpoint, self.any_intervening_cutpoint,  \
-            self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear, self.Z_coax, self.dZ_coax )
+            self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear, self.Z_cut, self. dZ_cut, self.Z_coax, self.dZ_coax )
 
