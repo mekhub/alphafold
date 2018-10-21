@@ -9,13 +9,13 @@ class AlphaFoldParams:
     def __init__( self ):
         # Four parameter model
         self.Kd_BP  = 0.0002;    # Kd for forming base pair (units of M )
-        self.C_init = 1          # Effective molarity for starting each loop (units of M)
+        self.C_init = 1.0          # Effective molarity for starting each loop (units of M)
         self.l      = 0.5        # counts number of linkages in loop
         self.l_BP   = 0.2        # counts number of base pairs in loop
         self.C_eff_stacked_pair = 1e-5  # effective molarity for forming stacked pair (units of M)
-        self.K_coax = 100; # coax bonus for contiguous helices
-        self.C_std = 1; # 1 M. drops out in end (up to overall scale factor).
-        self.min_loop_length = 1
+        self.K_coax = 100; # 0 # coax bonus for contiguous helices
+        self.C_std = 1.0; # 1 M. drops out in end (up to overall scale factor).
+        self.min_loop_length = 1 # integer
 
     def get_variables( self ):
         return ( self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.C_std, self.min_loop_length )
@@ -103,7 +103,8 @@ class Partition:
         # stringent test that partition function is correct -- all the Z(i,i) agree.
         for i in range( self.N ):
             assert( abs( ( self.Z_final[i] - self.Z_final[0] ) / self.Z_final[0] ) < 1.0e-5 )
-            assert( abs( ( self.dZ_final[i] - self.dZ_final[0] ) / self.dZ_final[0] ) < 1.0e-5 )
+            if (self.dZ_final[0] > 0 ):
+                assert( self.dZ_final[0] == 0 or  abs( ( self.dZ_final[i] - self.dZ_final[0] ) / self.dZ_final[0] ) < 1.0e-5 )
 
         # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
         bpp_tot = 0.0
@@ -111,7 +112,7 @@ class Partition:
             for j in range( self.N ):
                 bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
         bpp_tot_based_on_deriv = -self.dZ_final[0] * self.params.Kd_BP / self.Z_final[0]
-        assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
+        if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
 
 ##################################################################################################
 # Following four functions hold ALL THE GOOD STUFF.
@@ -157,7 +158,8 @@ def update_Z_BP( self, i, j ):
     l_coax = get_l_coax( self )
 
     # Residues that are base paired must *not* bring together contiguous loop with length less than min_loop length
-    if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' )) and \
+    if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ) or
+        ( sequence[i].islower() and sequence[j].islower() and sequence[i]==sequence[j] )) and \
           ( any_intervening_cutpoint[i][j] or ( ((j-i-1) % N)) >= min_loop_length  ) and \
           ( any_intervening_cutpoint[j][i] or ( ((i-j-1) % N)) >= min_loop_length  ):
 
@@ -175,6 +177,10 @@ def update_Z_BP( self, i, j ):
         dZ_BP[i][j] += (C_std/Kd_BP) * dZ_cut[i][j]
 
         if (not is_cutpoint[i]) and (not is_cutpoint[j-1]):
+            # allow for flush stack -- WATCH OUT. this double-counts base-pair step (same motif as C_eff_stacked_pair term above)
+            #Z_BP [i][j] += Z_BP[(i+1) % N][(j-1) % N] * C_init * l * l_coax * K_coax / Kd_BP
+            #dZ_BP[i][j] += dZ_BP[(i+1) % N][(j-1) % N] * C_init * l * l_coax * K_coax / Kd_BP
+
             # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
             for k in range( i+2, i+offset-1 ):
                 if not is_cutpoint[k % N]:
@@ -343,13 +349,23 @@ def get_Z_final( self ):
             Z_final[i]  -=  C_init * Z_coax[i][(i-1) % N] * l_coax * l / C_std
             dZ_final[i] -=  C_init * dZ_coax[i][(i-1) % N] * l_coax * l / C_std
 
-            # New co-axial stack might form across ligation junction -- not counted yet if the stacked base pairs are in split segments
+            # New co-axial stack might form across ligation junction
             for j in range( i + 1, i + N - 2):
+                # If the two coaxially stacked base pairs are connected by a loop.
+                for k in range( j + 2, i + N - 1):
+                    Z_final[i]  += Z_BP[i][j % N] * C_eff[(j+1) % N][(k-1) % N] * Z_BP[k % N][(i-1) % N] * l * l * l_coax * K_coax
+                    dZ_final[i] += (dZ_BP[i][j % N] * C_eff[(j+1) % N][(k-1) % N] * Z_BP[k % N][(i-1) % N] +
+                                    Z_BP[i][j % N] * dC_eff[(j+1) % N][(k-1) % N] * Z_BP[k % N][(i-1) % N] +
+                                    Z_BP[i][j % N] * C_eff[(j+1) % N][(k-1) % N] * dZ_BP[k % N][(i-1) % N]) * l * l * l_coax * K_coax
+
+
+                # If the two stacked base pairs are in split segments
                 for k in range( j + 1, i + N - 1):
                     Z_final[i]  += Z_BP[i][j % N] * Z_cut[j % N][k % N] * Z_BP[k % N][(i-1) % N] * K_coax
                     dZ_final[i] += (dZ_BP[i][j % N] * Z_cut[j % N][k % N] * Z_BP[k % N][(i-1) % N] +
                                     Z_BP[i][j % N] * dZ_cut[j % N][k % N] * Z_BP[k % N][(i-1) % N] +
                                     Z_BP[i][j % N] * Z_cut[j % N][k % N] * dZ_BP[k % N][(i-1) % N]) * K_coax
+
 
 
     self.Z_final = Z_final
