@@ -22,7 +22,7 @@ def test_alphafold():
                  bpp, [0,1], 1.0 )
 
     sequences = ['GC','GC']
-    (Z, bpp, dZ) = partition( sequences )
+    (Z, bpp, dZ) = partition( sequences, verbose = True )
     output_test( Z, (C_std/Kd_BP)*(2 + l**2 * l_BP**2 *C_init/Kd_BP + C_eff_stacked_pair/Kd_BP ), \
                  bpp, [0,3], (1 + l**2 * l_BP**2 * C_init/Kd_BP + C_eff_stacked_pair/Kd_BP )/(2 + l**2 * l_BP**2 *C_init/Kd_BP + C_eff_stacked_pair/Kd_BP ) )
 
@@ -41,7 +41,7 @@ def test_alphafold():
 
     sequence = 'CAGCAG'
     (Z, bpp, dZ) = partition( sequence, verbose = True )
-    output_test( Z, (1 + C_init * l**2 *l_BP/Kd_BP)**2  + C_init * l**5 * l_BP/Kd_BP, \
+    output_test( Z, (1 + C_init * l**2 *l_BP/Kd_BP)**2  + C_init * l**5 * l_BP/Kd_BP + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax, \
                  bpp, [0,2], C_init * l**2 *l_BP/Kd_BP*(1 + C_init * l**2 *l_BP/Kd_BP)/((1 + C_init * l**2 *l_BP/Kd_BP)**2  + C_init * l**5 * l_BP/Kd_BP) )
 
     #################################################
