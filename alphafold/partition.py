@@ -457,9 +457,9 @@ def unpack_variables( self ):
     '''
     This helper function just lets me write out equations without
     using "self" which obscures connection to my handwritten equations
+    In C++, will just use convention of object variables like N_, sequence_.
     '''
-    params = self.params
-    return (params.C_init, params.l, params.Kd_BP, params.l_BP, params.C_eff_stacked_pair, params.K_coax, params.l_coax, params.C_std, params.min_loop_length, \
-            self.N, self.sequence, self.is_cutpoint, self.any_intervening_cutpoint,  \
-            self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear, self.Z_cut, self. dZ_cut, self.Z_coax, self.dZ_coax )
+    return self.params.get_variables() + \
+           ( self.N, self.sequence, self.is_cutpoint, self.any_intervening_cutpoint,  \
+             self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear, self.Z_cut, self. dZ_cut, self.Z_coax, self.dZ_coax )
 
