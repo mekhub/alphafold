@@ -3,7 +3,7 @@ from alphafold.output_helpers import *
 from alphafold.partition import *
 
 def test_alphafold():
-    ( Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std,  min_loop_length ) = AlphaFoldParams().get_variables()
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length ) = AlphaFoldParams().get_variables()
 
     # test of sequences where we know the final partition function.
     sequence = 'CAAAGAA'

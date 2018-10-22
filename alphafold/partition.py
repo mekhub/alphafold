@@ -7,18 +7,19 @@ class AlphaFoldParams:
     Parameters that Define the statistical mechanical model for RNA folding
     '''
     def __init__( self ):
-        # Four parameter model
+        # Seven parameter model
+        self.C_init = 1.0        # Effective molarity for starting each loop (units of M)
+        self.l      = 0.5        # Effective molarity penalty for each linkages in loop (dimensionless)
         self.Kd_BP  = 0.0002;    # Kd for forming base pair (units of M )
-        self.C_init = 1.0          # Effective molarity for starting each loop (units of M)
-        self.l      = 0.5        # counts number of linkages in loop
-        self.l_BP   = 0.2        # counts number of base pairs in loop
-        self.C_eff_stacked_pair = 1e-5  # effective molarity for forming stacked pair (units of M)
-        self.K_coax = 100; # 0 # coax bonus for contiguous helices
-        self.C_std = 1.0; # 1 M. drops out in end (up to overall scale factor).
+        self.l_BP   = 0.2        # Effective molarity penalty for each base pair in loop (dimensionless)
+        self.C_eff_stacked_pair = 1e4 # Effective molarity for forming stacked pair (units of M)
+        self.K_coax = 100        # coax bonus for contiguous helices (dimensionless). Set to 0 to turn off coax (dimensionless)
+        self.l_coax = 200        # Effective molarity bonus for each coaxial stack in loop. Initial guess: C_eff_stacked_pair / (C_init*l*K_coax)
+        self.C_std = 1.0;        # 1 M. drops out in end (up to overall scale factor).
         self.min_loop_length = 1 # integer
 
     def get_variables( self ):
-        return ( self.Kd_BP, self.C_init, self.l, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.C_std, self.min_loop_length )
+        return ( self.C_init, self.l, self.Kd_BP, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.l_coax, self.C_std, self.min_loop_length )
 
 ##################################################################################################
 def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False ):
@@ -123,7 +124,7 @@ def update_Z_cut( self, i, j ):
     Useful for Z_BP and Z_final calcs below.
     Analogous to 'exterior' Z in Mathews calc & Dirks multistrand calc.
     '''
-    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
     for c in range( i, i+offset ):
@@ -140,11 +141,6 @@ def update_Z_cut( self, i, j ):
             Z_cut [i][j] += Z_seg1 * Z_seg2
             dZ_cut[i][j] += dZ_seg1 * Z_seg2 + Z_seg1 * dZ_seg2
 
-def get_l_coax( self ):
-    if ( self.params.K_coax == 0 ): return 0
-    l_coax = self.params.C_eff_stacked_pair / (self.params.C_init * self.params.l * self.params.K_coax)  # to first approximation. later could let l_coax float.
-    return l_coax
-
 ##################################################################################################
 def update_Z_BP( self, i, j ):
     '''
@@ -152,10 +148,9 @@ def update_Z_BP( self, i, j ):
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
     TODO:  Will soon generalize to arbitrary number of base pairs beyond C-G
     '''
-    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
-    l_coax = get_l_coax( self )
 
     # Residues that are base paired must *not* bring together contiguous loop with length less than min_loop length
     if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ) or
@@ -217,7 +212,7 @@ def update_Z_coax( self, i, j ):
     '''
     Z_coax(i,j) is the partition function for all structures that form coaxial stacks between (i,k) and (k+1,j) for some k
     '''
-    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
 
@@ -240,9 +235,8 @@ def update_C_eff( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
-    l_coax = get_l_coax( self )
 
     # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
     if not is_cutpoint[(j-1) % N]:
@@ -285,7 +279,7 @@ def update_Z_linear( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
@@ -322,9 +316,8 @@ def get_Z_final( self ):
     Z_final  = []
     dZ_final = []
 
-    (Kd_BP, C_init, l, l_BP, C_eff_stacked_pair, K_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
-    l_coax = get_l_coax( self)
 
     for i in range( N ):
         Z_final.append( 0 )
@@ -465,8 +458,8 @@ def unpack_variables( self ):
     This helper function just lets me write out equations without
     using "self" which obscures connection to my handwritten equations
     '''
-    return (self.params.Kd_BP, self.params.C_init, self.params.l, self.params.l_BP, self.params.C_eff_stacked_pair, self.params.K_coax, self.params.C_std, \
-            self.params.min_loop_length, \
+    params = self.params
+    return (params.C_init, params.l, params.Kd_BP, params.l_BP, params.C_eff_stacked_pair, params.K_coax, params.l_coax, params.C_std, params.min_loop_length, \
             self.N, self.sequence, self.is_cutpoint, self.any_intervening_cutpoint,  \
             self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear, self.Z_cut, self. dZ_cut, self.Z_coax, self.dZ_coax )
 
