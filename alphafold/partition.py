@@ -17,7 +17,7 @@ class AlphaFoldParams:
         self.l_coax = 200     # Effective molarity bonus for each coaxial stack in loop. Initial guess: C_eff_stacked_pair / (C_init*l*K_coax)
         self.C_std = 1.0      # 1 M. drops out in end (up to overall scale factor).
         self.min_loop_length = 1 # Disallow apical loops smaller than this size (integer)
-        self.allow_strained_3WJ = True # Prevent strained three-way-junctions with two helices coaxially stacked and no spacer nucleotides to other helix.
+        self.allow_strained_3WJ = False # Prevent strained three-way-junctions with two helices coaxially stacked and no spacer nucleotides to other helix.
 
     def get_variables( self ):
         return ( self.C_init, self.l, self.Kd_BP, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.l_coax, self.C_std, self.min_loop_length, self.allow_strained_3WJ )
@@ -95,7 +95,7 @@ class Partition:
     def show_matrices( self ):
         output_DP( "Z_BP", self.Z_BP )
         output_DP( "C_eff", self.C_eff, self.Z_final )
-        output_DP( "dC_eff", self.dC_eff, self.dZ_final )
+        #output_DP( "dC_eff", self.dC_eff, self.dZ_final )
         output_DP( "Z_coax", self.Z_coax )
         output_DP( "Z_linear", self.Z_linear )
         output_square( "BPP", self.bpp );
@@ -189,10 +189,9 @@ def update_Z_BP( self, i, j ):
             # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
             for k in range( i+2, i+offset-1 ):
                 if not is_cutpoint[k % N]:
-                    if allow_strained_3WJ:
-                        Z_BP [i][j] += Z_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BP
-                        dZ_BP[i][j] += (dZ_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] +
-                                        Z_BP[(i+1) % N][k % N] * dC_eff_for_coax[(k+1) % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BP
+                    Z_BP [i][j] += Z_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BP
+                    dZ_BP[i][j] += (dZ_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] +
+                                    Z_BP[(i+1) % N][k % N] * dC_eff_for_coax[(k+1) % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BP
 
 
             # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
@@ -250,22 +249,28 @@ def update_C_eff( self, i, j ):
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
 
+    exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and (not is_cutpoint[j] )
+
     # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
     if not is_cutpoint[(j-1) % N]:
         C_eff[i][j]  += C_eff[i][(j-1) % N] * l
         dC_eff[i][j] += dC_eff[i][(j-1) % N] * l
 
     # j is base paired, and its partner is k > i. (look below for case with i and j base paired)
+    C_eff_for_BP = self.C_eff_no_coax_singlet if exclude_strained_3WJ else C_eff
+    dC_eff_for_BP = self.dC_eff_no_coax_singlet if exclude_strained_3WJ else dC_eff
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
-            C_eff[i][j]  += C_eff[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP
-            dC_eff[i][j] += ( dC_eff[i][(k-1) % N] * Z_BP[k % N][j] + C_eff[i][(k-1) % N] * dZ_BP[k % N][j] ) * l * l_BP
+            C_eff[i][j]  += C_eff_for_BP[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP
+            dC_eff[i][j] += ( dC_eff_for_BP[i][(k-1) % N] * Z_BP[k % N][j] + C_eff_for_BP[i][(k-1) % N] * dZ_BP[k % N][j] ) * l * l_BP
 
     # j is coax-stacked, and its partner is k > i.  (look below for case with i and j coaxially stacked)
+    C_eff_for_coax = self.C_eff_no_BP_singlet if exclude_strained_3WJ else C_eff
+    dC_eff_for_coax = self.dC_eff_no_BP_singlet if exclude_strained_3WJ else dC_eff
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
-            C_eff[i][j]  += C_eff[i][(k-1) % N] * Z_coax[k % N][j] * l * l_coax
-            dC_eff[i][j] += (dC_eff[i][(k-1) % N] * Z_coax[k % N][j] + C_eff[i][(k-1) % N] * dZ_coax[k % N][j]) * l * l_coax
+            C_eff[i][j]  += C_eff_for_coax[i][(k-1) % N] * Z_coax[k % N][j] * l * l_coax
+            dC_eff[i][j] += (dC_eff_for_coax[i][(k-1) % N] * Z_coax[k % N][j] + C_eff_for_coax[i][(k-1) % N] * dZ_coax[k % N][j]) * l * l_coax
 
     # some helper arrays that prevent closure of any 3WJ with a single coaxial stack and single helix with not intervening loop nucleotides
     self.C_eff_no_coax_singlet [i][j] =  C_eff[i][j] + C_init *  Z_BP[i][j] * l_BP

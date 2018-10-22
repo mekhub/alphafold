@@ -58,17 +58,25 @@ def test_alphafold():
 
 
     # testing extended alphabet & coaxial stacks
-    l_coax = C_eff_stacked_pair / (C_init * l * K_coax) # really should make this an independent variable.
     sequence = ['xy','yz','zx']
     params_allow_strained_3WJ = AlphaFoldParams()
     params_allow_strained_3WJ.allow_strained_3WJ = True
     (Z, bpp, dZ) = partition( sequence, params_allow_strained_3WJ )
-    Z_ref = 1 + 3*(C_std/Kd_BP)**2 * (1 + K_coax)  + \
+    Z_ref = 3*(C_std/Kd_BP)**2 * (1 + K_coax)  + \
             (C_std/Kd_BP)**2 * (C_init/Kd_BP) * l**3 * l_BP**3  + \
             3*(C_std/Kd_BP)**2 * (C_init/Kd_BP) * K_coax * l_coax*l**2 * l_BP
     bpp_ref = ( 2 * (C_std/Kd_BP)**2 * (1 + K_coax) + \
                 (C_std/Kd_BP)**2 * (C_init/Kd_BP) * l**3 * l_BP**3 + \
                 3*(C_std/Kd_BP)**2 * (C_init/Kd_BP) * K_coax * l_coax*l**2 * l_BP ) / Z_ref
+    output_test( Z, Z_ref, bpp, [1,2], bpp_ref  )
+
+    # testing extended alphabet & coaxial stacks
+    sequence = ['xy','yz','zx']
+    (Z, bpp, dZ) = partition( sequence )
+    Z_ref = 3*(C_std/Kd_BP)**2 * (1 + K_coax)  + \
+            (C_std/Kd_BP)**2 * (C_init/Kd_BP) * l**3 * l_BP**3
+    bpp_ref = ( 2 * (C_std/Kd_BP)**2 * (1 + K_coax) + \
+                (C_std/Kd_BP)**2 * (C_init/Kd_BP) * l**3 * l_BP**3 ) / Z_ref
     output_test( Z, Z_ref, bpp, [1,2], bpp_ref  )
 
 
