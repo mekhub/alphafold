@@ -57,6 +57,19 @@ def test_alphafold():
                  bpp, [0,2], (C_init * l**2 *l_BP/Kd_BP*(1 + C_init * l**2 *l_BP/Kd_BP) + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax)/((1 + C_init * l**2 *l_BP/Kd_BP)**2  + C_init * l**5 * l_BP/Kd_BP + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax) )
 
 
+    # testing extended alphabet & coaxial stacks
+    l_coax = C_eff_stacked_pair / (C_init * l * K_coax) # really should make this an independent variable.
+    sequence = ['xy','yz','zx']
+    (Z, bpp, dZ) = partition( sequence )
+    Z_ref = 1 + 3*(C_std/Kd_BP)**2 * (1 + K_coax)  + \
+            (C_std/Kd_BP)**2 * (C_init/Kd_BP) * l**3 * l_BP**3  + \
+            3*(C_std/Kd_BP)**2 * (C_init/Kd_BP) * K_coax * l_coax*l**2 * l_BP
+    bpp_ref = ( 2 * (C_std/Kd_BP)**2 * (1 + K_coax) + \
+                (C_std/Kd_BP)**2 * (C_init/Kd_BP) * l**3 * l_BP**3 + \
+                3*(C_std/Kd_BP)**2 * (C_init/Kd_BP) * K_coax * l_coax*l**2 * l_BP ) / Z_ref
+    output_test( Z, Z_ref, bpp, [1,2], bpp_ref  )
+
+
 if __name__=='__main__':
     test_alphafold()
 
