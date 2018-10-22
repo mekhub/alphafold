@@ -8,18 +8,19 @@ class AlphaFoldParams:
     '''
     def __init__( self ):
         # Seven parameter model
-        self.C_init = 1.0        # Effective molarity for starting each loop (units of M)
-        self.l      = 0.5        # Effective molarity penalty for each linkages in loop (dimensionless)
-        self.Kd_BP  = 0.0002;    # Kd for forming base pair (units of M )
-        self.l_BP   = 0.2        # Effective molarity penalty for each base pair in loop (dimensionless)
+        self.C_init = 1.0     # Effective molarity for starting each loop (units of M)
+        self.l      = 0.5     # Effective molarity penalty for each linkages in loop (dimensionless)
+        self.Kd_BP  = 0.0002  # Kd for forming base pair (units of M )
+        self.l_BP   = 0.2     # Effective molarity penalty for each base pair in loop (dimensionless)
         self.C_eff_stacked_pair = 1e4 # Effective molarity for forming stacked pair (units of M)
-        self.K_coax = 100        # coax bonus for contiguous helices (dimensionless). Set to 0 to turn off coax (dimensionless)
-        self.l_coax = 200        # Effective molarity bonus for each coaxial stack in loop. Initial guess: C_eff_stacked_pair / (C_init*l*K_coax)
-        self.C_std = 1.0;        # 1 M. drops out in end (up to overall scale factor).
-        self.min_loop_length = 1 # integer
+        self.K_coax = 100     # coax bonus for contiguous helices (dimensionless). Set to 0 to turn off coax (dimensionless)
+        self.l_coax = 200     # Effective molarity bonus for each coaxial stack in loop. Initial guess: C_eff_stacked_pair / (C_init*l*K_coax)
+        self.C_std = 1.0      # 1 M. drops out in end (up to overall scale factor).
+        self.min_loop_length = 1 # Disallow apical loops smaller than this size (integer)
+        self.allow_strained_3WJ = True # Prevent strained three-way-junctions with two helices coaxially stacked and no spacer nucleotides to other helix.
 
     def get_variables( self ):
-        return ( self.C_init, self.l, self.Kd_BP, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.l_coax, self.C_std, self.min_loop_length )
+        return ( self.C_init, self.l, self.Kd_BP, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.l_coax, self.C_std, self.min_loop_length, self.allow_strained_3WJ )
 
 ##################################################################################################
 def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False ):
@@ -124,7 +125,7 @@ def update_Z_cut( self, i, j ):
     Useful for Z_BP and Z_final calcs below.
     Analogous to 'exterior' Z in Mathews calc & Dirks multistrand calc.
     '''
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
     for c in range( i, i+offset ):
@@ -148,9 +149,21 @@ def update_Z_BP( self, i, j ):
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
     TODO:  Will soon generalize to arbitrary number of base pairs beyond C-G
     '''
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
+
+    if allow_strained_3WJ: # can write this in a more pythonic compact style, right?
+        C_eff_for_coax  = C_eff
+        dC_eff_for_coax = dC_eff
+        C_eff_for_BP  = C_eff
+        dC_eff_for_BP = dC_eff
+    else:
+        C_eff_for_coax  = self.C_eff_no_BP_singlet
+        dC_eff_for_coax = self.dC_eff_no_BP_singlet
+        C_eff_for_BP  = self.C_eff_no_coax_singlet
+        dC_eff_for_BP = self.dC_eff_no_coax_singlet
+
 
     # Residues that are base paired must *not* bring together contiguous loop with length less than min_loop length
     if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ) or
@@ -160,8 +173,8 @@ def update_Z_BP( self, i, j ):
 
         if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
             # base pair closes a loop
-            Z_BP[i][j]  += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l * l_BP)
-            dZ_BP[i][j] += (1.0/Kd_BP ) * ( dC_eff[(i+1) % N][(j-1) % N] * l * l * l_BP)
+            Z_BP[i][j]  += (1.0/Kd_BP ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N] * l * l * l_BP)
+            dZ_BP[i][j] += (1.0/Kd_BP ) * ( dC_eff_for_BP[(i+1) % N][(j-1) % N] * l * l * l_BP)
 
             # base pair forms a stacked pair with previous pair
             Z_BP[i][j]  += (1.0/Kd_BP ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N]
@@ -172,23 +185,22 @@ def update_Z_BP( self, i, j ):
         dZ_BP[i][j] += (C_std/Kd_BP) * dZ_cut[i][j]
 
         if (not is_cutpoint[i]) and (not is_cutpoint[j-1]):
-            # allow for flush stack -- WATCH OUT. this double-counts base-pair step (same motif as C_eff_stacked_pair term above)
-            #Z_BP [i][j] += Z_BP[(i+1) % N][(j-1) % N] * C_init * l * l_coax * K_coax / Kd_BP
-            #dZ_BP[i][j] += dZ_BP[(i+1) % N][(j-1) % N] * C_init * l * l_coax * K_coax / Kd_BP
 
             # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
             for k in range( i+2, i+offset-1 ):
                 if not is_cutpoint[k % N]:
-                    Z_BP [i][j] += Z_BP[(i+1) % N][k % N] * C_eff[(k+1) % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BP
-                    dZ_BP[i][j] += (dZ_BP[(i+1) % N][k % N] * C_eff[(k+1) % N][(j-1) % N] +
-                                    Z_BP[(i+1) % N][k % N] * dC_eff[(k+1) % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BP
+                    if allow_strained_3WJ:
+                        Z_BP [i][j] += Z_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BP
+                        dZ_BP[i][j] += (dZ_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] +
+                                        Z_BP[(i+1) % N][k % N] * dC_eff_for_coax[(k+1) % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BP
+
 
             # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
             for k in range( i+2, i+offset-1 ):
                 if not is_cutpoint[(k-1) % N]:
-                    Z_BP [i][j] += C_eff[(i+1) % N][(k-1) % N] * Z_BP[k % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BP
-                    dZ_BP[i][j] += (dC_eff[(i+1) % N][(k-1) % N] * Z_BP[k % N][(j-1) % N] +
-                                    C_eff[(i+1) % N][(k-1) % N] * dZ_BP[k % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BP
+                    Z_BP [i][j] += C_eff_for_coax[(i+1) % N][(k-1) % N] * Z_BP[k % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BP
+                    dZ_BP[i][j] += (dC_eff_for_coax[(i+1) % N][(k-1) % N] * Z_BP[k % N][(j-1) % N] +
+                                    C_eff_for_coax[(i+1) % N][(k-1) % N] * dZ_BP[k % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BP
 
         # "left stack" but no loop closed on right (free strands hanging off j end)
         if not is_cutpoint[ i ]:
@@ -212,7 +224,7 @@ def update_Z_coax( self, i, j ):
     '''
     Z_coax(i,j) is the partition function for all structures that form coaxial stacks between (i,k) and (k+1,j) for some k
     '''
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
 
@@ -235,7 +247,7 @@ def update_C_eff( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
 
     # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
@@ -279,7 +291,7 @@ def update_Z_linear( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
@@ -316,7 +328,7 @@ def get_Z_final( self ):
     Z_final  = []
     dZ_final = []
 
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, N, \
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
 
     for i in range( N ):
@@ -346,15 +358,21 @@ def get_Z_final( self ):
                     Z_final[i]  += C_eff_stacked_pair * Z_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N]
                     dZ_final[i] += C_eff_stacked_pair * (dZ_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N] + Z_BP[i % N][j % N] * dZ_BP[(j+1) % N][(i - 1) % N] )
 
+            if allow_strained_3WJ: # can write this in a more pythonic compact style, right?
+                C_eff_for_coax  = C_eff
+                dC_eff_for_coax = dC_eff
+            else:
+                C_eff_for_coax  = self.C_eff_no_BP_singlet
+                dC_eff_for_coax = self.dC_eff_no_BP_singlet
 
             # New co-axial stack might form across ligation junction
             for j in range( i + 1, i + N - 2):
                 # If the two coaxially stacked base pairs are connected by a loop.
                 for k in range( j + 2, i + N - 1):
-                    Z_final[i]  += Z_BP[i][j % N] * C_eff[(j+1) % N][(k-1) % N] * Z_BP[k % N][(i-1) % N] * l * l * l_coax * K_coax
-                    dZ_final[i] += (dZ_BP[i][j % N] * C_eff[(j+1) % N][(k-1) % N] * Z_BP[k % N][(i-1) % N] +
-                                    Z_BP[i][j % N] * dC_eff[(j+1) % N][(k-1) % N] * Z_BP[k % N][(i-1) % N] +
-                                    Z_BP[i][j % N] * C_eff[(j+1) % N][(k-1) % N] * dZ_BP[k % N][(i-1) % N]) * l * l * l_coax * K_coax
+                    Z_final[i]  += Z_BP[i][j % N] * C_eff_for_coax[(j+1) % N][(k-1) % N] * Z_BP[k % N][(i-1) % N] * l * l * l_coax * K_coax
+                    dZ_final[i] += (dZ_BP[i][j % N] *  C_eff_for_coax[(j+1) % N][(k-1) % N] *  Z_BP[k % N][(i-1) % N] +
+                                     Z_BP[i][j % N] * dC_eff_for_coax[(j+1) % N][(k-1) % N] *  Z_BP[k % N][(i-1) % N] +
+                                     Z_BP[i][j % N] *  C_eff_for_coax[(j+1) % N][(k-1) % N] * dZ_BP[k % N][(i-1) % N]) * l * l * l_coax * K_coax
 
 
                 # If the two stacked base pairs are in split segments
