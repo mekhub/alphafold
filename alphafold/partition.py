@@ -1,5 +1,6 @@
 from partition_helpers import *
 from output_helpers import *
+from copy import deepcopy
 
 ##################################################################################################
 class AlphaFoldParams:
@@ -153,17 +154,8 @@ def update_Z_BP( self, i, j ):
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
 
-    if allow_strained_3WJ: # can write this in a more pythonic compact style, right?
-        C_eff_for_coax  = C_eff
-        dC_eff_for_coax = dC_eff
-        C_eff_for_BP  = C_eff
-        dC_eff_for_BP = dC_eff
-    else:
-        C_eff_for_coax  = self.C_eff_no_BP_singlet
-        dC_eff_for_coax = self.dC_eff_no_BP_singlet
-        C_eff_for_BP  = self.C_eff_no_coax_singlet
-        dC_eff_for_BP = self.dC_eff_no_coax_singlet
-
+    ( C_eff_for_coax, dC_eff_for_coax, C_eff_for_BP, dC_eff_for_BP ) = \
+    (C_eff, dC_eff, C_eff, dC_eff) if allow_strained_3WJ else (self.C_eff_no_BP_singlet, self.dC_eff_no_BP_singlet, self.C_eff_no_coax_singlet, self.dC_eff_no_coax_singlet)
 
     # Residues that are base paired must *not* bring together contiguous loop with length less than min_loop length
     if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ) or
@@ -257,16 +249,14 @@ def update_C_eff( self, i, j ):
         dC_eff[i][j] += dC_eff[i][(j-1) % N] * l
 
     # j is base paired, and its partner is k > i. (look below for case with i and j base paired)
-    C_eff_for_BP = self.C_eff_no_coax_singlet if exclude_strained_3WJ else C_eff
-    dC_eff_for_BP = self.dC_eff_no_coax_singlet if exclude_strained_3WJ else dC_eff
+    (C_eff_for_BP, dC_eff_for_BP) = (self.C_eff_no_coax_singlet, self.dC_eff_no_coax_singlet) if exclude_strained_3WJ else (C_eff, dC_eff)
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
             C_eff[i][j]  += C_eff_for_BP[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP
             dC_eff[i][j] += ( dC_eff_for_BP[i][(k-1) % N] * Z_BP[k % N][j] + C_eff_for_BP[i][(k-1) % N] * dZ_BP[k % N][j] ) * l * l_BP
 
     # j is coax-stacked, and its partner is k > i.  (look below for case with i and j coaxially stacked)
-    C_eff_for_coax = self.C_eff_no_BP_singlet if exclude_strained_3WJ else C_eff
-    dC_eff_for_coax = self.dC_eff_no_BP_singlet if exclude_strained_3WJ else dC_eff
+    (C_eff_for_coax, dC_eff_for_coax) = (self.C_eff_no_BP_singlet, self.dC_eff_no_BP_singlet) if exclude_strained_3WJ else (C_eff, dC_eff)
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
             C_eff[i][j]  += C_eff_for_coax[i][(k-1) % N] * Z_coax[k % N][j] * l * l_coax
@@ -408,7 +398,6 @@ def get_bpp_matrix( self ):
             self.bpp[i][j] = self.Z_BP[i][j] * self.Z_BP[j][i] * self.params.Kd_BP / self.Z_final[0]
 
 
-
 ##################################################################################################
 def initialize_sequence_information( self ):
     '''
@@ -457,13 +446,11 @@ def initialize_dynamic_programming_matrices( self ):
     self.Z_cut    = initialize_zero_matrix( N );
     self.Z_coax   = initialize_zero_matrix( N );
     self.C_eff    = initialize_zero_matrix( N );
-    self.C_eff_no_coax_singlet = initialize_zero_matrix( N );
-    self.C_eff_no_BP_singlet   = initialize_zero_matrix( N );
     for i in range( N ): #length of fragment
         self.Z_linear[i][i] = 1
         self.C_eff[i][i]                 = self.params.C_init
-        self.C_eff_no_coax_singlet[i][i] = self.params.C_init
-        self.C_eff_no_BP_singlet  [i][i] = self.params.C_init
+    self.C_eff_no_coax_singlet = deepcopy( self.C_eff )
+    self.C_eff_no_BP_singlet   = deepcopy( self.C_eff )
 
     # first calculate derivatives with respect to Kd_BP
     self.dC_eff    = initialize_zero_matrix( N );
