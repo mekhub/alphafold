@@ -6,12 +6,12 @@ def test_alphafold():
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ ) = AlphaFoldParams().get_variables()
 
     # test of sequences where we know the final partition function.
-    sequence = 'CAAAGAA'
+    sequence = 'CNNNGNN'
     (Z, bpp, dZ) = partition( sequence, circle = True )
     output_test( Z, C_init  * (l**7) * (1 + (C_init * l_BP**2) / Kd_BP ) / C_std, \
                  bpp, [0,4], (C_init * l_BP**2/ Kd_BP) / ( 1 + C_init * l_BP**2/ Kd_BP) )
 
-    sequence = 'CAG'
+    sequence = 'CNG'
     (Z, bpp, dZ) = partition( sequence )
     output_test( Z, 1 + C_init * l**2 * l_BP/ Kd_BP, \
                  bpp, [0,2], (C_init * l**2 * l_BP/Kd_BP)/( 1 + C_init * l**2 * l_BP/Kd_BP ) )
@@ -26,12 +26,12 @@ def test_alphafold():
     output_test( Z, (C_std/Kd_BP)*(2 + l**2 * l_BP**2 *C_init/Kd_BP + C_eff_stacked_pair/Kd_BP ), \
                  bpp, [0,3], (1 + l**2 * l_BP**2 * C_init/Kd_BP + C_eff_stacked_pair/Kd_BP )/(2 + l**2 * l_BP**2 *C_init/Kd_BP + C_eff_stacked_pair/Kd_BP ) )
 
-    sequence = 'CAGGC'
+    sequence = 'CNGGC'
     (Z, bpp, dZ) = partition( sequence )
     output_test( Z, 1 + C_init * l**2 *l_BP/Kd_BP * ( 2 + l ), \
                  bpp, [0,2], C_init*l**2*l_BP/Kd_BP /(  1+C_init*l**2*l_BP/Kd_BP * ( 2 + l )) )
 
-    sequence = 'CGACG'
+    sequence = 'CGNCG'
     (Z, bpp, dZ) = partition( sequence )
     output_test( Z, 1 + C_init*l**2*l_BP/Kd_BP +
                  C_init*l**4*l_BP/Kd_BP  +
@@ -51,7 +51,7 @@ def test_alphafold():
     assert( abs( dZ_numerical - dZ )/ abs( dZ ) < 1.0e-5 )
     print
 
-    sequence = 'CAGCAG'
+    sequence = 'CNGCNG'
     (Z, bpp, dZ) = partition( sequence )
     output_test( Z, (1 + C_init * l**2 *l_BP/Kd_BP)**2  + C_init * l**5 * l_BP/Kd_BP + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax, \
                  bpp, [0,2], (C_init * l**2 *l_BP/Kd_BP*(1 + C_init * l**2 *l_BP/Kd_BP) + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax)/((1 + C_init * l**2 *l_BP/Kd_BP)**2  + C_init * l**5 * l_BP/Kd_BP + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax) )

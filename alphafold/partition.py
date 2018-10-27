@@ -457,9 +457,11 @@ def initialize_dynamic_programming_matrices( self ):
     self.C_eff_no_BP_singlet   = deepcopy( self.C_eff )
 
     self.base_pair_types = []
-    self.base_pair_types.append( BasePairType( '', '', self.params.Kd_BP, N ) ) # generic match
     self.base_pair_types.append( BasePairType( 'C', 'G', self.params.Kd_BP, N ) )
     self.base_pair_types.append( BasePairType( 'G', 'C', self.params.Kd_BP, N ) )
+    self.base_pair_types.append( BasePairType( 'A', 'U', self.params.Kd_BP, N ) )
+    self.base_pair_types.append( BasePairType( 'U', 'A', self.params.Kd_BP, N ) )
+    self.base_pair_types.append( BasePairType( '', '', self.params.Kd_BP, N ) ) # generic match
 
     # first calculate derivatives with respect to Kd_BP
     self.dC_eff    = initialize_zero_matrix( N );
