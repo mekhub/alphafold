@@ -22,14 +22,17 @@ This code brings together features pioneered in (but scattered across) prior pac
  * Enumerative backtracking to get all structures and their Boltzmann weights (_coming soon_)
  * Stochastic backtracking to get Boltzmann-sampled structures (_coming soon_)
  * Minimum free energy structures (_coming soon_)
- * 'Classic' Turner2004 & ContraFold parameters (_coming soon_)
  * Generalized base pairs (e.g., both Watson-Crick and Sugar/Hoogsteen G-A pairs) (_coming soon_)
+ * 'Classic' Turner2004 & ContraFold parameters (_coming soon_)
+ * Modeling of ligand/protein binding to RNA hairpins and internal loops
+ * Modeling of protein binding to RNA single-stranded segments
  
 This code will also present entirely new features, based on recent theoretical insights from R. Das & students:
  * Cross-checks based on computation of the partition function `N` different ways for each RNA.
  * Loop penalties that rise like the logarithm of the number of loop nucleotides, still in `N^3` time
  * Parameters for chemically modified bases, and some modified backbones, based on Rosetta calculations
  * Linear motifs identified by Rosetta or by crystallography as having favorable energy bonuses
+ * Modeling of protein binding to RNA, including proper steric exclusion effects.
  * Modeling of RNA tertiary contacts, through a novel stochastic sampling method and Rosetta-calculated properties of the contacts.
  * Tracking and propagation of estimated model uncertainties.
  * Efficient learning from large data sets through stochastic gradient-based calculations
@@ -37,3 +40,29 @@ This code will also present entirely new features, based on recent theoretical i
  
 ## License
 This code is being released with the MIT license. So you can distribute it with your code. 
+
+## Getting started
+Clone this repository, and just type:
+```
+./alphafold.py
+```
+to run tests on a bunch of example sequences.
+
+To run on tRNA(phe) from yeast:
+```
+./alphafold.py -s GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA
+```
+
+To circularize:
+
+``` 
+./alphafold.py -s GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA --circle
+```
+
+To run on a multi-strand system, type:
+```
+./alphafold.py -s GCAACG CGAAGC
+```
+
+## Contributing
+More information on making contributions coming soon. For now, you can fork the repo and pull request.
