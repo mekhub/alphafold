@@ -1,3 +1,21 @@
+def _show_results( self ):
+    print 'sequence =', self.sequence
+    cutpoint = ''
+    for i in range( self.N ):
+        if self.is_cutpoint[ i ]: cutpoint += 'X'
+        else: cutpoint += '-'
+    print 'cutpoint =', cutpoint
+    print 'circle   = ', self.circle
+    print 'Z =',self.Z_final[0]
+
+def _show_matrices( self ):
+    output_DP( "Z_BP", self.Z_BP )
+    output_DP( "C_eff", self.C_eff, self.Z_final )
+    #output_DP( "dC_eff", self.dC_eff, self.dZ_final )
+    output_DP( "Z_coax", self.Z_coax )
+    output_DP( "Z_linear", self.Z_linear )
+    output_square( "BPP", self.bpp );
+
 def output_DP( tag, X, X_final = []):
     N = len( X )
     print

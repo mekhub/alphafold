@@ -1,5 +1,4 @@
-from partition_helpers import *
-from output_helpers import *
+from output_helpers import _show_results, _show_matrices
 from copy import deepcopy
 
 ##################################################################################################
@@ -42,6 +41,7 @@ class Partition:
     '''
     Statistical mechanical model for RNA folding, testing a bunch of extensions and with lots of cross-checks.
     TODO: complete expressions for derivatives (only doing derivatives w.r.t. Kd_BP right now)
+    TODO: replace dynamic programming matrices with a class that auto-updates derivatives, caches each contribution for backtracking, and automatically does the modulo N wrapping
     (C) R. Das, Stanford University, 2018
     '''
     def __init__( self, sequences, params ):
@@ -80,42 +80,10 @@ class Partition:
         get_bpp_matrix( self ) # fill base pair probability matrix
         return
 
-    ##############################################################################################
-    def show_results( self ):
-        print 'sequence =', self.sequence
-        cutpoint = ''
-        for i in range( self.N ):
-            if self.is_cutpoint[ i ]: cutpoint += 'X'
-            else: cutpoint += '-'
-        print 'cutpoint =', cutpoint
-        print 'circle   = ', self.circle
-        print 'Z =',self.Z_final[0]
-        return
-
-    ##################################################################################################
-    def show_matrices( self ):
-        output_DP( "Z_BP", self.Z_BP )
-        output_DP( "C_eff", self.C_eff, self.Z_final )
-        #output_DP( "dC_eff", self.dC_eff, self.dZ_final )
-        output_DP( "Z_coax", self.Z_coax )
-        output_DP( "Z_linear", self.Z_linear )
-        output_square( "BPP", self.bpp );
-
-    ##################################################################################################
-    def run_cross_checks( self ):
-        # stringent test that partition function is correct -- all the Z(i,i) agree.
-        for i in range( self.N ):
-            assert( abs( ( self.Z_final[i] - self.Z_final[0] ) / self.Z_final[0] ) < 1.0e-5 )
-            if (self.dZ_final[0] > 0 ):
-                assert( self.dZ_final[0] == 0 or  abs( ( self.dZ_final[i] - self.dZ_final[0] ) / self.dZ_final[0] ) < 1.0e-5 )
-
-        # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
-        bpp_tot = 0.0
-        for i in range( self.N ):
-            for j in range( self.N ):
-                bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
-        bpp_tot_based_on_deriv = -self.dZ_final[0] * self.params.Kd_BP / self.Z_final[0]
-        if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
+    # boring member functions -- defined later.
+    def show_results( self ): _show_results( self )
+    def show_matrices( self ): _show_matrices( self )
+    def run_cross_checks( self ): _run_cross_checks( self )
 
 ##################################################################################################
 # Following four functions hold ALL THE GOOD STUFF.
@@ -397,6 +365,21 @@ def get_bpp_matrix( self ):
         for j in range( self.N ):
             self.bpp[i][j] = self.Z_BP[i][j] * self.Z_BP[j][i] * self.params.Kd_BP / self.Z_final[0]
 
+##################################################################################################
+def _run_cross_checks( self ):
+    # stringent test that partition function is correct -- all the Z(i,i) agree.
+    for i in range( self.N ):
+        assert( abs( ( self.Z_final[i] - self.Z_final[0] ) / self.Z_final[0] ) < 1.0e-5 )
+        if (self.dZ_final[0] > 0 ):
+            assert( self.dZ_final[0] == 0 or  abs( ( self.dZ_final[i] - self.dZ_final[0] ) / self.dZ_final[0] ) < 1.0e-5 )
+
+    # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
+    bpp_tot = 0.0
+    for i in range( self.N ):
+        for j in range( self.N ):
+            bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
+    bpp_tot_based_on_deriv = -self.dZ_final[0] * self.params.Kd_BP / self.Z_final[0]
+    if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
 
 ##################################################################################################
 def initialize_sequence_information( self ):
@@ -461,6 +444,26 @@ def initialize_dynamic_programming_matrices( self ):
     self.dC_eff_no_coax_singlet = initialize_zero_matrix( N );
     self.dC_eff_no_BP_singlet   = initialize_zero_matrix( N );
 
+##################################################################################################
+def initialize_zero_matrix( N ):
+    X = []
+    for i in range( N ):
+        X.append( [] )
+        for j in range( N ): X[i].append( 0.0 )
+    return X
+
+##################################################################################################
+def initialize_any_intervening_cutpoint( is_cutpoint ):
+    N = len( is_cutpoint )
+    any_intervening_cutpoint = initialize_zero_matrix( N )
+    for i in range( N ): #index of subfragment
+        found_cutpoint = False
+        any_intervening_cutpoint[ i ][ i ] = False
+        for offset in range( N ): #length of subfragment
+            j = (i + offset) % N;  # N cyclizes
+            any_intervening_cutpoint[ i ][ j ] = found_cutpoint
+            if is_cutpoint[ j ]: found_cutpoint = True
+    return any_intervening_cutpoint
 
 ##################################################################################################
 def unpack_variables( self ):
