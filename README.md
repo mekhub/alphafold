@@ -64,5 +64,11 @@ To run on a multi-strand system, type:
 ./alphafold.py -s GCAACG CGAAGC
 ```
 
+To re-run tRNA in a totally weird way:
+```
+./alphafold.py -s UGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGAC --circle
+```
+Should get the same answer as above linear case!
+
 ## Contributing
 More information on making contributions coming soon. For now, you can fork the repo and pull request.
