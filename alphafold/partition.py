@@ -116,7 +116,6 @@ def update_Z_BP( self, i, j ):
     '''
     Z_BP is the partition function for all structures that base pair i and j.
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
-    TODO:  Will soon generalize to arbitrary number of base pairs beyond C-G
     '''
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
@@ -144,6 +143,7 @@ def update_Z_BP( self, i, j ):
             dZ_BPq[i][j] += (1.0/Kd_BPq ) * ( dC_eff_for_BP[(i+1) % N][(j-1) % N] * l * l * l_BP)
 
             # base pair forms a stacked pair with previous pair
+            # TODO: generalize C_eff_stacked_pair to be function of base pairs q (at i,j) and r (at i+1,j-1)
             Z_BPq[i][j]  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N]
             dZ_BPq[i][j] += (1.0/Kd_BPq ) * C_eff_stacked_pair * dZ_BP[(i+1) % N][(j-1) % N]
 
@@ -340,11 +340,12 @@ def get_Z_final( self ):
             for j in range( i + 1, i + N - 2):
                 # If the two coaxially stacked base pairs are connected by a loop.
                 for k in range( j + 2, i + N - 1):
+                    if is_cutpoint[j % N]: continue
+                    if is_cutpoint[(k-1) % N]: continue
                     Z_final[i]  += Z_BP[i][j % N] * C_eff_for_coax[(j+1) % N][(k-1) % N] * Z_BP[k % N][(i-1) % N] * l * l * l_coax * K_coax
                     dZ_final[i] += (dZ_BP[i][j % N] *  C_eff_for_coax[(j+1) % N][(k-1) % N] *  Z_BP[k % N][(i-1) % N] +
                                      Z_BP[i][j % N] * dC_eff_for_coax[(j+1) % N][(k-1) % N] *  Z_BP[k % N][(i-1) % N] +
                                      Z_BP[i][j % N] *  C_eff_for_coax[(j+1) % N][(k-1) % N] * dZ_BP[k % N][(i-1) % N]) * l * l * l_coax * K_coax
-
 
                 # If the two stacked base pairs are in split segments
                 for k in range( j + 1, i + N - 1):
@@ -352,8 +353,6 @@ def get_Z_final( self ):
                     dZ_final[i] += (dZ_BP[i][j % N] * Z_cut[j % N][k % N] * Z_BP[k % N][(i-1) % N] +
                                     Z_BP[i][j % N] * dZ_cut[j % N][k % N] * Z_BP[k % N][(i-1) % N] +
                                     Z_BP[i][j % N] * Z_cut[j % N][k % N] * dZ_BP[k % N][(i-1) % N]) * K_coax
-
-
 
     self.Z_final = Z_final
     self.dZ_final = dZ_final
