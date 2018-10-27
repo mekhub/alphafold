@@ -79,6 +79,13 @@ def test_alphafold():
                 (C_std/Kd_BP)**2 * (C_init/Kd_BP) * l**3 * l_BP**3 ) / Z_ref
     output_test( Z, Z_ref, bpp, [1,2], bpp_ref  )
 
+    # test that caught a bug in Z_final
+    sequence = 'NyNyxNx'
+    (Z, bpp, dZ) = partition( sequence )
+    Z_ref = (1 + C_init * l**2 *l_BP/Kd_BP)**2  +(C_init * l**2 *l_BP/Kd_BP)**2 * K_coax
+    bpp_ref = ( C_init * l**2 *l_BP/Kd_BP * (1 + C_init * l**2 *l_BP/Kd_BP)  + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax ) / Z_ref
+    output_test( Z, Z_ref, bpp, [1,3], bpp_ref  )
+
 
 if __name__=='__main__':
     test_alphafold()
