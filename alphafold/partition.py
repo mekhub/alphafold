@@ -125,58 +125,66 @@ def update_Z_BP( self, i, j ):
     ( C_eff_for_coax, dC_eff_for_coax, C_eff_for_BP, dC_eff_for_BP ) = \
     (C_eff, dC_eff, C_eff, dC_eff) if allow_strained_3WJ else (self.C_eff_no_BP_singlet, self.dC_eff_no_BP_singlet, self.C_eff_no_coax_singlet, self.dC_eff_no_coax_singlet)
 
-    # Residues that are base paired must *not* bring together contiguous loop with length less than min_loop length
-    if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' ) or
-        ( sequence[i].islower() and sequence[j].islower() and sequence[i]==sequence[j] )) and \
-          ( any_intervening_cutpoint[i][j] or ( ((j-i-1) % N)) >= min_loop_length  ) and \
-          ( any_intervening_cutpoint[j][i] or ( ((i-j-1) % N)) >= min_loop_length  ):
+    if ( not any_intervening_cutpoint[i][j] and ( ((j-i-1) % N)) < min_loop_length ): return
+    if ( not any_intervening_cutpoint[j][i] and ( ((i-j-1) % N)) < min_loop_length ): return
+
+    for base_pair_type in self.base_pair_types:
+        if base_pair_type.match_lowercase:
+            if not (sequence[i].islower() and sequence[j].islower() and sequence[i]==sequence[j] ): continue
+        else:
+            if not ( sequence[i] == base_pair_type.nt1 and sequence[ j ] == base_pair_type.nt2 ): continue
+
+        Z_BPq  = base_pair_type.Z_BP
+        dZ_BPq = base_pair_type.dZ_BP
+        Kd_BPq = base_pair_type.Kd_BP
 
         if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
             # base pair closes a loop
-            Z_BP[i][j]  += (1.0/Kd_BP ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N] * l * l * l_BP)
-            dZ_BP[i][j] += (1.0/Kd_BP ) * ( dC_eff_for_BP[(i+1) % N][(j-1) % N] * l * l * l_BP)
+            Z_BPq[i][j]  += (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N] * l * l * l_BP)
+            dZ_BPq[i][j] += (1.0/Kd_BPq ) * ( dC_eff_for_BP[(i+1) % N][(j-1) % N] * l * l * l_BP)
 
             # base pair forms a stacked pair with previous pair
-            Z_BP[i][j]  += (1.0/Kd_BP ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N]
-            dZ_BP[i][j] += (1.0/Kd_BP ) * C_eff_stacked_pair * dZ_BP[(i+1) % N][(j-1) % N]
+            Z_BPq[i][j]  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N]
+            dZ_BPq[i][j] += (1.0/Kd_BPq ) * C_eff_stacked_pair * dZ_BP[(i+1) % N][(j-1) % N]
 
         # base pair brings together two strands that were previously disconnected
-        Z_BP [i][j] += (C_std/Kd_BP) * Z_cut[i][j]
-        dZ_BP[i][j] += (C_std/Kd_BP) * dZ_cut[i][j]
+        Z_BPq [i][j] += (C_std/Kd_BPq) * Z_cut[i][j]
+        dZ_BPq[i][j] += (C_std/Kd_BPq) * dZ_cut[i][j]
 
         if (not is_cutpoint[i]) and (not is_cutpoint[j-1]):
 
             # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
             for k in range( i+2, i+offset-1 ):
                 if not is_cutpoint[k % N]:
-                    Z_BP [i][j] += Z_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BP
-                    dZ_BP[i][j] += (dZ_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] +
-                                    Z_BP[(i+1) % N][k % N] * dC_eff_for_coax[(k+1) % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BP
+                    Z_BPq [i][j] += Z_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BPq
+                    dZ_BPq[i][j] += (dZ_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] +
+                                    Z_BP[(i+1) % N][k % N] * dC_eff_for_coax[(k+1) % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BPq
 
 
             # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
             for k in range( i+2, i+offset-1 ):
                 if not is_cutpoint[(k-1) % N]:
-                    Z_BP [i][j] += C_eff_for_coax[(i+1) % N][(k-1) % N] * Z_BP[k % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BP
-                    dZ_BP[i][j] += (dC_eff_for_coax[(i+1) % N][(k-1) % N] * Z_BP[k % N][(j-1) % N] +
-                                    C_eff_for_coax[(i+1) % N][(k-1) % N] * dZ_BP[k % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BP
+                    Z_BPq [i][j] += C_eff_for_coax[(i+1) % N][(k-1) % N] * Z_BP[k % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BPq
+                    dZ_BPq[i][j] += (dC_eff_for_coax[(i+1) % N][(k-1) % N] * Z_BP[k % N][(j-1) % N] +
+                                    C_eff_for_coax[(i+1) % N][(k-1) % N] * dZ_BP[k % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BPq
 
         # "left stack" but no loop closed on right (free strands hanging off j end)
         if not is_cutpoint[ i ]:
             for k in range( i+2, i+offset ):
-                Z_BP[i][j] += Z_BP[(i+1) % N][k % N] * Z_cut[k % N][j] * C_std * K_coax / Kd_BP
-                dZ_BP[i][j] += (dZ_BP[(i+1) % N][k % N] * Z_cut[k % N][j] + Z_BP[(i+1) % N][k % N] * dZ_cut[k % N][j] ) * C_std * K_coax / Kd_BP
+                Z_BPq[i][j] += Z_BP[(i+1) % N][k % N] * Z_cut[k % N][j] * C_std * K_coax / Kd_BPq
+                dZ_BPq[i][j] += (dZ_BP[(i+1) % N][k % N] * Z_cut[k % N][j] + Z_BP[(i+1) % N][k % N] * dZ_cut[k % N][j] ) * C_std * K_coax / Kd_BPq
 
         # "right stack" but no loop closed on left (free strands hanging off i end)
         if not is_cutpoint[(j-1) % N]:
             for k in range( i, i+offset-1 ):
-                Z_BP[i][j] += Z_cut[i][k % N] * Z_BP[k % N][(j-1) % N] * C_std * K_coax / Kd_BP
-                dZ_BP[i][j]+= ( dZ_cut[i][k % N] * Z_BP[k % N][(j-1) % N]  + Z_cut[i][k % N] * dZ_BP[k % N][(j-1) % N] ) * C_std * K_coax / Kd_BP
+                Z_BPq[i][j] += Z_cut[i][k % N] * Z_BP[k % N][(j-1) % N] * C_std * K_coax / Kd_BPq
+                dZ_BPq[i][j]+= ( dZ_cut[i][k % N] * Z_BP[k % N][(j-1) % N]  + Z_cut[i][k % N] * dZ_BP[k % N][(j-1) % N] ) * C_std * K_coax / Kd_BPq
 
-    # key 'special sauce' for derivative w.r.t. Kd_BP
-    dZ_BP[i][j] += -(1.0/Kd_BP) * Z_BP[i][j]
+        # key 'special sauce' for derivative w.r.t. Kd_BP
+        dZ_BPq[i][j] += -(1.0/Kd_BPq) * Z_BPq[i][j]
 
-    return
+        Z_BP[i][j] = Z_BPq[i][j]
+        dZ_BP[i][j] = dZ_BPq[i][j]
 
 ##################################################################################################
 def update_Z_coax( self, i, j ):
@@ -414,6 +422,19 @@ def initialize_sequence_information( self ):
     self.any_intervening_cutpoint = initialize_any_intervening_cutpoint( self.is_cutpoint )
 
 ##################################################################################################
+class BasePairType:
+    def __init__( self, nt1, nt2, Kd_BP, N ):
+        '''
+        Uh, a little weird to have Z in here.
+        '''
+        self.nt1 = nt1
+        self.nt2 = nt2
+        self.Kd_BP = Kd_BP
+        self.Z_BP  = initialize_zero_matrix( N );
+        self.dZ_BP = initialize_zero_matrix( N );
+        self.match_lowercase = ( nt1 == '' and nt2 == '' )
+
+##################################################################################################
 def initialize_dynamic_programming_matrices( self ):
     '''
     A bunch of zero matrices. Only non-trivial thing is
@@ -434,6 +455,11 @@ def initialize_dynamic_programming_matrices( self ):
         self.C_eff[i][i]                 = self.params.C_init
     self.C_eff_no_coax_singlet = deepcopy( self.C_eff )
     self.C_eff_no_BP_singlet   = deepcopy( self.C_eff )
+
+    self.base_pair_types = []
+    self.base_pair_types.append( BasePairType( '', '', self.params.Kd_BP, N ) ) # generic match
+    self.base_pair_types.append( BasePairType( 'C', 'G', self.params.Kd_BP, N ) )
+    self.base_pair_types.append( BasePairType( 'G', 'C', self.params.Kd_BP, N ) )
 
     # first calculate derivatives with respect to Kd_BP
     self.dC_eff    = initialize_zero_matrix( N );
