@@ -1,4 +1,4 @@
-from output_helpers import _show_results, _show_matrices
+from .output_helpers import _show_results, _show_matrices
 from copy import deepcopy
 
 ##################################################################################################
