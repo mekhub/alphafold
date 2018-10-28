@@ -438,15 +438,28 @@ class DynamicProgrammingData:
     def __init__( self, N ):
         self.X = []
         for i in range( N ): self.X.append( [0.0]*N )
+
         self.dX = deepcopy( self.X ) # another zero matrix.
 
+        self.X_contrib = []
+        for i in range( N ): self.X_contrib.append( [[]]*N )
+
     def __getitem__( self, idx ):
-        # overloaded []. warning: slow.
+        # overloaded []. warning: overhead! directly access object.X[ idx ] in inner loops.
         return self.X[ idx ]
 
     def __len__( self ): return len( self.X )
 
-    ##################################################################################################
+    def add( self, i, j, b ):
+        #  trying out a function that might make code more readable,
+        #  (could hide all contribution accumulation for backtracking -- and
+        #   perhaps even derivatives -- inside class!)
+        # but this kind of thing appears to take up too much overhead.
+        self.X[i][j]  += b
+        self.dX[i][j] += 0
+        self.X_contrib[i][j].append( [i,j,b] )
+
+##################################################################################################
 class BasePairType:
     def __init__( self, nt1, nt2, Kd_BP, N ):
         '''
