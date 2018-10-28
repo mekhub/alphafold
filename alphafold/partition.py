@@ -185,7 +185,6 @@ def update_Z_BP( self, i, j ):
                     dZ_BPq[i][j] += (dZ_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] +
                                     Z_BP[(i+1) % N][k % N] * dC_eff_for_coax[(k+1) % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BPq
 
-
             # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
             #            ---
             #           /   \
@@ -239,6 +238,12 @@ def update_Z_coax( self, i, j ):
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
 
+        #  all structures that form coaxial stacks between (i,k) and (k+1,j) for some k
+        #       -- k -- k+1 --
+        #      /   :     :    \
+        #      \   :     :    /
+        #       -- i     j --
+        #
     for k in range( i+1, i+offset-1 ):
         if not is_cutpoint[ k % N ]:
             Z_coax[i][j]  += Z_BP[i][k % N] * Z_BP[(k+1) % N][j] * K_coax
