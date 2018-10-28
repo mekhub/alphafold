@@ -1,3 +1,4 @@
+from periodicarray import PeriodicArray
 from .output_helpers import _show_results, _show_matrices
 from copy import deepcopy
 
@@ -473,10 +474,8 @@ def initialize_dynamic_programming_matrices( self ):
 
 ##################################################################################################
 def initialize_zero_matrix( N ):
-    X = []
-    for i in range( N ):
-        X.append( [] )
-        for j in range( N ): X[i].append( 0.0 )
+    X = PeriodicArray( N )
+    for i in range( N ): X[i] = PeriodicArray( N )
     return X
 
 ##################################################################################################
