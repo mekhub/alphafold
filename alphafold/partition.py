@@ -126,6 +126,7 @@ def update_Z_BP( self, i, j ):
     ( C_eff_for_coax, dC_eff_for_coax, C_eff_for_BP, dC_eff_for_BP ) = \
     (C_eff, dC_eff, C_eff, dC_eff) if allow_strained_3WJ else (self.C_eff_no_BP_singlet.X, self.C_eff_no_BP_singlet.dX, self.C_eff_no_coax_singlet.X, self.C_eff_no_coax_singlet.dX)
 
+    # minimum loop length -- no other way to penalize short segments.
     if ( not any_intervening_cutpoint[i][j] and ( ((j-i-1) % N)) < min_loop_length ): return
     if ( not any_intervening_cutpoint[j][i] and ( ((i-j-1) % N)) < min_loop_length ): return
 
@@ -141,22 +142,43 @@ def update_Z_BP( self, i, j ):
 
         if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
             # base pair closes a loop
+            #      ~~~
+            #     ~   ~
+            #  i+1     j-1
+            #    |     |
+            #    i ... j
             Z_BPq[i][j]  += (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N] * l * l * l_BP)
             dZ_BPq[i][j] += (1.0/Kd_BPq ) * ( dC_eff_for_BP[(i+1) % N][(j-1) % N] * l * l * l_BP)
             #Z_BP_contrib[i][j].append( [[C_eff_for_BP, i+1, j-1, (1.0/Kd_BPq)*l*l*l_BP]] )
 
             # base pair forms a stacked pair with previous pair
+            #      ---
+            #     /   \
+            #  i+1 ... j-1
+            #    |     |
+            #    i ... j
+            #
             # TODO: generalize C_eff_stacked_pair to be function of base pairs q (at i,j) and r (at i+1,j-1)
             Z_BPq[i][j]  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N]
             dZ_BPq[i][j] += (1.0/Kd_BPq ) * C_eff_stacked_pair * dZ_BP[(i+1) % N][(j-1) % N]
 
         # base pair brings together two strands that were previously disconnected
+        #
+        #    |     |
+        #    i ... j
+        #
         Z_BPq [i][j] += (C_std/Kd_BPq) * Z_cut[i][j]
         dZ_BPq[i][j] += (C_std/Kd_BPq) * dZ_cut[i][j]
 
         if (not is_cutpoint[i]) and (not is_cutpoint[j-1]):
 
             # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
+            #      ---
+            #     /   \
+            #  i+1 ... k - k+1 ~
+            #    |              ~
+            #    i ... j - j-1 ~
+            #
             for k in range( i+2, i+offset-1 ):
                 if not is_cutpoint[k % N]:
                     Z_BPq [i][j] += Z_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BPq
@@ -165,6 +187,12 @@ def update_Z_BP( self, i, j ):
 
 
             # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
+            #            ---
+            #           /   \
+            #  ~ k-1 - k ... j-1
+            # ~              |
+            #  ~ i+1 - i ... j
+            #
             for k in range( i+2, i+offset-1 ):
                 if not is_cutpoint[(k-1) % N]:
                     Z_BPq [i][j] += C_eff_for_coax[(i+1) % N][(k-1) % N] * Z_BP[k % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BPq
@@ -172,12 +200,24 @@ def update_Z_BP( self, i, j ):
                                     C_eff_for_coax[(i+1) % N][(k-1) % N] * dZ_BP[k % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BPq
 
         # "left stack" but no loop closed on right (free strands hanging off j end)
+        #      ---
+        #     /   \
+        #  i+1 ... k -
+        #    |
+        #    i ... j -
+        #
         if not is_cutpoint[ i ]:
             for k in range( i+2, i+offset ):
                 Z_BPq[i][j] += Z_BP[(i+1) % N][k % N] * Z_cut[k % N][j] * C_std * K_coax / Kd_BPq
                 dZ_BPq[i][j] += (dZ_BP[(i+1) % N][k % N] * Z_cut[k % N][j] + Z_BP[(i+1) % N][k % N] * dZ_cut[k % N][j] ) * C_std * K_coax / Kd_BPq
 
         # "right stack" but no loop closed on left (free strands hanging off i end)
+        #            ---
+        #           /   \
+        #        - k ... j-1
+        #                |
+        #        - i ... j
+        #
         if not is_cutpoint[(j-1) % N]:
             for k in range( i, i+offset-1 ):
                 Z_BPq[i][j] += Z_cut[i][k % N] * Z_BP[k % N][(j-1) % N] * C_std * K_coax / Kd_BPq
