@@ -36,6 +36,7 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
 
     return ( p.Z_final[0], p.bpp, p.dZ_final[0] )
 
+
 ##################################################################################################
 class Partition:
     '''
@@ -110,6 +111,7 @@ def update_Z_cut( self, i, j ):
                 dZ_seg2 = dZ_linear[(c+1) % N][(j-1) % N]
             Z_cut [i][j] += Z_seg1 * Z_seg2
             dZ_cut[i][j] += dZ_seg1 * Z_seg2 + Z_seg1 * dZ_seg2
+            #Z_cut_contrib[i][j].append( Z_linear_contrib
 
 ##################################################################################################
 def update_Z_BP( self, i, j ):
@@ -122,7 +124,7 @@ def update_Z_BP( self, i, j ):
     offset = ( j - i ) % N
 
     ( C_eff_for_coax, dC_eff_for_coax, C_eff_for_BP, dC_eff_for_BP ) = \
-    (C_eff, dC_eff, C_eff, dC_eff) if allow_strained_3WJ else (self.C_eff_no_BP_singlet, self.dC_eff_no_BP_singlet, self.C_eff_no_coax_singlet, self.dC_eff_no_coax_singlet)
+    (C_eff, dC_eff, C_eff, dC_eff) if allow_strained_3WJ else (self.C_eff_no_BP_singlet.X, self.C_eff_no_BP_singlet.dX, self.C_eff_no_coax_singlet.X, self.C_eff_no_coax_singlet.dX)
 
     if ( not any_intervening_cutpoint[i][j] and ( ((j-i-1) % N)) < min_loop_length ): return
     if ( not any_intervening_cutpoint[j][i] and ( ((i-j-1) % N)) < min_loop_length ): return
@@ -141,6 +143,7 @@ def update_Z_BP( self, i, j ):
             # base pair closes a loop
             Z_BPq[i][j]  += (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N] * l * l * l_BP)
             dZ_BPq[i][j] += (1.0/Kd_BPq ) * ( dC_eff_for_BP[(i+1) % N][(j-1) % N] * l * l * l_BP)
+            #Z_BP_contrib[i][j].append( [[C_eff_for_BP, i+1, j-1, (1.0/Kd_BPq)*l*l*l_BP]] )
 
             # base pair forms a stacked pair with previous pair
             # TODO: generalize C_eff_stacked_pair to be function of base pairs q (at i,j) and r (at i+1,j-1)
@@ -183,8 +186,9 @@ def update_Z_BP( self, i, j ):
         # key 'special sauce' for derivative w.r.t. Kd_BP
         dZ_BPq[i][j] += -(1.0/Kd_BPq) * Z_BPq[i][j]
 
-        Z_BP[i][j] = Z_BPq[i][j]
+        Z_BP[i][j]  = Z_BPq[i][j]
         dZ_BP[i][j] = dZ_BPq[i][j]
+        #Z_BP_contrib[i][j] += Z_BPq_contrib[i][j]
 
 ##################################################################################################
 def update_Z_coax( self, i, j ):
@@ -223,31 +227,33 @@ def update_C_eff( self, i, j ):
     if not is_cutpoint[(j-1) % N]:
         C_eff[i][j]  += C_eff[i][(j-1) % N] * l
         dC_eff[i][j] += dC_eff[i][(j-1) % N] * l
+        #C_eff_contrib[i][j].append( [[C_eff, i, j-1, l]] )
 
     # j is base paired, and its partner is k > i. (look below for case with i and j base paired)
-    (C_eff_for_BP, dC_eff_for_BP) = (self.C_eff_no_coax_singlet, self.dC_eff_no_coax_singlet) if exclude_strained_3WJ else (C_eff, dC_eff)
+    (C_eff_for_BP, dC_eff_for_BP) = (self.C_eff_no_coax_singlet.X, self.C_eff_no_coax_singlet.dX ) if exclude_strained_3WJ else (C_eff, dC_eff)
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
             C_eff[i][j]  += C_eff_for_BP[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP
             dC_eff[i][j] += ( dC_eff_for_BP[i][(k-1) % N] * Z_BP[k % N][j] + C_eff_for_BP[i][(k-1) % N] * dZ_BP[k % N][j] ) * l * l_BP
 
     # j is coax-stacked, and its partner is k > i.  (look below for case with i and j coaxially stacked)
-    (C_eff_for_coax, dC_eff_for_coax) = (self.C_eff_no_BP_singlet, self.dC_eff_no_BP_singlet) if exclude_strained_3WJ else (C_eff, dC_eff)
+    (C_eff_for_coax, dC_eff_for_coax) = (self.C_eff_no_BP_singlet.X, self.C_eff_no_BP_singlet.dX) if exclude_strained_3WJ else (C_eff, dC_eff)
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
             C_eff[i][j]  += C_eff_for_coax[i][(k-1) % N] * Z_coax[k % N][j] * l * l_coax
             dC_eff[i][j] += (dC_eff_for_coax[i][(k-1) % N] * Z_coax[k % N][j] + C_eff_for_coax[i][(k-1) % N] * dZ_coax[k % N][j]) * l * l_coax
 
     # some helper arrays that prevent closure of any 3WJ with a single coaxial stack and single helix with not intervening loop nucleotides
-    self.C_eff_no_coax_singlet [i][j] =  C_eff[i][j] + C_init *  Z_BP[i][j] * l_BP
-    self.dC_eff_no_coax_singlet[i][j] = dC_eff[i][j] + C_init * dZ_BP[i][j] * l_BP
+    self.C_eff_no_coax_singlet.X[i][j] =  C_eff[i][j] + C_init *  Z_BP[i][j] * l_BP
+    self.C_eff_no_coax_singlet.dX[i][j] = dC_eff[i][j] + C_init * dZ_BP[i][j] * l_BP
 
-    self.C_eff_no_BP_singlet [i][j] =  C_eff[i][j] + C_init *  Z_coax[i][j] * l_coax
-    self.dC_eff_no_BP_singlet[i][j] = dC_eff[i][j] + C_init * dZ_coax[i][j] * l_coax
+    self.C_eff_no_BP_singlet.X[i][j] =  C_eff[i][j] + C_init *  Z_coax[i][j] * l_coax
+    self.C_eff_no_BP_singlet.dX[i][j] = dC_eff[i][j] + C_init * dZ_coax[i][j] * l_coax
 
     # j is base paired, and its partner is i
     C_eff[i][j]  += C_init * Z_BP[i][j] * l_BP
     dC_eff[i][j] += C_init * dZ_BP[i][j] * l_BP
+    #C_eff_contrib[i][j].append( [[Z_BP, i, j, C_init * l_BP]] )
 
     # j is coax-stacked, and its partner is i.
     C_eff[i][j]  += C_init * Z_coax[i][j] * l_coax
@@ -303,19 +309,20 @@ def get_Z_final( self ):
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
 
     for i in range( N ):
-        Z_final.append( 0 )
-        dZ_final.append( 0 )
+        Z_final.append( 0.0 )
+        dZ_final.append( 0.0 )
 
         if self.is_cutpoint[(i + N - 1) % N]:
             Z_final[i]  += Z_linear[i][(i-1) % N]
             dZ_final[i] += dZ_linear[i][(i-1) % N]
+            #Z_final_contrib[i].append( Z_linear, i, i-1, 1.0 )
         else:
             # Need to 'ligate' across i-1 to i
             # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
 
             # Need to remove Z_coax contribution from C_eff, since its covered by C_eff_stacked_pair below.
-            Z_final[i]  += self.C_eff_no_coax_singlet[i][(i - 1) % N] * l / C_std
-            dZ_final[i] += self.dC_eff_no_coax_singlet[i][(i - 1) % N] * l / C_std
+            Z_final[i]  += self.C_eff_no_coax_singlet.X[i][(i - 1) % N] * l / C_std
+            dZ_final[i] += self.C_eff_no_coax_singlet.dX[i][(i - 1) % N] * l / C_std
 
             for c in range( i, i + N - 1):
                 if self.is_cutpoint[c % N]:
@@ -333,8 +340,8 @@ def get_Z_final( self ):
                 C_eff_for_coax  = C_eff
                 dC_eff_for_coax = dC_eff
             else:
-                C_eff_for_coax  = self.C_eff_no_BP_singlet
-                dC_eff_for_coax = self.dC_eff_no_BP_singlet
+                C_eff_for_coax  = self.C_eff_no_BP_singlet.X
+                dC_eff_for_coax = self.C_eff_no_BP_singlet.dX
 
             # New co-axial stack might form across ligation junction
             for j in range( i + 1, i + N - 2):
@@ -367,10 +374,10 @@ def get_bpp_matrix( self ):
     '''
 
     # base pair probability matrix
-    self.bpp = initialize_zero_matrix( self.N );
+    self.bpp = DynamicProgrammingData( self.N );
     for i in range( self.N ):
         for j in range( self.N ):
-            self.bpp[i][j] = self.Z_BP[i][j] * self.Z_BP[j][i] * self.params.Kd_BP / self.Z_final[0]
+            self.bpp.X[i][j] = self.Z_BP[i][j] * self.Z_BP[j][i] * self.params.Kd_BP / self.Z_final[0]
 
 ##################################################################################################
 def _run_cross_checks( self ):
@@ -420,7 +427,26 @@ def initialize_sequence_information( self ):
 
     self.any_intervening_cutpoint = initialize_any_intervening_cutpoint( self.is_cutpoint )
 
-##################################################################################################
+###################################################################################################################33
+class DynamicProgrammingData:
+    '''
+    Dynamic programming object, with derivs and contribution accumulation.
+     X   = values (N x N)
+     dX  = derivatives (N X N)
+     X_contrib = contributions (coming soon)
+    '''
+    def __init__( self, N ):
+        self.X = []
+        for i in range( N ): self.X.append( [0.0]*N )
+        self.dX = deepcopy( self.X ) # another zero matrix.
+
+    def __getitem__( self, idx ):
+        # overloaded []. warning: slow.
+        return self.X[ idx ]
+
+    def __len__( self ): return len( self.X )
+
+    ##################################################################################################
 class BasePairType:
     def __init__( self, nt1, nt2, Kd_BP, N ):
         '''
@@ -429,8 +455,9 @@ class BasePairType:
         self.nt1 = nt1
         self.nt2 = nt2
         self.Kd_BP = Kd_BP
-        self.Z_BP  = initialize_zero_matrix( N );
-        self.dZ_BP = initialize_zero_matrix( N );
+        self.Z_BP_DP  = DynamicProgrammingData( N );
+        self.Z_BP  = self.Z_BP_DP.X
+        self.dZ_BP = self.Z_BP_DP.dX;
         self.match_lowercase = ( nt1 == '' and nt2 == '' )
 
 ##################################################################################################
@@ -444,14 +471,14 @@ def initialize_dynamic_programming_matrices( self ):
     '''
     N = self.N
     # initialize dynamic programming matrices
-    self.Z_BP     = initialize_zero_matrix( N );
-    self.Z_linear = initialize_zero_matrix( N );
-    self.Z_cut    = initialize_zero_matrix( N );
-    self.Z_coax   = initialize_zero_matrix( N );
-    self.C_eff    = initialize_zero_matrix( N );
+    self.Z_BP     = DynamicProgrammingData( N );
+    self.Z_linear = DynamicProgrammingData( N );
+    self.Z_cut    = DynamicProgrammingData( N );
+    self.Z_coax   = DynamicProgrammingData( N );
+    self.C_eff    = DynamicProgrammingData( N );
     for i in range( N ): #length of fragment
-        self.Z_linear[i][i] = 1
-        self.C_eff[i][i]                 = self.params.C_init
+        self.Z_linear.X[i][i] = 1
+        self.C_eff.X[i][i]                 = self.params.C_init
     self.C_eff_no_coax_singlet = deepcopy( self.C_eff )
     self.C_eff_no_BP_singlet   = deepcopy( self.C_eff )
 
@@ -462,27 +489,11 @@ def initialize_dynamic_programming_matrices( self ):
     self.base_pair_types.append( BasePairType( 'U', 'A', self.params.Kd_BP, N ) )
     self.base_pair_types.append( BasePairType( '', '', self.params.Kd_BP, N ) ) # generic match
 
-    # first calculate derivatives with respect to Kd_BP
-    self.dC_eff    = initialize_zero_matrix( N );
-    self.dZ_BP     = initialize_zero_matrix( N );
-    self.dZ_linear = initialize_zero_matrix( N );
-    self.dZ_cut = initialize_zero_matrix( N );
-    self.dZ_coax = initialize_zero_matrix( N );
-    self.dC_eff_no_coax_singlet = initialize_zero_matrix( N );
-    self.dC_eff_no_BP_singlet   = initialize_zero_matrix( N );
-
-##################################################################################################
-def initialize_zero_matrix( N ):
-    X = []
-    for i in range( N ):
-        X.append( [] )
-        for j in range( N ): X[i].append( 0.0 )
-    return X
-
 ##################################################################################################
 def initialize_any_intervening_cutpoint( is_cutpoint ):
     N = len( is_cutpoint )
-    any_intervening_cutpoint = initialize_zero_matrix( N )
+    any_intervening_cutpoint = [[]]*N
+    for i in range( N ): any_intervening_cutpoint[i] = [False]*N
     for i in range( N ): #index of subfragment
         found_cutpoint = False
         any_intervening_cutpoint[ i ][ i ] = False
@@ -501,5 +512,5 @@ def unpack_variables( self ):
     '''
     return self.params.get_variables() + \
            ( self.N, self.sequence, self.is_cutpoint, self.any_intervening_cutpoint,  \
-             self.Z_BP, self.dZ_BP, self.C_eff, self.dC_eff, self.Z_linear, self.dZ_linear, self.Z_cut, self. dZ_cut, self.Z_coax, self.dZ_coax )
+             self.Z_BP.X, self.Z_BP.dX, self.C_eff.X, self.C_eff.dX, self.Z_linear.X, self.Z_linear.dX, self.Z_cut.X, self.Z_cut.dX, self.Z_coax.X, self.Z_coax.dX )
 
