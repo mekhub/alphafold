@@ -336,12 +336,7 @@ def get_Z_final( self ):
                     Z_final[i]  += C_eff_stacked_pair * Z_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N]
                     dZ_final[i] += C_eff_stacked_pair * (dZ_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N] + Z_BP[i % N][j % N] * dZ_BP[(j+1) % N][(i - 1) % N] )
 
-            if allow_strained_3WJ: # can write this in a more pythonic compact style, right?
-                C_eff_for_coax  = C_eff
-                dC_eff_for_coax = dC_eff
-            else:
-                C_eff_for_coax  = self.C_eff_no_BP_singlet.X
-                dC_eff_for_coax = self.C_eff_no_BP_singlet.dX
+            (C_eff_for_coax, dC_eff_for_coax ) = (C_eff, dC_eff ) if allow_strained_3WJ else (self.C_eff_no_BP_singlet.X,self.C_eff_no_BP_singlet.dX)
 
             # New co-axial stack might form across ligation junction
             for j in range( i + 1, i + N - 2):
