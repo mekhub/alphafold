@@ -1,4 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+from __future__ import print_function
+
 from alphafold.output_helpers import *
 from alphafold.partition import *
 
@@ -47,9 +49,9 @@ def test_alphafold():
     params_perturb.Kd_BP += delta
     (Z_perturb, bpp_perturb, dZ_perturb) = partition( sequence, params_perturb ) # note that Z sums over only base pair (not dissociated strands!)
     dZ_numerical = (Z_perturb-Z)/delta
-    print "dZ_dKd (numerical) =",dZ_numerical, ";  dZ_dKd (analytic) =",dZ
+    print("dZ_dKd (numerical) =",dZ_numerical, ";  dZ_dKd (analytic) =",dZ)
     assert( abs( dZ_numerical - dZ )/ abs( dZ ) < 1.0e-5 )
-    print
+    print()
 
     sequence = 'CNGCNG'
     (Z, bpp, dZ) = partition( sequence )
