@@ -2,6 +2,7 @@
 import argparse
 import random
 from util import *
+from copy import deepcopy
 
 C_init = 1
 l    = 0.5
@@ -72,7 +73,7 @@ def partition( sequences, circle = False ):
                             Z_product *= Z_linear[(c+1) % N][j-1]
                             Z_product_contrib.append( [id(Z_linear),c+1,j-1] )
                         Z_BP[i][j] += (C_std/Kd_BP) * Z_product
-                        Z_BP_contrib[i][j].append( [(C_std/Kd_BP) * Z_product, Z_product_contrib] )
+                        if len( Z_product_contrib ) > 0: Z_BP_contrib[i][j].append( [(C_std/Kd_BP) * Z_product, Z_product_contrib] )
 
             if not is_cutpoint[(j-1) % N]:
                 C_eff[i][j] += C_eff[i][(j-1) % N] * l
@@ -140,6 +141,7 @@ def partition( sequences, circle = False ):
         if mfe_mode:
             contrib     = max( contribs )
         else: # stochastic backtracking mode
+            # Random sample weighted by probability. Must be a simple function for this.
             contrib_cumsum = [ contribs[0][0]/contrib_sum ]
             for contrib in contribs[1:]: contrib_cumsum.append( contrib_cumsum[-1] + contrib[0]/contrib_sum )
             assert( len( contrib_cumsum ) == len( contribs ) )
@@ -151,9 +153,7 @@ def partition( sequences, circle = False ):
         p *= contrib[0]/contrib_sum
         for backtrack_info in contrib[1]:
             #print 'backtrack_info',backtrack_info, id( Z_BP), id( C_eff ), id( Z_linear)
-            Z_backtrack_id = backtrack_info[0]
-            i = backtrack_info[1]
-            j = backtrack_info[2]
+            ( Z_backtrack_id, i, j )  = backtrack_info
             backtrack_contrib = []
             if Z_backtrack_id == id(Z_BP):
                 backtrack_contrib = Z_BP_contrib
@@ -162,6 +162,29 @@ def partition( sequences, circle = False ):
             elif Z_backtrack_id == id(Z_linear):  backtrack_contrib = Z_linear_contrib
             p = backtrack( backtrack_contrib[i%N][j%N], bps, p, mfe_mode )
         return p
+
+    # uh super-tricky
+    def enumerative_backtrack( contribs, all_p_bps, p_input = 1.0, bps_input = [] ):
+        p = p_input
+        bps = deepcopy( bps_input )
+        print 'contribs',contribs, 'p',p, 'bps',bps, 'all_p_bps',all_p_bps
+        if len( contribs ) == 0:
+            all_p_bps.append( (p,deepcopy(bps)) )
+            print 'HEY! all_bps ', all_p_bps
+            return bps
+        contrib_sum = sum( contrib[0] for contrib in contribs )
+        for contrib in contribs:
+            if ( contrib[0] == 0.0 ): continue
+            p_contrib = p * contrib[0]/contrib_sum
+            for backtrack_info in contrib[1]:
+                ( Z_backtrack_id, i, j )  = backtrack_info
+                if Z_backtrack_id == id(Z_BP):
+                    backtrack_contrib = Z_BP_contrib
+                    bps.append( (i%N,j%N) )
+                elif Z_backtrack_id == id(C_eff):     backtrack_contrib = C_eff_contrib
+                elif Z_backtrack_id == id(Z_linear):  backtrack_contrib = Z_linear_contrib
+                bps = enumerative_backtrack( backtrack_contrib[i%N][j%N], all_p_bps, p_contrib, bps )
+        return bps
 
     ######################################
     # MFE tests
@@ -185,6 +208,15 @@ def partition( sequences, circle = False ):
         p = backtrack( Z_final_contrib[0], bps, mfe_mode = False )
         print bps, "   ", p
     print
+
+
+    ######################################
+    # Enumerative backtrack tests
+    all_p_bps = []
+    enumerative_backtrack( Z_final_contrib[0], all_p_bps )
+    print all_p_bps
+    p_tot = sum( p_bp[0] for p_bp in all_p_bps )
+    print 'p_tot = ',p_tot
 
     # stringent test that partition function is correct:
     for i in range( N ): assert( abs( ( Z_final[i] - Z_final[0] ) / Z_final[0] ) < 1.0e-5 )
