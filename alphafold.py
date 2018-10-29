@@ -3,6 +3,7 @@ import argparse
 import random
 from util import *
 from copy import deepcopy
+from secstruct import *
 
 C_init = 1
 l    = 0.5
@@ -192,7 +193,7 @@ def partition( sequences, circle = False ):
     for i in range( N ): assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
     print
     print 'Doing backtrack to get minimum free energy structure:'
-    print  bps_MFE[0], "   ", p_MFE[0], "[MFE]"
+    print  secstruct(bps_MFE[0],N), "   ", p_MFE[0], "[MFE]"
     print
 
     ######################################
@@ -201,13 +202,13 @@ def partition( sequences, circle = False ):
     print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble'
     for i in range( N_backtrack ):
         (bps,p)= boltzmann_sample( Z_final_contrib[0] )
-        print bps, "   ", p, "[stochastic]"
+        print secstruct(bps,N), "   ", p, "[stochastic]"
     print
 
     ######################################
     # Enumerative backtrack tests
     p_bps = backtrack( Z_final_contrib[0] )
-    print p_bps
+    for (p,bps) in p_bps:  print secstruct(bps,N), "   ", p, "[enumerative]"
     p_tot = sum( p_bp[0] for p_bp in p_bps )
     print 'p_tot = ',p_tot
 
@@ -224,7 +225,6 @@ def partition( sequences, circle = False ):
     print 'Z =',Z_final[0]
 
     return ( Z_final[0], bpp )
-
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser( description = "Compute nearest neighbor model partitition function for RNA sequence" )
