@@ -50,11 +50,17 @@ for i in range( N ): x[56][56] = 20
 t1 = time.time()
 print t1 - t0, 'x[56][56] = 20'
 
-
 t0 = time.time()
 for i in range( N ): xDP.X[56][56] = 20
 t1 = time.time()
 print t1 - t0,'xDP.X[56][56] = 20'
+
+t0 = time.time()
+for i in range( N ):
+    val = 20
+    xDP.X[56][56] = val
+t1 = time.time()
+print t1 - t0,'val = 20; xDP.X[56][56] = val'
 
 t0 = time.time()
 for i in range( N ): xDP[56][56] = 20

@@ -1,5 +1,6 @@
 from output_helpers import _show_results, _show_matrices
 from copy import deepcopy
+from alphafold.secstruct import *
 
 ##################################################################################################
 class AlphaFoldParams:
@@ -30,11 +31,12 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
     p = Partition( sequences, params, calc_deriv )
     p.circle  = circle
     p.run()
+    p.calc_mfe()
     if verbose: p.show_matrices()
     p.show_results()
     p.run_cross_checks()
 
-    return ( p.Z_final[0], p.bpp, p.dZ_final[0] )
+    return ( p.Z_final[0], p.bpp, p.bps_MFE, p.dZ_final[0] )
 
 ##################################################################################################
 class Partition:
@@ -54,6 +56,7 @@ class Partition:
         self.params = params
         self.circle = False  # user can update later --> circularize sequence
         self.calc_deriv = calc_deriv
+        self.bps_MFE = []
         return
 
     ##############################################################################################
@@ -81,6 +84,7 @@ class Partition:
         get_bpp_matrix( self ) # fill base pair probability matrix
         return
 
+    def calc_mfe( self ): _calc_mfe( self )
     # boring member functions -- defined later.
     def show_results( self ): _show_results( self )
     def show_matrices( self ): _show_matrices( self )
@@ -114,7 +118,7 @@ def update_Z_cut( self, i, j ):
             #Z_cut_contrib[i][j].append( Z_linear_contrib
 
 ##################################################################################################
-def update_Z_BP( self, i, j ):
+def update_Z_BP( self, i, j, calc_contrib = False ):
     '''
     Z_BP is the partition function for all structures that base pair i and j.
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
@@ -123,8 +127,10 @@ def update_Z_BP( self, i, j ):
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax, calc_deriv ) = unpack_variables( self )
     offset = ( j - i ) % N
 
-    ( C_eff_for_coax, dC_eff_for_coax, C_eff_for_BP, dC_eff_for_BP ) = \
-    (C_eff, dC_eff, C_eff, dC_eff) if allow_strained_3WJ else (self.C_eff_no_BP_singlet.X, self.C_eff_no_BP_singlet.dX, self.C_eff_no_coax_singlet.X, self.C_eff_no_coax_singlet.dX)
+    ( C_eff_for_coax, dC_eff_for_coax, C_eff_for_coax_id, C_eff_for_BP, dC_eff_for_BP, C_eff_for_BP_id ) = \
+    (C_eff, dC_eff, id(self.C_eff), C_eff, dC_eff, id(self.C_eff)) if allow_strained_3WJ else (self.C_eff_no_BP_singlet.X, self.C_eff_no_BP_singlet.dX, id(self.C_eff_no_BP_singlet), \
+                                                                                               self.C_eff_no_coax_singlet.X, self.C_eff_no_coax_singlet.dX, id(self.C_eff_no_coax_singlet))
+    if calc_contrib: self.Z_BP.contrib[i][j] = []
 
     # minimum loop length -- no other way to penalize short segments.
     if ( not any_intervening_cutpoint[i][j] and ( ((j-i-1) % N)) < min_loop_length ): return
@@ -136,9 +142,7 @@ def update_Z_BP( self, i, j ):
         else:
             if not ( sequence[i] == base_pair_type.nt1 and sequence[ j ] == base_pair_type.nt2 ): continue
 
-        Z_BPq  = base_pair_type.Z_BP
-        dZ_BPq = base_pair_type.dZ_BP
-        Kd_BPq = base_pair_type.Kd_BP
+        (Z_BPq, dZ_BPq, Kd_BPq)  = ( base_pair_type.Z_BP, base_pair_type.dZ_BP, base_pair_type.Kd_BP )
 
         if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
             # base pair closes a loop
@@ -151,7 +155,7 @@ def update_Z_BP( self, i, j ):
             #
             Z_BPq[i][j]  += (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N] * l * l * l_BP)
             if calc_deriv: dZ_BPq[i][j] += (1.0/Kd_BPq ) * ( dC_eff_for_BP[(i+1) % N][(j-1) % N] * l * l * l_BP)
-            #Z_BP_contrib[i][j].append( [[C_eff_for_BP, i+1, j-1, (1.0/Kd_BPq)*l*l*l_BP]] )
+            if calc_contrib: self.Z_BP.contrib[i][j].append( ( (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N] * l * l * l_BP), [(C_eff_for_BP_id, i+1, j-1)] ) )
 
             # base pair forms a stacked pair with previous pair
             #      ___
@@ -253,7 +257,7 @@ def update_Z_coax( self, i, j ):
             dZ_coax[i][j] += (dZ_BP[i][k % N] * Z_BP[(k+1) % N][j] + Z_BP[i][k % N] * dZ_BP[(k+1) % N][j]) * K_coax
 
 ##################################################################################################
-def update_C_eff( self, i, j ):
+def update_C_eff( self, i, j, calc_contrib = False ):
     '''
     C_eff tracks the effective molarity of a loop starting at i and ending at j
     Assumes a model where each additional element multiplicatively reduces the effective molarity, by
@@ -261,13 +265,15 @@ def update_C_eff( self, i, j ):
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
     Relies on Z_BP being already filled out for i,j
     TODO: In near future, will include possibility of multiple C_eff terms, which combined together will
-      allow for free energy costs of loop closure to scale apprpoximately log-linearly rather than
+      allow for free energy costs of loop closure to scale approximately log-linearly rather than
       linearly with loop size.
     '''
     offset = ( j - i ) % self.N
 
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax, calc_deriv ) = unpack_variables( self )
+
+    if ( calc_contrib ): self.C_eff.contrib[i][j] = []
 
     exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and (not is_cutpoint[j] )
 
@@ -278,7 +284,7 @@ def update_C_eff( self, i, j ):
     if not is_cutpoint[(j-1) % N]:
         C_eff[i][j]  += C_eff[i][(j-1) % N] * l
         if calc_deriv: dC_eff[i][j] += dC_eff[i][(j-1) % N] * l
-        #C_eff_contrib[i][j].append( [[C_eff, i, j-1, l]] )
+        if calc_contrib: self.C_eff.contrib[i][j].append( (C_eff[i][(j-1) % N] * l, [(id(self.C_eff),i,j-1)] ) )
 
     # j is base paired, and its partner is k > i. (look below for case with i and j base paired)
     #                 ___
@@ -304,11 +310,13 @@ def update_C_eff( self, i, j ):
             if calc_deriv: dC_eff[i][j] += (dC_eff_for_coax[i][(k-1) % N] * Z_coax[k % N][j] + C_eff_for_coax[i][(k-1) % N] * dZ_coax[k % N][j]) * l * l_coax
 
     # some helper arrays that prevent closure of any 3WJ with a single coaxial stack and single helix with not intervening loop nucleotides
-    self.C_eff_no_coax_singlet.X[i][j] =  C_eff[i][j] + C_init *  Z_BP[i][j] * l_BP
+    self.C_eff_no_coax_singlet.X[i][j] =  C_eff[i][j]  + C_init *  Z_BP[i][j] * l_BP
     self.C_eff_no_coax_singlet.dX[i][j] = dC_eff[i][j] + C_init * dZ_BP[i][j] * l_BP
+    if calc_contrib: self.C_eff_no_coax_singlet.contrib[i][j] = self.C_eff.contrib[i][j] + [ (C_init * Z_BP[i][j] * l_BP, [(id(self.Z_BP),i,j)] )]
 
     self.C_eff_no_BP_singlet.X[i][j] =  C_eff[i][j] + C_init *  Z_coax[i][j] * l_coax
     self.C_eff_no_BP_singlet.dX[i][j] = dC_eff[i][j] + C_init * dZ_coax[i][j] * l_coax
+
 
     # j is base paired, and its partner is i
     #      ___
@@ -331,7 +339,7 @@ def update_C_eff( self, i, j ):
     if calc_deriv: dC_eff[i][j] += C_init * dZ_coax[i][j] * l_coax
 
 ##################################################################################################
-def update_Z_linear( self, i, j ):
+def update_Z_linear( self, i, j, calc_contrib = False ):
     '''
     Z_linear tracks the total partition function from i to j, assuming all intervening residues are covalently connected (or base-paired).
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
@@ -342,6 +350,8 @@ def update_Z_linear( self, i, j ):
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax, calc_deriv ) = unpack_variables( self )
 
+    if calc_contrib: self.Z_linear.contrib[i][j] = []
+
     # j is not base paired: Extension by one residue from j-1 to j.
     #
     #    i ~~~~~~ j-1 - j
@@ -351,12 +361,13 @@ def update_Z_linear( self, i, j ):
         if calc_deriv: dZ_linear[i][j] += dZ_linear[i][(j - 1) % N]
 
     # j is base paired, and its partner is i
-    #                 ___
-    #                /   \
-    #    i ~~~~k-1 - k...j
+    #     ___
+    #    /   \
+    #    i...j
     #
     Z_linear[i][j]  += Z_BP[i][j]
     if calc_deriv: dZ_linear[i][j] += dZ_BP[i][j]
+    if calc_contrib: self.Z_linear.contrib[i][j].append( (Z_BP[i][j], [(id(self.Z_BP),i,j)]) )
 
     # j is base paired, and its partner is k > i
     #                 ___
@@ -390,19 +401,21 @@ def update_Z_linear( self, i, j ):
             if calc_deriv: dZ_linear[i][j] += dZ_linear[i][(k-1) % N] * Z_coax[k % N][j] + Z_linear[i][(k-1) % N] * dZ_coax[k % N][j]
 
 ##################################################################################################
-def get_Z_final( self ):
+def get_Z_final( self, calc_contrib = False ):
     # Z_final is total partition function, and is computed at end of filling dynamic programming arrays
     # Get the answer (in N ways!) --> so final output is actually Z_final(i), an array.
     # Equality of the array is tested in run_cross_checks()
-    Z_final  = []
-    dZ_final = []
-
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax, calc_deriv ) = unpack_variables( self )
+
+    Z_final  = [0.0]*N
+    dZ_final = [0.0]*N
+    Z_final_contrib = []
 
     for i in range( N ):
         Z_final.append( 0.0 )
         dZ_final.append( 0.0 )
+        Z_final_contrib.append( [] )
 
         if self.is_cutpoint[(i + N - 1) % N]:
             #
@@ -416,7 +429,7 @@ def get_Z_final( self ):
             #
             Z_final[i]  += Z_linear[i][(i-1) % N]
             if calc_deriv: dZ_final[i] += dZ_linear[i][(i-1) % N]
-            #Z_final_contrib[i].append( Z_linear, i, i-1, 1.0 )
+            if calc_contrib: Z_final_contrib[i].append( (Z_linear[i][(i-1) % N], [(id(self.Z_linear), i, i-1)]) )
         else:
             # Need to 'ligate' across i-1 to i
             # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
@@ -482,6 +495,7 @@ def get_Z_final( self ):
 
     self.Z_final = Z_final
     self.dZ_final = dZ_final
+    self.Z_final_contrib = Z_final_contrib
 
 ##################################################################################################
 def get_bpp_matrix( self ):
@@ -561,8 +575,8 @@ class DynamicProgrammingData:
 
         self.dX = deepcopy( self.X ) # another zero matrix.
 
-        self.X_contrib = []
-        for i in range( N ): self.X_contrib.append( [[]]*N )
+        self.contrib = []
+        for i in range( N ): self.contrib.append( [[]]*N )
 
     def __getitem__( self, idx ):
         # overloaded []. warning: overhead! directly access object.X[ idx ] in inner loops.
@@ -645,6 +659,90 @@ def unpack_variables( self ):
     '''
     return self.params.get_variables() + \
            ( self.N, self.sequence, self.is_cutpoint, self.any_intervening_cutpoint,  \
-             self.Z_BP.X, self.Z_BP.dX, self.C_eff.X, self.C_eff.dX, self.Z_linear.X, self.Z_linear.dX, self.Z_cut.X, self.Z_cut.dX, self.Z_coax.X, self.Z_coax.dX, \
+             self.Z_BP.X, self.Z_BP.dX, \
+             self.C_eff.X, self.C_eff.dX, \
+             self.Z_linear.X, self.Z_linear.dX, self.Z_cut.X, self.Z_cut.dX, self.Z_coax.X, self.Z_coax.dX, \
              self.calc_deriv)
+
+
+##################################################################################################
+def get_random_contrib( contribs ):
+    # Random sample weighted by probability. Must be a simple function for this.
+    contrib_cumsum = [ contribs[0][0] ]
+    for contrib in contribs[1:]: contrib_cumsum.append( contrib_cumsum[-1] + contrib[0] )
+    r = random.random() * contrib_cumsum[ -1 ]
+    for (idx,psum) in enumerate( contrib_cumsum ):
+        if r < psum: return contribs[idx]
+
+##################################################################################################
+def backtrack( self, contribs_input, mode = 'mfe' ):
+    if len( contribs_input ) == 0: return []
+    print 'contribs_input', contribs_input
+    contrib_sum = sum( contrib[0] for contrib in contribs_input )
+    if   mode == 'enumerative': contribs = deepcopy( contribs_input )
+    elif mode == 'mfe':         contribs = [ max( contribs_input ) ]
+    elif mode == 'stochastic' : contribs = [ get_random_contrib( contribs_input ) ]
+    p_bps = [] # list of tuples of (p_structure, bps_structure) for each structure
+    N = self.N
+    for contrib in contribs: # each option ('contribution' to this partition function of this sub-region)
+        if ( contrib[0] == 0.0 ): continue
+        p_contrib = contrib[0]/contrib_sum
+        p_bps_contrib = [ [p_contrib,[]] ]
+
+        for backtrack_info in contrib[1]: # each 'branch'
+            ( Z_backtrack_id, i, j )  = backtrack_info
+            if Z_backtrack_id == id(self.Z_BP):
+                update_Z_BP( self, i, j, calc_contrib = True )
+                backtrack_contrib = self.Z_BP.contrib
+                p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i%N,j%N)] ] for p_bp in p_bps_contrib ]
+            elif Z_backtrack_id == id(self.C_eff):
+                update_C_eff( self, i, j, calc_contrib = True )
+                backtrack_contrib = self.C_eff.contrib
+            elif Z_backtrack_id == id(self.C_eff_no_coax_singlet):
+                update_C_eff( self, i, j, calc_contrib = True )
+                backtrack_contrib = self.C_eff_no_coax_singlet.contrib
+            elif Z_backtrack_id == id(self.Z_linear):
+                update_Z_linear( self, i, j, calc_contrib = True )
+                backtrack_contrib = self.Z_linear.contrib
+            p_bps_component = backtrack( self, backtrack_contrib[i%N][j%N], mode )
+            if len( p_bps_component ) == 0: continue
+            # put together all branches
+            p_bps_contrib_new = []
+            for p_bps1 in p_bps_contrib:
+                for p_bps2 in p_bps_component:
+                    p_bps_contrib_new.append( [p_bps1[0]*p_bps2[0], p_bps1[1]+p_bps2[1]] )
+            p_bps_contrib = p_bps_contrib_new
+
+        p_bps += p_bps_contrib
+    return p_bps
+
+##################################################################################################
+def mfe( self, Z_final_contrib ):
+    p_bps = backtrack( self, Z_final_contrib, mode = 'mfe' )
+    assert( len(p_bps) == 1 )
+    return (p_bps[0][1],p_bps[0][0])
+
+##################################################################################################
+def boltzmann_sample( self, Z_final_contrib ):
+    p_bps = backtrack( self, Z_final_contrib, mode = 'stochastic' )
+    assert( len(p_bps) == 1 )
+    return (p_bps[0][1],p_bps[0][0])
+
+##################################################################################################
+def _calc_mfe( self ):
+    N = self.N
+    p_MFE = [0.0]*N
+    bps_MFE = [[]]*N
+    get_Z_final( self, calc_contrib = True )
+    print 'Z_linear',id( self.Z_linear), 'C_eff',id( self.C_eff ),'Z_BP',id( self.Z_BP), 'C_eff_no_coax_singlet',id( self.C_eff_no_coax_singlet)
+    for i in range( 1 ):
+        (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final_contrib[i] )
+        assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
+    print
+    print 'Doing backtrack to get minimum free energy structure:'
+    print  secstruct(bps_MFE[0],N), "   ", p_MFE[0], "[MFE]"
+    print
+    self.bps_MFE = bps_MFE
+
+
 

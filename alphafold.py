@@ -12,6 +12,6 @@ if __name__=='__main__':
     args     = parser.parse_args()
 
     if args.sequences != None: # run tests
-        (Z, bpp, dZ) = partition( args.sequences, circle = args.circle, verbose = args.verbose )
+        (Z, bpp, bps_MFE, dZ) = partition( args.sequences, circle = args.circle, verbose = args.verbose )
     else:
         test_alphafold()
