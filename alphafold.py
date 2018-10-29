@@ -133,6 +133,14 @@ def partition( sequences, circle = False ):
     output_DP( "Z_linear", Z_linear )
     output_square( "BPP", bpp );
 
+    def get_random_contrib( contribs ):
+        # Random sample weighted by probability. Must be a simple function for this.
+        contrib_cumsum = [ contribs[0][0] ]
+        for contrib in contribs[1:]: contrib_cumsum.append( contrib_cumsum[-1] + contrib[0] )
+        r = random.random() * contrib_cumsum[ -1 ]
+        for (idx,psum) in enumerate( contrib_cumsum ):
+            if r < psum: return contribs[idx]
+
     ######################################
     # Let's do MFE through backtracking
     def backtrack( contribs, bps, p = 1.0, mfe_mode = True ):
@@ -141,14 +149,7 @@ def partition( sequences, circle = False ):
         if mfe_mode:
             contrib     = max( contribs )
         else: # stochastic backtracking mode
-            # Random sample weighted by probability. Must be a simple function for this.
-            contrib_cumsum = [ contribs[0][0]/contrib_sum ]
-            for contrib in contribs[1:]: contrib_cumsum.append( contrib_cumsum[-1] + contrib[0]/contrib_sum )
-            assert( len( contrib_cumsum ) == len( contribs ) )
-            r = random.random()
-            for (idx,psum) in enumerate( contrib_cumsum ):
-                if r < psum: break
-            contrib = contribs[idx]
+            contrib = get_random_contrib( contribs )
 
         p *= contrib[0]/contrib_sum
         for backtrack_info in contrib[1]:
@@ -163,28 +164,39 @@ def partition( sequences, circle = False ):
             p = backtrack( backtrack_contrib[i%N][j%N], bps, p, mfe_mode )
         return p
 
-    # uh super-tricky
-    def enumerative_backtrack( contribs, all_p_bps, p_input = 1.0, bps_input = [] ):
-        p = p_input
-        bps = deepcopy( bps_input )
-        print 'contribs',contribs, 'p',p, 'bps',bps, 'all_p_bps',all_p_bps
-        if len( contribs ) == 0:
-            all_p_bps.append( (p,deepcopy(bps)) )
-            print 'HEY! all_bps ', all_p_bps
-            return bps
-        contrib_sum = sum( contrib[0] for contrib in contribs )
-        for contrib in contribs:
+
+    def enumerative_backtrack( contribs_input, mode = 'enumerative' ):
+        if len( contribs_input ) == 0: return []
+        contrib_sum = sum( contrib[0] for contrib in contribs_input )
+        if   mode == 'enumerative': contribs = deepcopy( contribs_input )
+        elif mode == 'mfe':         contribs = [ max( contribs_input ) ]
+        elif mode == 'stochastic' : contribs = [ get_random_contrib( contribs_input ) ]
+
+        p_bps = [] # list of tuples of (p_structure, bps_structure) for each structure
+        for contrib in contribs: # each option ('contribution' to this partition function of this sub-region)
             if ( contrib[0] == 0.0 ): continue
-            p_contrib = p * contrib[0]/contrib_sum
-            for backtrack_info in contrib[1]:
+            p_contrib = contrib[0]/contrib_sum
+            p_bps_contrib = [ [p_contrib,[]] ]
+
+            for backtrack_info in contrib[1]: # each 'branch'
                 ( Z_backtrack_id, i, j )  = backtrack_info
                 if Z_backtrack_id == id(Z_BP):
                     backtrack_contrib = Z_BP_contrib
-                    bps.append( (i%N,j%N) )
+                    p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i,j)] ] for p_bp in p_bps_contrib ]
                 elif Z_backtrack_id == id(C_eff):     backtrack_contrib = C_eff_contrib
                 elif Z_backtrack_id == id(Z_linear):  backtrack_contrib = Z_linear_contrib
-                bps = enumerative_backtrack( backtrack_contrib[i%N][j%N], all_p_bps, p_contrib, bps )
-        return bps
+
+                p_bps_component = enumerative_backtrack( backtrack_contrib[i%N][j%N], mode )
+                if len( p_bps_component ) == 0: continue
+                # put together all branches
+                p_bps_contrib_new = []
+                for p_bps1 in p_bps_contrib:
+                    for p_bps2 in p_bps_component:
+                        p_bps_contrib_new.append( [p_bps1[0]*p_bps2[0], p_bps1[1]+p_bps2[1]] )
+                p_bps_contrib = p_bps_contrib_new
+
+            p_bps += p_bps_contrib
+        return p_bps
 
     ######################################
     # MFE tests
@@ -206,17 +218,30 @@ def partition( sequences, circle = False ):
     for i in range( N_backtrack ):
         bps = []
         p = backtrack( Z_final_contrib[0], bps, mfe_mode = False )
-        print bps, "   ", p
+        print bps, "   ", p, "[stochastic]"
     print
-
 
     ######################################
     # Enumerative backtrack tests
-    all_p_bps = []
-    enumerative_backtrack( Z_final_contrib[0], all_p_bps )
-    print all_p_bps
-    p_tot = sum( p_bp[0] for p_bp in all_p_bps )
+    p_bps = enumerative_backtrack( Z_final_contrib[0] )
+    print p_bps
+    p_tot = sum( p_bp[0] for p_bp in p_bps )
     print 'p_tot = ',p_tot
+
+    #######################################
+    # Can we hack enumerative backtrack to do MFE?
+    p_bps_MFE = enumerative_backtrack( Z_final_contrib[0], mode = 'mfe' )
+    print  p_bps_MFE[0][1], "   ", p_bps_MFE[0][0], "[MFE]"
+
+    #######################################
+    # Can we hack enumerative backtrack to do stochastic?
+    print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble using hack of enumerative backtrack'
+    for i in range( N_backtrack ):
+        bps = []
+        p_bps = enumerative_backtrack( Z_final_contrib[0], mode = 'stochastic' )
+        print p_bps[0][1], "   ", p_bps[0][0], "[stochastic]"
+    print
+
 
     # stringent test that partition function is correct:
     for i in range( N ): assert( abs( ( Z_final[i] - Z_final[0] ) / Z_final[0] ) < 1.0e-5 )
