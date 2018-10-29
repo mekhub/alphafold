@@ -36,7 +36,6 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
 
     return ( p.Z_final[0], p.bpp, p.dZ_final[0] )
 
-
 ##################################################################################################
 class Partition:
     '''
@@ -142,17 +141,19 @@ def update_Z_BP( self, i, j ):
 
         if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
             # base pair closes a loop
-            #      ~~~
-            #     ~   ~
-            #  i+1     j-1
-            #    |     |
+            #
+            #    ~~~~~~
+            #   ~      ~
+            # i+1      j-1
+            #   \       /
             #    i ... j
+            #
             Z_BPq[i][j]  += (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N] * l * l * l_BP)
             dZ_BPq[i][j] += (1.0/Kd_BPq ) * ( dC_eff_for_BP[(i+1) % N][(j-1) % N] * l * l * l_BP)
             #Z_BP_contrib[i][j].append( [[C_eff_for_BP, i+1, j-1, (1.0/Kd_BPq)*l*l*l_BP]] )
 
             # base pair forms a stacked pair with previous pair
-            #      ---
+            #      ___
             #     /   \
             #  i+1 ... j-1
             #    |     |
@@ -164,7 +165,7 @@ def update_Z_BP( self, i, j ):
 
         # base pair brings together two strands that were previously disconnected
         #
-        #    |     |
+        #   \       /
         #    i ... j
         #
         Z_BPq [i][j] += (C_std/Kd_BPq) * Z_cut[i][j]
@@ -173,7 +174,7 @@ def update_Z_BP( self, i, j ):
         if (not is_cutpoint[i]) and (not is_cutpoint[j-1]):
 
             # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
-            #      ---
+            #      ___
             #     /   \
             #  i+1 ... k - k+1 ~
             #    |              ~
@@ -186,7 +187,7 @@ def update_Z_BP( self, i, j ):
                                     Z_BP[(i+1) % N][k % N] * dC_eff_for_coax[(k+1) % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BPq
 
             # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
-            #            ---
+            #            ___
             #           /   \
             #  ~ k-1 - k ... j-1
             # ~              |
@@ -199,7 +200,7 @@ def update_Z_BP( self, i, j ):
                                     C_eff_for_coax[(i+1) % N][(k-1) % N] * dZ_BP[k % N][(j-1) % N] ) * l**2 * l_coax * K_coax / Kd_BPq
 
         # "left stack" but no loop closed on right (free strands hanging off j end)
-        #      ---
+        #      ___
         #     /   \
         #  i+1 ... k -
         #    |
@@ -211,11 +212,11 @@ def update_Z_BP( self, i, j ):
                 dZ_BPq[i][j] += (dZ_BP[(i+1) % N][k % N] * Z_cut[k % N][j] + Z_BP[(i+1) % N][k % N] * dZ_cut[k % N][j] ) * C_std * K_coax / Kd_BPq
 
         # "right stack" but no loop closed on left (free strands hanging off i end)
-        #            ---
-        #           /   \
-        #        - k ... j-1
-        #                |
-        #        - i ... j
+        #       ___
+        #      /   \
+        #   - k ... j-1
+        #           |
+        #   - i ... j
         #
         if not is_cutpoint[(j-1) % N]:
             for k in range( i, i+offset-1 ):
@@ -238,12 +239,13 @@ def update_Z_coax( self, i, j ):
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
 
-        #  all structures that form coaxial stacks between (i,k) and (k+1,j) for some k
-        #       -- k -- k+1 --
-        #      /   :     :    \
-        #      \   :     :    /
-        #       -- i     j --
-        #
+    #  all structures that form coaxial stacks between (i,k) and (k+1,j) for some k
+    #
+    #       -- k - k+1 -
+    #      /   :    :   \
+    #      \   :    :   /
+    #       -- i    j --
+    #
     for k in range( i+1, i+offset-1 ):
         if not is_cutpoint[ k % N ]:
             Z_coax[i][j]  += Z_BP[i][k % N] * Z_BP[(k+1) % N][j] * K_coax
@@ -269,12 +271,19 @@ def update_C_eff( self, i, j ):
     exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and (not is_cutpoint[j] )
 
     # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
+    #
+    #    i ~~~~~~ j-1 - j
+    #
     if not is_cutpoint[(j-1) % N]:
         C_eff[i][j]  += C_eff[i][(j-1) % N] * l
         dC_eff[i][j] += dC_eff[i][(j-1) % N] * l
         #C_eff_contrib[i][j].append( [[C_eff, i, j-1, l]] )
 
     # j is base paired, and its partner is k > i. (look below for case with i and j base paired)
+    #                 ___
+    #                /   \
+    #    i ~~~~k-1 - k...j
+    #
     (C_eff_for_BP, dC_eff_for_BP) = (self.C_eff_no_coax_singlet.X, self.C_eff_no_coax_singlet.dX ) if exclude_strained_3WJ else (C_eff, dC_eff)
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
@@ -282,6 +291,11 @@ def update_C_eff( self, i, j ):
             dC_eff[i][j] += ( dC_eff_for_BP[i][(k-1) % N] * Z_BP[k % N][j] + C_eff_for_BP[i][(k-1) % N] * dZ_BP[k % N][j] ) * l * l_BP
 
     # j is coax-stacked, and its partner is k > i.  (look below for case with i and j coaxially stacked)
+    #               _______
+    #              / :   : \
+    #              \ :   : /
+    #    i ~~~~k-1 - k   j
+    #
     (C_eff_for_coax, dC_eff_for_coax) = (self.C_eff_no_BP_singlet.X, self.C_eff_no_BP_singlet.dX) if exclude_strained_3WJ else (C_eff, dC_eff)
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
@@ -296,11 +310,22 @@ def update_C_eff( self, i, j ):
     self.C_eff_no_BP_singlet.dX[i][j] = dC_eff[i][j] + C_init * dZ_coax[i][j] * l_coax
 
     # j is base paired, and its partner is i
+    #      ___
+    #     /   \
+    #  i+1 ... j-1
+    #    |     |
+    #    i ... j
+    #
     C_eff[i][j]  += C_init * Z_BP[i][j] * l_BP
     dC_eff[i][j] += C_init * dZ_BP[i][j] * l_BP
     #C_eff_contrib[i][j].append( [[Z_BP, i, j, C_init * l_BP]] )
 
     # j is coax-stacked, and its partner is i.
+    #       ------------
+    #      /   :    :   \
+    #      \   :    :   /
+    #       -- i    j --
+    #
     C_eff[i][j]  += C_init * Z_coax[i][j] * l_coax
     dC_eff[i][j] += C_init * dZ_coax[i][j] * l_coax
 
@@ -317,26 +342,47 @@ def update_Z_linear( self, i, j ):
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, dZ_BP, C_eff, dC_eff, Z_linear, dZ_linear, Z_cut, dZ_cut, Z_coax, dZ_coax ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
+    #
+    #    i ~~~~~~ j-1 - j
+    #
     if not is_cutpoint[(j-1) % N]:
         Z_linear[i][j]  += Z_linear[i][(j - 1) % N]
         dZ_linear[i][j] += dZ_linear[i][(j - 1) % N]
 
     # j is base paired, and its partner is i
+    #                 ___
+    #                /   \
+    #    i ~~~~k-1 - k...j
+    #
     Z_linear[i][j]  += Z_BP[i][j]
     dZ_linear[i][j] += dZ_BP[i][j]
 
     # j is base paired, and its partner is k > i
-    # probably could be accelerated through numpy
+    #                 ___
+    #                /   \
+    #    i ~~~~k-1 - k...j
+    #
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
             Z_linear[i][j]  += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
             dZ_linear[i][j] += ( dZ_linear[i][(k-1) % N] * Z_BP[k % N][j] + Z_linear[i][(k-1) % N] * dZ_BP[k % N][j] )
 
     # j is coax-stacked, and its partner is i.
+    #       ------------
+    #      /   :    :   \
+    #      \   :    :   /
+    #       -- i    j --
+    #
     Z_linear[i][j]  += Z_coax[i][j]
     dZ_linear[i][j] += dZ_coax[i][j]
 
     # j is coax-stacked, and its partner is k > i.
+    #
+    #               _______
+    #              / :   : \
+    #              \ :   : /
+    #    i ~~~~k-1 - k   j
+    #
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
             Z_linear[i][j]  += Z_linear[i][(k-1) % N] * Z_coax[k % N][j]
@@ -358,6 +404,15 @@ def get_Z_final( self ):
         dZ_final.append( 0.0 )
 
         if self.is_cutpoint[(i + N - 1) % N]:
+            #
+            #      i ------- i-1
+            #
+            #     or equivalently
+            #        ________
+            #       /        \
+            #       \        /
+            #        i-1    i
+            #
             Z_final[i]  += Z_linear[i][(i-1) % N]
             dZ_final[i] += dZ_linear[i][(i-1) % N]
             #Z_final_contrib[i].append( Z_linear, i, i-1, 1.0 )
@@ -372,10 +427,19 @@ def get_Z_final( self ):
             for c in range( i, i + N - 1):
                 if self.is_cutpoint[c % N]:
                     #any split segments, combined independently
+                    #
+                    #   c+1 --- i-1 - i --- c
+                    #               *
                     Z_final[i]  += Z_linear[i][c % N] * Z_linear[(c+1) % N][(i-1) % N ]
                     dZ_final[i] += ( dZ_linear[i][c % N] * Z_linear[(c+1) % N][(i-1) % N ] + Z_linear[i][c % N] * dZ_linear[(c+1) % N][(i-1) % N ] )
 
             # base pair forms a stacked pair with previous pair
+            #
+            #   - j+1 - j -
+            #      :    :
+            #      :    :
+            #   - i-1 - i -
+            #         *
             for j in range( i+1, (i + N - 1) ):
                 if not is_cutpoint[ j % N ]:
                     Z_final[i]  += C_eff_stacked_pair * Z_BP[i % N][j % N] * Z_BP[(j+1) % N][(i - 1) % N]
@@ -386,6 +450,13 @@ def get_Z_final( self ):
             # New co-axial stack might form across ligation junction
             for j in range( i + 1, i + N - 2):
                 # If the two coaxially stacked base pairs are connected by a loop.
+                #
+                #       ~~~~
+                #   -- k    j --
+                #  /   :    :   \
+                #  \   :    :   /
+                #   - i-1 - i --
+                #         *
                 for k in range( j + 2, i + N - 1):
                     if is_cutpoint[j % N]: continue
                     if is_cutpoint[(k-1) % N]: continue
@@ -395,6 +466,13 @@ def get_Z_final( self ):
                                      Z_BP[i][j % N] *  C_eff_for_coax[(j+1) % N][(k-1) % N] * dZ_BP[k % N][(i-1) % N]) * l * l * l_coax * K_coax
 
                 # If the two stacked base pairs are in split segments
+                #
+                #      \    /
+                #   -- k    j --
+                #  /   :    :   \
+                #  \   :    :   /
+                #   - i-1 - i --
+                #         *
                 for k in range( j + 1, i + N - 1):
                     Z_final[i]  += Z_BP[i][j % N] * Z_cut[j % N][k % N] * Z_BP[k % N][(i-1) % N] * K_coax
                     dZ_final[i] += (dZ_BP[i][j % N] * Z_cut[j % N][k % N] * Z_BP[k % N][(i-1) % N] +
