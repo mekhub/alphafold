@@ -5,6 +5,13 @@ def initialize_zero_matrix( N ):
         for j in range( N ): X[i].append( 0.0 )
     return X
 
+def initialize_contrib_matrix( N ):
+    X = []
+    for i in range( N ):
+        X.append( [] )
+        for j in range( N ): X[i].append( [] )
+    return X
+
 def output_DP( tag, X, X_final = []):
     N = len( X )
     print

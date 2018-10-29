@@ -22,6 +22,10 @@ def partition( sequences, circle = False ):
     Z_BP  = initialize_zero_matrix( N );
     Z_linear = initialize_zero_matrix( N );
 
+    C_eff_contrib = initialize_contrib_matrix( N )
+    Z_BP_contrib = initialize_contrib_matrix( N )
+    Z_linear_contrib = initialize_contrib_matrix( N )
+
     # initialize
     for i in range( N ): #length of fragment
         C_eff[ i ][ i ] = C_init
@@ -54,36 +58,67 @@ def partition( sequences, circle = False ):
                   ( any_cutpoint[j][i] or ( ((i-j-1) % N)) >= min_loop_length  ):
                 if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
                     Z_BP[i][j] += (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l * l_BP)
+                    Z_BP_contrib[i][j].append( [ (1.0/Kd_BP ) * ( C_eff[(i+1) % N][(j-1) % N] * l * l * l_BP), [[id(C_eff),i+1,j-1]] ] )
+
                 for c in range( i, i+offset ):
                     if is_cutpoint[c % N]:
                         Z_product = 1
-                        if c != i : Z_product *= Z_linear[i+1][c % N]
-                        if (c+1)%N != j:  Z_product *= Z_linear[(c+1) % N][j-1]
+                        Z_product_contrib = []
+                        if c != i :
+                            Z_product *= Z_linear[i+1][c % N]
+                            Z_product_contrib.append( [id(Z_linear),i+1,c] )
+                        if (c+1)%N != j:
+                            Z_product *= Z_linear[(c+1) % N][j-1]
+                            Z_product_contrib.append( [id(Z_linear),c+1,j-1] )
                         Z_BP[i][j] += (C_std/Kd_BP) * Z_product
+                        Z_BP_contrib[i][j].append( [(C_std/Kd_BP) * Z_product, Z_product_contrib] )
 
-            if not is_cutpoint[(j-1) % N]: C_eff[i][j] += C_eff[i][(j-1) % N] * l
+            if not is_cutpoint[(j-1) % N]:
+                C_eff[i][j] += C_eff[i][(j-1) % N] * l
+                C_eff_contrib[i][j].append( [C_eff[i][(j-1) % N] * l, [[id(C_eff), i, j-1]]] )
+
             C_eff[i][j] += C_init * Z_BP[i][j] * l_BP
-            for k in range( i+1, i+offset):
-                if not is_cutpoint[ (k-1) % N]: C_eff[i][j] += C_eff[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP
+            C_eff_contrib[i][j].append( [ C_init * Z_BP[i][j] * l_BP, [[id(Z_BP), i, j]] ] )
 
-            if not is_cutpoint[(j-1) % N]: Z_linear[i][j] += Z_linear[i][(j - 1) % N]
-            Z_linear[i][j] += Z_BP[i][j]
             for k in range( i+1, i+offset):
-                if not is_cutpoint[ (k-1) % N]: Z_linear[i][j] += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
+                if not is_cutpoint[ (k-1) % N]:
+                    C_eff[i][j] += C_eff[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP
+                    C_eff_contrib[i][j].append( [ C_eff[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP, \
+                                                  [[ id(C_eff), i, k-1 ], [id(Z_BP), k, j ]] ] )
+
+            if not is_cutpoint[(j-1) % N]:
+                Z_linear[i][j] += Z_linear[i][(j - 1) % N]
+                Z_linear_contrib[i][j].append( [ Z_linear[i][(j - 1) % N], [[id(Z_linear), i, j-1]]]  )
+
+            Z_linear[i][j] += Z_BP[i][j]
+            Z_linear_contrib[i][j].append( [ Z_BP[i][j], [ [id(Z_BP), i, j] ] ] )
+
+            for k in range( i+1, i+offset):
+                if not is_cutpoint[ (k-1) % N]:
+                    Z_linear[i][j] += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
+                    Z_linear_contrib[i][j].append( [ Z_linear[i][(k-1) % N] * Z_BP[k % N][j], \
+                                                     [ [id(Z_linear), i, k-1], [id(Z_BP), k, j ] ] ] )
 
     # get the answer (in N ways!)
     Z_final = []
+    Z_final_contrib = []
     for i in range( N ):
         Z_final.append( 0 )
+        Z_final_contrib.append( [] )
         if not is_cutpoint[(i + N - 1) % N]:
             for c in range( i, i + N - 1):
-                if is_cutpoint[c % N]: Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] #any split segments, combined independently
+                if is_cutpoint[c % N]:
+                    Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] #any split segments, combined independently
+                    Z_final_contrib[i].append( [ Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ],\
+                                                 [ [id(Z_linear), i, c ], [id(Z_linear), c+1, i-1] ] ] )
 
         if is_cutpoint[(i + N - 1) % N]:
             Z_final[i] += Z_linear[i][(i-1) % N]
+            Z_final_contrib[i].append( [ Z_linear[i][(i-1) % N], [[id(Z_linear), i, i-1 ]] ] )
         else:
             # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
             Z_final[i] += C_eff[i][(i - 1) % N] * l / C_std
+            Z_final_contrib[i].append( [ C_eff[i][(i - 1) % N] * l / C_std, [[id(C_eff), i, i-1]] ] )
 
     # base pair probability matrix
     bpp = initialize_zero_matrix( N );
@@ -95,6 +130,34 @@ def partition( sequences, circle = False ):
     output_DP( "C_eff", C_eff, Z_final )
     output_DP( "Z_linear", Z_linear )
     output_square( "BPP", bpp );
+
+    # Let's do MFE through backtracking
+    def get_mfe( contribs, p, bps ):
+        if len( contribs ) == 0: return p
+        contrib_sum = sum( contrib[0] for contrib in contribs )
+        contrib     = max( contribs )
+        p *= contrib[0]/contrib_sum
+        for backtrack_info in contrib[1]:
+            #print 'backtrack_info',backtrack_info, id( Z_BP), id( C_eff ), id( Z_linear)
+            Z_backtrack_id = backtrack_info[0]
+            i = backtrack_info[1]
+            j = backtrack_info[2]
+            backtrack_contrib = []
+            if Z_backtrack_id == id(Z_BP):
+                backtrack_contrib = Z_BP_contrib
+                bps.append( (i%N,j%N) )
+            elif Z_backtrack_id == id(C_eff):
+                backtrack_contrib = C_eff_contrib
+            elif Z_backtrack_id == id(Z_linear):
+                backtrack_contrib = Z_linear_contrib
+            p = get_mfe( backtrack_contrib[i%N][j%N], p, bps )
+        return p
+
+    p_MFE = []
+    for i in range( N ):
+        bps_MFE = []
+        p_MFE.append( get_mfe( Z_final_contrib[i], 1.0, bps_MFE ) )
+        print p_MFE[i], bps_MFE
 
     # stringent test that partition function is correct:
     for i in range( N ): assert( abs( ( Z_final[i] - Z_final[0] ) / Z_final[0] ) < 1.0e-5 )
@@ -109,7 +172,6 @@ def partition( sequences, circle = False ):
     print 'Z =',Z_final[0]
 
     return ( Z_final[0], bpp )
-
 
 
 if __name__=='__main__':
