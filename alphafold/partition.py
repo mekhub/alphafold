@@ -23,11 +23,11 @@ class AlphaFoldParams:
         return ( self.C_init, self.l, self.Kd_BP, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.l_coax, self.C_std, self.min_loop_length, self.allow_strained_3WJ )
 
 ##################################################################################################
-def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False ):
+def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False ):
     '''
     Wrapper function into Partition() class
     '''
-    p = Partition( sequences, params )
+    p = Partition( sequences, params, calc_deriv )
     p.circle  = circle
     p.run()
     if verbose: p.show_matrices()
@@ -44,7 +44,7 @@ class Partition:
     TODO: replace dynamic programming matrices with a class that auto-updates derivatives, caches each contribution for backtracking, and automatically does the modulo N wrapping
     (C) R. Das, Stanford University, 2018
     '''
-    def __init__( self, sequences, params ):
+    def __init__( self, sequences, params, calc_deriv = False ):
         '''
         Required user input.
         sequences = string with sequence, or array of strings (sequences of interacting strands)
@@ -53,6 +53,7 @@ class Partition:
         self.sequences = sequences
         self.params = params
         self.circle = False  # user can update later --> circularize sequence
+        self.calc_deriv = calc_deriv
         return
 
     ##############################################################################################
@@ -502,16 +503,17 @@ def _run_cross_checks( self ):
     # stringent test that partition function is correct -- all the Z(i,i) agree.
     for i in range( self.N ):
         assert( abs( ( self.Z_final[i] - self.Z_final[0] ) / self.Z_final[0] ) < 1.0e-5 )
-        if (self.dZ_final[0] > 0 ):
+        if self.calc_deriv and self.dZ_final[0] > 0:
             assert( self.dZ_final[0] == 0 or  abs( ( self.dZ_final[i] - self.dZ_final[0] ) / self.dZ_final[0] ) < 1.0e-5 )
 
     # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
-    bpp_tot = 0.0
-    for i in range( self.N ):
-        for j in range( self.N ):
-            bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
-    bpp_tot_based_on_deriv = -self.dZ_final[0] * self.params.Kd_BP / self.Z_final[0]
-    if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
+    if self.calc_deriv:
+        bpp_tot = 0.0
+        for i in range( self.N ):
+            for j in range( self.N ):
+                bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
+        bpp_tot_based_on_deriv = -self.dZ_final[0] * self.params.Kd_BP / self.Z_final[0]
+        if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
 
 ##################################################################################################
 def initialize_sequence_information( self ):
