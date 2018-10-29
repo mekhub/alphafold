@@ -172,16 +172,19 @@ def partition( sequences, circle = False ):
         p_MFE[i] = backtrack( Z_final_contrib[i], bps_MFE[i] )
     for i in range( N ): assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
     print
+    print 'Doing backtrack to get minimum free energy structure:'
     print  bps_MFE[0], "   ", p_MFE[0], "[MFE]"
     print
 
     ######################################
     # Stochastic backtrack tests
     N_backtrack = 10
+    print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble'
     for i in range( N_backtrack ):
         bps = []
         p = backtrack( Z_final_contrib[0], bps, mfe_mode = False )
         print bps, "   ", p
+    print
 
     # stringent test that partition function is correct:
     for i in range( N ): assert( abs( ( Z_final[i] - Z_final[0] ) / Z_final[0] ) < 1.0e-5 )
