@@ -141,31 +141,7 @@ def partition( sequences, circle = False ):
         for (idx,psum) in enumerate( contrib_cumsum ):
             if r < psum: return contribs[idx]
 
-    ######################################
-    # Let's do MFE through backtracking
-    def backtrack( contribs, bps, p = 1.0, mfe_mode = True ):
-        if len( contribs ) == 0: return p
-        contrib_sum = sum( contrib[0] for contrib in contribs )
-        if mfe_mode:
-            contrib     = max( contribs )
-        else: # stochastic backtracking mode
-            contrib = get_random_contrib( contribs )
-
-        p *= contrib[0]/contrib_sum
-        for backtrack_info in contrib[1]:
-            #print 'backtrack_info',backtrack_info, id( Z_BP), id( C_eff ), id( Z_linear)
-            ( Z_backtrack_id, i, j )  = backtrack_info
-            backtrack_contrib = []
-            if Z_backtrack_id == id(Z_BP):
-                backtrack_contrib = Z_BP_contrib
-                bps.append( (i%N,j%N) )
-            elif Z_backtrack_id == id(C_eff):     backtrack_contrib = C_eff_contrib
-            elif Z_backtrack_id == id(Z_linear):  backtrack_contrib = Z_linear_contrib
-            p = backtrack( backtrack_contrib[i%N][j%N], bps, p, mfe_mode )
-        return p
-
-
-    def enumerative_backtrack( contribs_input, mode = 'enumerative' ):
+    def backtrack( contribs_input, mode = 'enumerative' ):
         if len( contribs_input ) == 0: return []
         contrib_sum = sum( contrib[0] for contrib in contribs_input )
         if   mode == 'enumerative': contribs = deepcopy( contribs_input )
@@ -186,7 +162,7 @@ def partition( sequences, circle = False ):
                 elif Z_backtrack_id == id(C_eff):     backtrack_contrib = C_eff_contrib
                 elif Z_backtrack_id == id(Z_linear):  backtrack_contrib = Z_linear_contrib
 
-                p_bps_component = enumerative_backtrack( backtrack_contrib[i%N][j%N], mode )
+                p_bps_component = backtrack( backtrack_contrib[i%N][j%N], mode )
                 if len( p_bps_component ) == 0: continue
                 # put together all branches
                 p_bps_contrib_new = []
@@ -198,13 +174,21 @@ def partition( sequences, circle = False ):
             p_bps += p_bps_contrib
         return p_bps
 
+    def mfe( Z_final_contrib ):
+        p_bps = backtrack( Z_final_contrib, mode = 'mfe' )
+        assert( len(p_bps) == 1 )
+        return (p_bps[0][1],p_bps[0][0])
+
+    def boltzmann_sample( Z_final_contrib ):
+        p_bps = backtrack( Z_final_contrib, mode = 'stochastic' )
+        assert( len(p_bps) == 1 )
+        return (p_bps[0][1],p_bps[0][0])
+
     ######################################
     # MFE tests
     p_MFE = [0.0]*N
     bps_MFE = [[]]*N
-    for i in range( N ):
-        bps_MFE[i] = []
-        p_MFE[i] = backtrack( Z_final_contrib[i], bps_MFE[i] )
+    for i in range( N ): (bps_MFE[i], p_MFE[i] ) = mfe( Z_final_contrib[i] )
     for i in range( N ): assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
     print
     print 'Doing backtrack to get minimum free energy structure:'
@@ -216,32 +200,16 @@ def partition( sequences, circle = False ):
     N_backtrack = 10
     print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble'
     for i in range( N_backtrack ):
-        bps = []
-        p = backtrack( Z_final_contrib[0], bps, mfe_mode = False )
+        (bps,p)= boltzmann_sample( Z_final_contrib[0] )
         print bps, "   ", p, "[stochastic]"
     print
 
     ######################################
     # Enumerative backtrack tests
-    p_bps = enumerative_backtrack( Z_final_contrib[0] )
+    p_bps = backtrack( Z_final_contrib[0] )
     print p_bps
     p_tot = sum( p_bp[0] for p_bp in p_bps )
     print 'p_tot = ',p_tot
-
-    #######################################
-    # Can we hack enumerative backtrack to do MFE?
-    p_bps_MFE = enumerative_backtrack( Z_final_contrib[0], mode = 'mfe' )
-    print  p_bps_MFE[0][1], "   ", p_bps_MFE[0][0], "[MFE]"
-
-    #######################################
-    # Can we hack enumerative backtrack to do stochastic?
-    print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble using hack of enumerative backtrack'
-    for i in range( N_backtrack ):
-        bps = []
-        p_bps = enumerative_backtrack( Z_final_contrib[0], mode = 'stochastic' )
-        print p_bps[0][1], "   ", p_bps[0][0], "[stochastic]"
-    print
-
 
     # stringent test that partition function is correct:
     for i in range( N ): assert( abs( ( Z_final[i] - Z_final[0] ) / Z_final[0] ) < 1.0e-5 )
