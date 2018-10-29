@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import argparse
+import random
 from util import *
 
 C_init = 1
@@ -131,11 +132,22 @@ def partition( sequences, circle = False ):
     output_DP( "Z_linear", Z_linear )
     output_square( "BPP", bpp );
 
+    ######################################
     # Let's do MFE through backtracking
-    def get_mfe( contribs, p, bps ):
+    def backtrack( contribs, bps, p = 1.0, mfe_mode = True ):
         if len( contribs ) == 0: return p
         contrib_sum = sum( contrib[0] for contrib in contribs )
-        contrib     = max( contribs )
+        if mfe_mode:
+            contrib     = max( contribs )
+        else: # stochastic backtracking mode
+            contrib_cumsum = [ contribs[0][0]/contrib_sum ]
+            for contrib in contribs[1:]: contrib_cumsum.append( contrib_cumsum[-1] + contrib[0]/contrib_sum )
+            assert( len( contrib_cumsum ) == len( contribs ) )
+            r = random.random()
+            for (idx,psum) in enumerate( contrib_cumsum ):
+                if r < psum: break
+            contrib = contribs[idx]
+
         p *= contrib[0]/contrib_sum
         for backtrack_info in contrib[1]:
             #print 'backtrack_info',backtrack_info, id( Z_BP), id( C_eff ), id( Z_linear)
@@ -146,18 +158,30 @@ def partition( sequences, circle = False ):
             if Z_backtrack_id == id(Z_BP):
                 backtrack_contrib = Z_BP_contrib
                 bps.append( (i%N,j%N) )
-            elif Z_backtrack_id == id(C_eff):
-                backtrack_contrib = C_eff_contrib
-            elif Z_backtrack_id == id(Z_linear):
-                backtrack_contrib = Z_linear_contrib
-            p = get_mfe( backtrack_contrib[i%N][j%N], p, bps )
+            elif Z_backtrack_id == id(C_eff):     backtrack_contrib = C_eff_contrib
+            elif Z_backtrack_id == id(Z_linear):  backtrack_contrib = Z_linear_contrib
+            p = backtrack( backtrack_contrib[i%N][j%N], bps, p, mfe_mode )
         return p
 
-    p_MFE = []
+    ######################################
+    # MFE tests
+    p_MFE = [0.0]*N
+    bps_MFE = [[]]*N
     for i in range( N ):
-        bps_MFE = []
-        p_MFE.append( get_mfe( Z_final_contrib[i], 1.0, bps_MFE ) )
-        print p_MFE[i], bps_MFE
+        bps_MFE[i] = []
+        p_MFE[i] = backtrack( Z_final_contrib[i], bps_MFE[i] )
+    for i in range( N ): assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
+    print
+    print  bps_MFE[0], "   ", p_MFE[0], "[MFE]"
+    print
+
+    ######################################
+    # Stochastic backtrack tests
+    N_backtrack = 10
+    for i in range( N_backtrack ):
+        bps = []
+        p = backtrack( Z_final_contrib[0], bps, mfe_mode = False )
+        print bps, "   ", p
 
     # stringent test that partition function is correct:
     for i in range( N ): assert( abs( ( Z_final[i] - Z_final[0] ) / Z_final[0] ) < 1.0e-5 )
