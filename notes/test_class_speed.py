@@ -37,7 +37,7 @@ class DP:
         # but this kind of thing appears to take up too much overhead.
         self.Q[i][j]  += b
         self.dQ[i][j] += 0
-        self.Q_contrib[i][j].append( [i,j,b] )
+        self.contrib[i][j].append( [i,j,b] )
 
 def getval( DP, idx ):
     return DP.Q[ idx ][ idx ]
@@ -90,10 +90,16 @@ print t1 - t0,'xDP.Q[56][56] = 20 * 1.5 * 1.2 * x[1][1] * x[5][5]'
 
 t0 = time.time()
 for i in range( N ):
-    val = 20  * x[1][1] * x[5][5]
+    val = 20  * 1.5 * 1.2 * x[1][1] * x[5][5]
     xDP.Q[56][56] = val
 t1 = time.time()
 print t1 - t0,'val = 20 * 1.5 * 1.2 * x[1][1] * x[5][5]; xDP.Q[56][56] = val'
+
+t0 = time.time()
+for i in range( N ):
+    xDP.Q[56][56] = val = 20  * 1.5 * 1.2 * x[1][1] * x[5][5]
+t1 = time.time()
+print t1 - t0,'xDP.Q[56][56] = val = 20 * 1.5 * 1.2 * x[1][1] * x[5][5]'
 
 t0 = time.time()
 for i in range( N ): xDP[56][56] = 20 * 1.5 * 1.2 * x[1][1] * x[5][5]
@@ -145,7 +151,7 @@ t0 = time.time()
 for i in range( N ):
     xDP.Q[56][56] = 20
     xDP.dQ[56][56] = 0
-    xDP.Q_contrib[56][56].append( [x,56,56,20] )
+    xDP.contrib[56][56].append( [x,56,56,20] )
 t1 = time.time()
 print t1 - t0,'xDP.Q[56][56] = 20'
 
