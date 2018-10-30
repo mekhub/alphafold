@@ -102,6 +102,12 @@ t1 = time.time()
 print t1 - t0,'xDP.Q[56][56] = val = 20 * 1.5 * 1.2 * x[1][1] * x[5][5]'
 
 t0 = time.time()
+for i in range( N ):
+    if x[1][1] > 0.0: xDP.Q[56][56] = val = 20  * 1.5 * 1.2 * x[1][1] * x[5][5]
+t1 = time.time()
+print t1 - t0,'if x[1][1] > 0.0: xDP.Q[56][56] = val = 20 * 1.5 * 1.2 * x[1][1] * x[5][5]'
+
+t0 = time.time()
 for i in range( N ): xDP[56][56] = 20 * 1.5 * 1.2 * x[1][1] * x[5][5]
 t1 = time.time()
 print t1 - t0,'xDP[56][56] = 20 * 1.5 * 1.2 * x[1][1] * x[5][5]'
