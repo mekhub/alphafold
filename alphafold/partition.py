@@ -156,6 +156,9 @@ def update_Z_BP( self, i, j, calc_contrib = False ):
             Z_BPq.Q[i][j]  += (1.0/Kd_BPq ) * ( C_eff_for_BP.Q [(i+1) % N][(j-1) % N] * l * l * l_BP)
             if calc_deriv: Z_BPq.dQ[i][j] += (1.0/Kd_BPq ) * ( C_eff_for_BP.dQ[(i+1) % N][(j-1) % N] * l * l * l_BP)
             if calc_contrib: Z_BP.contrib[i][j].append( ( (1.0/Kd_BPq ) * ( C_eff_for_BP.Q [(i+1) % N][(j-1) % N] * l * l * l_BP), [(id(C_eff_for_BP), i+1, j-1)] ) )
+            # new idea --> check all of above with a nicely object-oriented (but slow) class operation that propagates deriv, contrib, etc.
+            # Later: write recursions *purely* in terms of this operator, and write a 'compiler' into python (or C++) code.
+            if check_ops: Z_BPq.DP[i][j]  += (1.0/Kd_BPq ) * ( C_eff_for_BP.DP [(i+1) % N][(j-1) % N] * l * l * l_BP)
 
             # base pair forms a stacked pair with previous pair
             #      ___
