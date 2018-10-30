@@ -142,7 +142,7 @@ def partition( sequences, circle = False ):
         for (idx,psum) in enumerate( contrib_cumsum ):
             if r < psum: return contribs[idx]
 
-    def backtrack( contribs_input, mode = 'enumerative' ):
+    def backtrack( contribs_input, mode = 'mfe' ):
         if len( contribs_input ) == 0: return []
         contrib_sum = sum( contrib[0] for contrib in contribs_input )
         if   mode == 'enumerative': contribs = deepcopy( contribs_input )
@@ -207,7 +207,7 @@ def partition( sequences, circle = False ):
 
     ######################################
     # Enumerative backtrack tests
-    p_bps = backtrack( Z_final_contrib[0] )
+    p_bps = backtrack( Z_final_contrib[0] , 'enumerative' )
     for (p,bps) in p_bps:  print secstruct(bps,N), "   ", p, "[enumerative]"
     p_tot = sum( p_bp[0] for p_bp in p_bps )
     print 'p_tot = ',p_tot
