@@ -5,12 +5,13 @@ from util import *
 from copy import deepcopy
 from secstruct import *
 from recursions import *
+from dynamic_programming import DynamicProgrammingData
 
-C_init = 1
+C_init = 1.0
 l    = 0.5
 l_BP = 0.1
 Kd_BP = 0.001;
-C_std = 1; # 1 M
+C_std = 1.0; # 1 M
 min_loop_length = 1
 
 def partition( sequences, circle = False ):
@@ -22,18 +23,14 @@ def partition( sequences, circle = False ):
     # Could also use numpy arrays, but
     # eventually I'd like to use linked lists to
     # simplify backtracking.
-    C_eff = initialize_zero_matrix( N );
-    Z_BP  = initialize_zero_matrix( N );
-    Z_linear = initialize_zero_matrix( N );
-
-    C_eff_contrib = initialize_contrib_matrix( N )
-    Z_BP_contrib = initialize_contrib_matrix( N )
-    Z_linear_contrib = initialize_contrib_matrix( N )
+    C_eff = DynamicProgrammingMatrix( N );
+    Z_BP  = DynamicProgrammingMatrix( N );
+    Z_linear = DynamicProgrammingMatrix( N );
 
     # initialize
     for i in range( N ): #length of fragment
-        C_eff[ i ][ i ] = C_init
-        Z_linear[ i ][ i ] = 1
+        C_eff[ i ][ i ].Q = C_init
+        Z_linear[ i ][ i ].Q = 1.0
 
     is_cutpoint = [False]*N
     if isinstance( sequences, list ):
@@ -59,35 +56,19 @@ def partition( sequences, circle = False ):
             update_Z( i, j, N,
                       sequence, is_cutpoint, any_cutpoint, \
                       C_init, l, l_BP, Kd_BP, C_std, min_loop_length, \
-                      Z_BP, Z_BP_contrib, C_eff, C_eff_contrib, Z_linear, Z_linear_contrib )
-
+                      Z_BP, C_eff, Z_linear )
 
     # get the answer (in N ways!)
-    Z_final = []
-    Z_final_contrib = []
-    for i in range( N ):
-        Z_final.append( 0 )
-        Z_final_contrib.append( [] )
-        if not is_cutpoint[(i + N - 1) % N]:
-            for c in range( i, i + N - 1):
-                if is_cutpoint[c % N]:
-                    Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] #any split segments, combined independently
-                    Z_final_contrib[i].append( [ Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ],\
-                                                 [ [id(Z_linear), i, c ], [id(Z_linear), c+1, i-1] ] ] )
-
-        if is_cutpoint[(i + N - 1) % N]:
-            Z_final[i] += Z_linear[i][(i-1) % N]
-            Z_final_contrib[i].append( [ Z_linear[i][(i-1) % N], [[id(Z_linear), i, i-1 ]] ] )
-        else:
-            # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
-            Z_final[i] += C_eff[i][(i - 1) % N] * l / C_std
-            Z_final_contrib[i].append( [ C_eff[i][(i - 1) % N] * l / C_std, [[id(C_eff), i, i-1]] ] )
+    Z_final = get_Z_final(N,
+                          sequence, is_cutpoint, any_cutpoint, \
+                          C_init, l, l_BP, Kd_BP, C_std, min_loop_length, \
+                          Z_BP, C_eff, Z_linear )
 
     # base pair probability matrix
     bpp = initialize_zero_matrix( N );
     for i in range( N ):
         for j in range( N ):
-            bpp[i][j] = Z_BP[i][j] * Z_BP[j][i] * Kd_BP / Z_final[0]
+            bpp[i][j] =  Z_BP[i][j].Q * Z_BP[j][i].Q * Kd_BP  / Z_final[0].Q
 
     output_DP( "Z_BP", Z_BP )
     output_DP( "C_eff", C_eff, Z_final )
@@ -118,12 +99,12 @@ def partition( sequences, circle = False ):
             for backtrack_info in contrib[1]: # each 'branch'
                 ( Z_backtrack_id, i, j )  = backtrack_info
                 if Z_backtrack_id == id(Z_BP):
-                    backtrack_contrib = Z_BP_contrib
+                    backtrack_contrib = Z_BP[i%N][j%N].contrib
                     p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i,j)] ] for p_bp in p_bps_contrib ]
-                elif Z_backtrack_id == id(C_eff):     backtrack_contrib = C_eff_contrib
-                elif Z_backtrack_id == id(Z_linear):  backtrack_contrib = Z_linear_contrib
+                elif Z_backtrack_id == id(C_eff):     backtrack_contrib = C_eff[i%N][j%N].contrib
+                elif Z_backtrack_id == id(Z_linear):  backtrack_contrib = Z_linear[i%N][j%N].contrib
 
-                p_bps_component = backtrack( backtrack_contrib[i%N][j%N], mode )
+                p_bps_component = backtrack( backtrack_contrib, mode )
                 if len( p_bps_component ) == 0: continue
                 # put together all branches
                 p_bps_contrib_new = []
@@ -149,7 +130,7 @@ def partition( sequences, circle = False ):
     # MFE tests
     p_MFE = [0.0]*N
     bps_MFE = [[]]*N
-    for i in range( N ): (bps_MFE[i], p_MFE[i] ) = mfe( Z_final_contrib[i] )
+    for i in range( N ): (bps_MFE[i], p_MFE[i] ) = mfe( Z_final[i].contrib )
     for i in range( N ): assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
     print
     print 'Doing backtrack to get minimum free energy structure:'
@@ -161,19 +142,19 @@ def partition( sequences, circle = False ):
     N_backtrack = 10
     print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble'
     for i in range( N_backtrack ):
-        (bps,p)= boltzmann_sample( Z_final_contrib[0] )
+        (bps,p)= boltzmann_sample( Z_final[0].contrib )
         print secstruct(bps,N), "   ", p, "[stochastic]"
     print
 
     ######################################
     # Enumerative backtrack tests
-    p_bps = backtrack( Z_final_contrib[0] , 'enumerative' )
+    p_bps = backtrack( Z_final[0].contrib , 'enumerative' )
     for (p,bps) in p_bps:  print secstruct(bps,N), "   ", p, "[enumerative]"
     p_tot = sum( p_bp[0] for p_bp in p_bps )
     print 'p_tot = ',p_tot
 
     # stringent test that partition function is correct:
-    for i in range( N ): assert( abs( ( Z_final[i] - Z_final[0] ) / Z_final[0] ) < 1.0e-5 )
+    for i in range( N ): assert( abs( ( Z_final[i].Q - Z_final[0].Q ) / Z_final[0].Q ) < 1.0e-5 )
 
     print 'sequence =', sequence
     cutpoint = ''
@@ -182,9 +163,9 @@ def partition( sequences, circle = False ):
         else: cutpoint += ' '
     print 'cutpoint =', cutpoint
     print 'circle   = ', circle
-    print 'Z =',Z_final[0]
+    print 'Z =',Z_final[0].Q
 
-    return ( Z_final[0], bpp )
+    return ( Z_final[0].Q, bpp )
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser( description = "Compute nearest neighbor model partitition function for RNA sequence" )
@@ -202,7 +183,6 @@ if __name__=='__main__':
         print 'bpp[0,4] = ',bpp_expected,' [expected]'
         assert( abs( (bpp[ bpp_idx[0] ][ bpp_idx[1] ] - bpp_expected)/bpp[ bpp_idx[0] ][ bpp_idx[1] ] )  < 1e-5 )
         print
-
 
     if sequences == None: # run tests
         # test of sequences where we know the final partition function.
