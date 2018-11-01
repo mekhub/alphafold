@@ -4,7 +4,7 @@ import random
 from util import *
 from copy import deepcopy
 from secstruct import *
-from recursions import *
+from explicit_recursions import *
 from dynamic_programming import DynamicProgrammingData
 
 C_init = 1.0
