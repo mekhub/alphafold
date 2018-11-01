@@ -95,7 +95,7 @@ def partition( sequences, circle = False ):
             for backtrack_info in contrib[1]: # each 'branch'
                 ( Z_backtrack, i, j )  = backtrack_info
                 if Z_backtrack == Z_BP: p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i,j)] ] for p_bp in p_bps_contrib ]
-                backtrack_contrib = Z_backtrack[i][j].contrib
+                backtrack_contrib = Z_backtrack[i%N][j%N].contrib
                 p_bps_component = backtrack( backtrack_contrib, mode )
                 if len( p_bps_component ) == 0: continue
                 # put together all branches
