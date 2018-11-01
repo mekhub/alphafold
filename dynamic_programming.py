@@ -32,7 +32,7 @@ class DynamicProgrammingData:
 
     def __iadd__(self, other):
         self.Q += other.Q
-        self.contrib.append( [self.Q, [other.info]] )
+        self.contrib.append( [other.Q, [other.info]] )
         return self
 
     def __mul__(self, other):

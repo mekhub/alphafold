@@ -28,8 +28,7 @@ def update_Z( i, j, N, \
     if not is_cutpoint[(j-1) % N]:
         C_eff[i][j] += C_eff[i][(j-1) % N] * l
 
-    C_eff[i][j].Q += C_init * Z_BP[i][j].Q * l_BP
-    C_eff[i][j].contrib.append( [ C_init * Z_BP[i][j].Q * l_BP, [[id(Z_BP), i, j]]] )
+    C_eff[i][j] += C_init * Z_BP[i][j] * l_BP
 
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:

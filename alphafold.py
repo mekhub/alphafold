@@ -27,6 +27,7 @@ def partition( sequences, circle = False ):
     C_eff = DynamicProgrammingMatrix( N );
     Z_BP  = DynamicProgrammingMatrix( N );
     Z_linear = DynamicProgrammingMatrix( N );
+    # not very elegant -- perhaps need to rethink how we cache information on contributions.
     set_ids( C_eff )
     set_ids( Z_BP )
     set_ids( Z_linear )
