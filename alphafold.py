@@ -4,7 +4,8 @@ import random
 from util import *
 from copy import deepcopy
 from secstruct import *
-from explicit_recursions import *
+from recursions import *
+#from explicit_recursions import *
 from dynamic_programming import DynamicProgrammingData
 
 C_init = 1.0
@@ -130,7 +131,9 @@ def partition( sequences, circle = False ):
     # MFE tests
     p_MFE = [0.0]*N
     bps_MFE = [[]]*N
+
     for i in range( N ): (bps_MFE[i], p_MFE[i] ) = mfe( Z_final[i].contrib )
+    print p_MFE
     for i in range( N ): assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
     print
     print 'Doing backtrack to get minimum free energy structure:'

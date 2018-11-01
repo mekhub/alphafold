@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 class DynamicProgrammingMatrix:
     '''
     Dynamic Programming Matrix that automatically does wrapping modulo N
@@ -29,18 +31,23 @@ class DynamicProgrammingData:
 
     def __iadd__(self, other):
         self.Q += other.Q
+        self.contrib += other.contrib
         return self
 
     def __mul__(self, other):
+        prod = deepcopy( self )
         if type( self ) == type( other ):
-            self.Q *= other.Q
+            prod.Q *= other.Q
         else:
-            self.Q *= other
-        return self
+            prod.Q *= other
+            for contrib in prod.contrib:
+                contrib[0] *= other
+        return prod
 
     def __truediv__( self, other ):
-        self.Q /= other
-        return self
+        quot = deepcopy( self )
+        quot.Q /= other
+        return quot
 
     __rmul__ = __mul__
     __floordiv__ = __truediv__
