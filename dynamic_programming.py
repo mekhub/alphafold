@@ -4,13 +4,16 @@ class DynamicProgrammingMatrix:
     '''
     Dynamic Programming Matrix that automatically does wrapping modulo N
     '''
-    def __init__( self, N ):
+    def __init__( self, N, val = 0.0, diag_val = 0.0 ):
         self.N = N
         self.DPmatrix = []
         for i in range( N ):
             self.DPmatrix.append( [] )
             for j in range( N ):
-                self.DPmatrix[i].append( DynamicProgrammingData() )
+                self.DPmatrix[i].append( DynamicProgrammingData( val ) )
+                self.DPmatrix[i][j].info = (self,i,j)
+
+        for i in range( N ): self.DPmatrix[i][i].Q = diag_val
 
     def __getitem__( self, idx ):
         return self.DPmatrix[ idx ]
@@ -24,8 +27,8 @@ class DynamicProgrammingData:
      dQ  = derivative (later will generalize to gradient w.r.t. all parameters)
      contrib = contributions
     '''
-    def __init__( self ):
-        self.Q = 0.0
+    def __init__( self, val = 0.0 ):
+        self.Q = val
         self.dQ = 0.0
         self.contrib = []
         self.info = []
@@ -55,10 +58,3 @@ class DynamicProgrammingData:
     __rmul__ = __mul__
     __floordiv__ = __truediv__
     __div__ = __truediv__
-
-
-def set_ids( D ):
-    for i in range( len( D ) ):
-        for j in range( len( D ) ):
-            D.DPmatrix[i][j].info = [id( D ),i,j]
-

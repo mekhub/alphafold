@@ -24,19 +24,9 @@ def partition( sequences, circle = False ):
     # Could also use numpy arrays, but
     # eventually I'd like to use linked lists to
     # simplify backtracking.
-    C_eff = DynamicProgrammingMatrix( N );
+    C_eff = DynamicProgrammingMatrix( N, diag_val = C_init );
     Z_BP  = DynamicProgrammingMatrix( N );
-    Z_linear = DynamicProgrammingMatrix( N );
-    # not very elegant -- perhaps need to rethink how we cache information on contributions.
-    set_ids( C_eff )
-    set_ids( Z_BP )
-    set_ids( Z_linear )
-
-
-    # initialize
-    for i in range( N ): #length of fragment
-        C_eff[ i ][ i ].Q = C_init
-        Z_linear[ i ][ i ].Q = 1.0
+    Z_linear = DynamicProgrammingMatrix( N, diag_val = 1.0 );
 
     is_cutpoint = [False]*N
     if isinstance( sequences, list ):
@@ -103,12 +93,9 @@ def partition( sequences, circle = False ):
             p_bps_contrib = [ [p_contrib,[]] ]
 
             for backtrack_info in contrib[1]: # each 'branch'
-                ( Z_backtrack_id, i, j )  = backtrack_info
-                if Z_backtrack_id == id(Z_BP):
-                    backtrack_contrib = Z_BP[i%N][j%N].contrib
-                    p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i,j)] ] for p_bp in p_bps_contrib ]
-                elif Z_backtrack_id == id(C_eff):     backtrack_contrib = C_eff[i%N][j%N].contrib
-                elif Z_backtrack_id == id(Z_linear):  backtrack_contrib = Z_linear[i%N][j%N].contrib
+                ( Z_backtrack, i, j )  = backtrack_info
+                if Z_backtrack == Z_BP: p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i,j)] ] for p_bp in p_bps_contrib ]
+                backtrack_contrib = Z_backtrack[i][j].contrib
                 p_bps_component = backtrack( backtrack_contrib, mode )
                 if len( p_bps_component ) == 0: continue
                 # put together all branches
