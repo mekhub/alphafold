@@ -27,6 +27,10 @@ def partition( sequences, circle = False ):
     C_eff = DynamicProgrammingMatrix( N );
     Z_BP  = DynamicProgrammingMatrix( N );
     Z_linear = DynamicProgrammingMatrix( N );
+    set_ids( C_eff )
+    set_ids( Z_BP )
+    set_ids( Z_linear )
+
 
     # initialize
     for i in range( N ): #length of fragment
@@ -104,7 +108,6 @@ def partition( sequences, circle = False ):
                     p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i,j)] ] for p_bp in p_bps_contrib ]
                 elif Z_backtrack_id == id(C_eff):     backtrack_contrib = C_eff[i%N][j%N].contrib
                 elif Z_backtrack_id == id(Z_linear):  backtrack_contrib = Z_linear[i%N][j%N].contrib
-
                 p_bps_component = backtrack( backtrack_contrib, mode )
                 if len( p_bps_component ) == 0: continue
                 # put together all branches
@@ -133,7 +136,6 @@ def partition( sequences, circle = False ):
     bps_MFE = [[]]*N
 
     for i in range( N ): (bps_MFE[i], p_MFE[i] ) = mfe( Z_final[i].contrib )
-    print p_MFE
     for i in range( N ): assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
     print
     print 'Doing backtrack to get minimum free energy structure:'
