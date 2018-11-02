@@ -1,7 +1,8 @@
 from output_helpers import _show_results, _show_matrices
 from copy import deepcopy
 from alphafold.secstruct import *
-from alphafold.recursions import *
+from alphafold.explicit_recursions import *
+from alphafold.dynamic_programming import *
 
 ##################################################################################################
 class AlphaFoldParams:
