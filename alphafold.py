@@ -91,7 +91,6 @@ def partition( sequences, circle = False ):
             if ( contrib[0] == 0.0 ): continue
             p_contrib = contrib[0]/contrib_sum
             p_bps_contrib = [ [p_contrib,[]] ]
-
             for backtrack_info in contrib[1]: # each 'branch'
                 ( Z_backtrack, i, j )  = backtrack_info
                 if Z_backtrack == Z_BP: p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i,j)] ] for p_bp in p_bps_contrib ]
@@ -164,9 +163,11 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser( description = "Compute nearest neighbor model partitition function for RNA sequence" )
     parser.add_argument( "-s","-seq","--sequences",help="RNA sequences (separate by space)",nargs='*')
     parser.add_argument("--circle", action='store_true', default=False, help='Sequence is a circle')
+    parser.add_argument("--explicit", action='store_true', default=False, help='Use explicit recursions (fast!)')
     args     = parser.parse_args()
     sequences = args.sequences;
     circle   = args.circle;
+    if args.explicit: from explicit_recursions import *
 
     def output_test( Z, Z_ref = 0, bpp = [], bpp_idx= [], bpp_expected = 0):
         print 'Z =',Z_ref,' [expected]'
