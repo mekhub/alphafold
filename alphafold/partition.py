@@ -79,6 +79,7 @@ class Partition:
                 # some preliminary helpers
                 update_Z_cut( self, i, j )
                 # base pairs and co-axial stacks
+                for base_pair_type in self.base_pair_types: update_Z_BPq( self, base_pair_type, i, j )
                 update_Z_BP( self, i, j )
                 update_Z_coax( self, i, j )
                 # C_eff makes use of information on Z_BP, so compute last

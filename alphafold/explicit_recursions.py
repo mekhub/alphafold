@@ -28,117 +28,130 @@ def update_Z_cut( self, i, j ):
             #Z_cut[i][j].contribs.append( Z_linear
 
 ##################################################################################################
-def update_Z_BP( self, i, j, calc_contrib = False ):
+def update_Z_BPq( self, base_pair_type, i, j, calc_contrib = False ):
     '''
-    Z_BP is the partition function for all structures that base pair i and j.
+    Z_BPq is the partition function for all structures that base pair i and j with base_pair_type q
     Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
     '''
+
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     ( C_eff_for_coax, C_eff_for_BP ) = (C_eff, C_eff ) if allow_strained_3WJ else (self.C_eff_no_BP_singlet, self.C_eff_no_coax_singlet )
-    if calc_contrib: Z_BP[i][j].contribs = []
 
     # minimum loop length -- no other way to penalize short segments.
     if ( not any_intervening_cutpoint[i][j] and ( ((j-i-1) % N)) < min_loop_length ): return
     if ( not any_intervening_cutpoint[j][i] and ( ((i-j-1) % N)) < min_loop_length ): return
 
-    for base_pair_type in self.base_pair_types:
-        if base_pair_type.match_lowercase:
-            if not (sequence[i].islower() and sequence[j].islower() and sequence[i]==sequence[j] ): continue
-        else:
-            if not ( sequence[i] == base_pair_type.nt1 and sequence[ j ] == base_pair_type.nt2 ): continue
+    if base_pair_type.match_lowercase:
+        if not (sequence[i].islower() and sequence[j].islower() and sequence[i]==sequence[j] ): return
+    else:
+        if not ( sequence[i] == base_pair_type.nt1 and sequence[ j ] == base_pair_type.nt2 ): return
 
-        (Z_BPq, Kd_BPq)  = ( base_pair_type.Z_BP, base_pair_type.Kd_BP )
+    (Z_BPq, Kd_BPq)  = ( base_pair_type.Z_BP, base_pair_type.Kd_BP )
 
-        if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
-            # base pair closes a loop
-            #
-            #    ~~~~~~
-            #   ~      ~
-            # i+1      j-1
-            #   \       /
-            #    i ... j
-            #
-            Z_BPq[i][j].Q  += (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N].Q * l * l * l_BP)
-            if calc_deriv: Z_BPq[i][j].dQ += (1.0/Kd_BPq ) * ( C_eff_for_BP[(i+1) % N][(j-1) % N].dQ * l * l * l_BP)
-            if calc_contrib: self.Z_BP[i][j].contribs.append( ( (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N].Q * l * l * l_BP), [(C_eff_for_BP, i+1, j-1)] ) )
-
-            # base pair forms a stacked pair with previous pair
-            #      ___
-            #     /   \
-            #  i+1 ... j-1
-            #    |     |
-            #    i ... j
-            #
-            # TODO: generalize C_eff_stacked_pair to be function of base pairs q (at i,j) and r (at i+1,j-1)
-            Z_BPq[i][j].Q  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N].Q
-            if calc_deriv: Z_BPq[i][j].dQ += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N].dQ
-
-        # base pair brings together two strands that were previously disconnected
+    if (not is_cutpoint[ i ]) and (not is_cutpoint[ (j-1) % N]):
+        # base pair closes a loop
         #
+        #    ~~~~~~
+        #   ~      ~
+        # i+1      j-1
         #   \       /
         #    i ... j
         #
-        Z_BPq [i][j].Q += (C_std/Kd_BPq) * Z_cut[i][j].Q
-        if calc_deriv: Z_BPq[i][j].dQ += (C_std/Kd_BPq) * Z_cut[i][j].dQ
+        Z_BPq[i][j].Q  += (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N].Q * l * l * l_BP)
+        if calc_deriv: Z_BPq[i][j].dQ += (1.0/Kd_BPq ) * ( C_eff_for_BP[(i+1) % N][(j-1) % N].dQ * l * l * l_BP)
+        if calc_contrib: self.Z_BP[i][j].contribs.append( ( (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N].Q * l * l * l_BP), [(C_eff_for_BP, i+1, j-1)] ) )
 
-        if (not is_cutpoint[i]) and (not is_cutpoint[j-1]):
-
-            # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
-            #      ___
-            #     /   \
-            #  i+1 ... k - k+1 ~
-            #    |              ~
-            #    i ... j - j-1 ~
-            #
-            for k in range( i+2, i+offset-1 ):
-                if not is_cutpoint[k % N]:
-                    Z_BPq [i][j].Q += Z_BP[(i+1) % N][k % N].Q * C_eff_for_coax[(k+1) % N][(j-1) % N].Q * l**2 * l_coax * K_coax / Kd_BPq
-                    if calc_deriv: Z_BPq[i][j].dQ += (Z_BP[(i+1) % N][k % N].dQ * C_eff_for_coax[(k+1) % N][(j-1) % N].Q +
-                                    Z_BP[(i+1) % N][k % N].Q * C_eff_for_coax[(k+1) % N][(j-1) % N].dQ ) * l**2 * l_coax * K_coax / Kd_BPq
-
-            # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
-            #            ___
-            #           /   \
-            #  ~ k-1 - k ... j-1
-            # ~              |
-            #  ~ i+1 - i ... j
-            #
-            for k in range( i+2, i+offset-1 ):
-                if not is_cutpoint[(k-1) % N]:
-                    Z_BPq [i][j].Q += C_eff_for_coax[(i+1) % N][(k-1) % N].Q * Z_BP[k % N][(j-1) % N].Q * l**2 * l_coax * K_coax / Kd_BPq
-                    if calc_deriv: Z_BPq[i][j].dQ += (C_eff_for_coax[(i+1) % N][(k-1) % N].dQ * Z_BP[k % N][(j-1) % N].Q +
-                                    C_eff_for_coax[(i+1) % N][(k-1) % N].Q * Z_BP[k % N][(j-1) % N].dQ ) * l**2 * l_coax * K_coax / Kd_BPq
-
-        # "left stack" but no loop closed on right (free strands hanging off j end)
+        # base pair forms a stacked pair with previous pair
         #      ___
         #     /   \
-        #  i+1 ... k -
-        #    |
-        #    i ... j -
+        #  i+1 ... j-1
+        #    |     |
+        #    i ... j
         #
-        if not is_cutpoint[ i ]:
-            for k in range( i+2, i+offset ):
-                Z_BPq[i][j].Q += Z_BP[(i+1) % N][k % N].Q * Z_cut[k % N][j].Q * C_std * K_coax / Kd_BPq
-                if calc_deriv: Z_BPq[i][j].dQ += (Z_BP[(i+1) % N][k % N].dQ * Z_cut[k % N][j].Q + Z_BP[(i+1) % N][k % N].Q * Z_cut[k % N][j].dQ ) * C_std * K_coax / Kd_BPq
+        # TODO: generalize C_eff_stacked_pair to be function of base pairs q (at i,j) and r (at i+1,j-1)
+        Z_BPq[i][j].Q  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N].Q
+        if calc_deriv: Z_BPq[i][j].dQ += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N].dQ
 
-        # "right stack" but no loop closed on left (free strands hanging off i end)
-        #       ___
-        #      /   \
-        #   - k ... j-1
-        #           |
-        #   - i ... j
+    # base pair brings together two strands that were previously disconnected
+    #
+    #   \       /
+    #    i ... j
+    #
+    Z_BPq [i][j].Q += (C_std/Kd_BPq) * Z_cut[i][j].Q
+    if calc_deriv: Z_BPq[i][j].dQ += (C_std/Kd_BPq) * Z_cut[i][j].dQ
+
+    if (not is_cutpoint[i]) and (not is_cutpoint[j-1]):
+
+        # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
+        #      ___
+        #     /   \
+        #  i+1 ... k - k+1 ~
+        #    |              ~
+        #    i ... j - j-1 ~
         #
-        if not is_cutpoint[(j-1) % N]:
-            for k in range( i, i+offset-1 ):
-                Z_BPq[i][j].Q += Z_cut[i][k % N].Q * Z_BP[k % N][(j-1) % N].Q * C_std * K_coax / Kd_BPq
-                if calc_deriv: Z_BPq[i][j].dQ+= ( Z_cut[i][k % N].dQ * Z_BP[k % N][(j-1) % N].Q  + Z_cut[i][k % N].Q * Z_BP[k % N][(j-1) % N].dQ ) * C_std * K_coax / Kd_BPq
+        for k in range( i+2, i+offset-1 ):
+            if not is_cutpoint[k % N]:
+                Z_BPq [i][j].Q += Z_BP[(i+1) % N][k % N].Q * C_eff_for_coax[(k+1) % N][(j-1) % N].Q * l**2 * l_coax * K_coax / Kd_BPq
+                if calc_deriv: Z_BPq[i][j].dQ += (Z_BP[(i+1) % N][k % N].dQ * C_eff_for_coax[(k+1) % N][(j-1) % N].Q +
+                                Z_BP[(i+1) % N][k % N].Q * C_eff_for_coax[(k+1) % N][(j-1) % N].dQ ) * l**2 * l_coax * K_coax / Kd_BPq
 
-        # key 'special sauce' for derivative w.r.t. Kd_BP
-        if calc_deriv: Z_BPq[i][j].dQ += -(1.0/Kd_BPq) * Z_BPq[i][j].Q
+        # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
+        #            ___
+        #           /   \
+        #  ~ k-1 - k ... j-1
+        # ~              |
+        #  ~ i+1 - i ... j
+        #
+        for k in range( i+2, i+offset-1 ):
+            if not is_cutpoint[(k-1) % N]:
+                Z_BPq [i][j].Q += C_eff_for_coax[(i+1) % N][(k-1) % N].Q * Z_BP[k % N][(j-1) % N].Q * l**2 * l_coax * K_coax / Kd_BPq
+                if calc_deriv: Z_BPq[i][j].dQ += (C_eff_for_coax[(i+1) % N][(k-1) % N].dQ * Z_BP[k % N][(j-1) % N].Q +
+                                C_eff_for_coax[(i+1) % N][(k-1) % N].Q * Z_BP[k % N][(j-1) % N].dQ ) * l**2 * l_coax * K_coax / Kd_BPq
 
+    # "left stack" but no loop closed on right (free strands hanging off j end)
+    #      ___
+    #     /   \
+    #  i+1 ... k -
+    #    |
+    #    i ... j -
+    #
+    if not is_cutpoint[ i ]:
+        for k in range( i+2, i+offset ):
+            Z_BPq[i][j].Q += Z_BP[(i+1) % N][k % N].Q * Z_cut[k % N][j].Q * C_std * K_coax / Kd_BPq
+            if calc_deriv: Z_BPq[i][j].dQ += (Z_BP[(i+1) % N][k % N].dQ * Z_cut[k % N][j].Q + Z_BP[(i+1) % N][k % N].Q * Z_cut[k % N][j].dQ ) * C_std * K_coax / Kd_BPq
+
+    # "right stack" but no loop closed on left (free strands hanging off i end)
+    #       ___
+    #      /   \
+    #   - k ... j-1
+    #           |
+    #   - i ... j
+    #
+    if not is_cutpoint[(j-1) % N]:
+        for k in range( i, i+offset-1 ):
+            Z_BPq[i][j].Q += Z_cut[i][k % N].Q * Z_BP[k % N][(j-1) % N].Q * C_std * K_coax / Kd_BPq
+            if calc_deriv: Z_BPq[i][j].dQ+= ( Z_cut[i][k % N].dQ * Z_BP[k % N][(j-1) % N].Q  + Z_cut[i][k % N].Q * Z_BP[k % N][(j-1) % N].dQ ) * C_std * K_coax / Kd_BPq
+
+    # key 'special sauce' for derivative w.r.t. Kd_BP
+    if calc_deriv: Z_BPq[i][j].dQ += -(1.0/Kd_BPq) * Z_BPq[i][j].Q
+
+##################################################################################################
+def update_Z_BP( self, i, j, calc_contrib = False ):
+    '''
+    Z_BP is the partition function for all structures that base pair i and j.
+    All the Z_BPq (partition functions for each base pair type) must have been
+    filled in already for i,j.
+    '''
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv ) = unpack_variables( self )
+
+    if calc_contrib: Z_BP[i][j].contribs = []
+
+    for base_pair_type in self.base_pair_types:
+        Z_BPq = base_pair_type.Z_BP
         Z_BP[i][j].Q  += Z_BPq[i][j].Q
         if calc_deriv: Z_BP[i][j].dQ += Z_BPq[i][j].dQ
         #Z_BP_contrib[i][j] += Z_BPq_contrib[i][j]
