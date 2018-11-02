@@ -6,11 +6,13 @@ class DynamicProgrammingMatrix:
     '''
     def __init__( self, N, val = 0.0, diag_val = 0.0 ):
         self.N = N
-        self.DPmatrix = []
+        self.DPmatrix = WrappedArray( N )
+        print self.DPmatrix
         for i in range( N ):
-            self.DPmatrix.append( [] )
+            self.DPmatrix[i] = WrappedArray( N )
+            print self.DPmatrix
             for j in range( N ):
-                self.DPmatrix[i].append( DynamicProgrammingData( val ) )
+                self.DPmatrix[i][j] = DynamicProgrammingData( val )
                 self.DPmatrix[i][j].info.append( (self,i,j) )
 
         for i in range( N ): self.DPmatrix[i][i].Q = diag_val
@@ -63,3 +65,18 @@ class DynamicProgrammingData:
     __floordiv__ = __truediv__
     __div__ = __truediv__
 
+
+class WrappedArray:
+    '''
+    For all the various cross-checks, like equality of partition function starting at any
+     i and wrapping around to N and then back 1 and then i-1, need to keep applying modulo N.
+    '''
+    def __init__( self, N, val = 0.0 ):
+        self.array = [val] * N
+        self.N = N
+    def __getitem__( self, idx ):
+        return self.array[idx % self.N]
+    def __setitem__( self, idx, item ):
+        self.array[idx % self.N] = item
+    def __len__( self ):
+        return self.N

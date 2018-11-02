@@ -28,7 +28,7 @@ def partition( sequences, circle = False ):
     Z_BP  = DynamicProgrammingMatrix( N );
     Z_linear = DynamicProgrammingMatrix( N, diag_val = 1.0 );
 
-    is_cutpoint = [False]*N
+    is_cutpoint = WrappedArray( N, False )
     if isinstance( sequences, list ):
         L = 0
         for i in range( len(sequences)-1 ):
