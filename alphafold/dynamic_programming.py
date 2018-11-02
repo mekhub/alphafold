@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 class DynamicProgrammingData:
     '''
     Dynamic programming object, with derivs and contribution accumulation.
