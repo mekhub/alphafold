@@ -35,14 +35,20 @@ class DynamicProgrammingData:
 
     def __iadd__(self, other):
         self.Q += other.Q
-        self.contrib.append( [other.Q, [other.info]] )
+        if  len( other.contrib ) > 0: self.contrib += other.contrib
+        elif len( other.info ) > 0: self.contrib.append( [other.Q, [other.info]] )
         return self
 
     def __mul__(self, other):
         prod = DynamicProgrammingData()
-        if type( self ) == type( other ):
+        if isinstance( other, DynamicProgrammingData ):
             prod.Q       = self.Q * other.Q
-            prod.contrib = other.contrib
+            contribs1 = initialize_contribs( self )
+            contribs2 = initialize_contribs( other )
+            for contrib1 in contribs1:
+                for contrib2 in contribs2:
+                    prod.contrib.append( [ contrib1[0]*contrib2[0],
+                                           contrib1[1]+contrib2[1] ] )
         else:
             prod.Q = self.Q * other
             for contrib in self.contrib:
@@ -58,3 +64,13 @@ class DynamicProgrammingData:
     __rmul__ = __mul__
     __floordiv__ = __truediv__
     __div__ = __truediv__
+
+
+def initialize_contribs( DP ):
+    '''
+    Contribs (or dummy contribs) when taking products
+    '''
+    contribs = DP.contrib
+    if len( contribs ) == 0:
+        contribs =[ [1.0,[]] ] if len( DP.info ) == 0 else [ [1.0,[DP.info]] ]
+    return contribs

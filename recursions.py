@@ -4,6 +4,7 @@ def update_Z( i, j, N, \
               sequence, is_cutpoint, any_cutpoint, \
               C_init, l, l_BP, Kd_BP, C_std, min_loop_length, \
               Z_BP, C_eff, Z_linear ):
+
     offset = ( j - i ) % N
     if (( sequence[i] == 'C' and sequence[j] == 'G' ) or ( sequence[i] == 'G' and sequence[j] == 'C' )) and \
                   ( any_cutpoint[i][j] or ( ((j-i-1) % N)) >= min_loop_length  ) and \
@@ -14,14 +15,10 @@ def update_Z( i, j, N, \
         for c in range( i, i+offset ):
             if is_cutpoint[c % N]:
                 Z_product = DynamicProgrammingData( 1.0 )
-                if c != i :
-                    Z_product.Q *= Z_linear[i+1][c % N].Q
-                    Z_product.contrib.append( [Z_linear,i+1,c] )
-                if (c+1)%N != j:
-                    Z_product.Q *= Z_linear[(c+1) % N][j-1].Q
-                    Z_product.contrib.append( [Z_linear,c+1,j-1] )
-                Z_BP[i][j].Q += (C_std/Kd_BP) * Z_product.Q
-                if len( Z_product.contrib ) > 0: Z_BP[i][j].contrib.append( [(C_std/Kd_BP) * Z_product.Q, Z_product.contrib] )
+                if c != i :      Z_product = Z_product * Z_linear[i+1][c % N]
+                if (c+1)%N != j: Z_product = Z_product * Z_linear[(c+1) % N][j-1]
+                Z_intermediate = (C_std/Kd_BP) * Z_product
+                Z_BP[i][j] += (C_std/Kd_BP) * Z_product
 
     if not is_cutpoint[(j-1) % N]:
         C_eff[i][j] += C_eff[i][(j-1) % N] * l
