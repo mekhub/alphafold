@@ -40,7 +40,7 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
     p.show_results()
     p.run_cross_checks()
 
-    return ( p.Z_final[0], p.bpp, p.bps_MFE, p.dZ_final[0] )
+    return ( p.Z_final[0].Q, p.bpp, p.bps_MFE, p.Z_final[0].dQ )
 
 ##################################################################################################
 class Partition:
@@ -105,18 +105,18 @@ def get_bpp_matrix( self ):
     '''
 
     # base pair probability matrix
-    self.bpp = DynamicProgrammingData( self.N );
+    self.bpp = initialize_zero_matrix( self.N )
     for i in range( self.N ):
         for j in range( self.N ):
-            self.bpp.Q[i][j] = self.Z_BP[i][j] * self.Z_BP[j][i] * self.params.Kd_BP / self.Z_final[0]
+            self.bpp[i][j] = self.Z_BP[i][j].Q * self.Z_BP[j][i].Q * self.params.Kd_BP / self.Z_final[0].Q
 
 ##################################################################################################
 def _run_cross_checks( self ):
     # stringent test that partition function is correct -- all the Z(i,i) agree.
     for i in range( self.N ):
-        assert( abs( ( self.Z_final[i] - self.Z_final[0] ) / self.Z_final[0] ) < 1.0e-5 )
-        if self.calc_deriv and self.dZ_final[0] > 0:
-            assert( self.dZ_final[0] == 0 or  abs( ( self.dZ_final[i] - self.dZ_final[0] ) / self.dZ_final[0] ) < 1.0e-5 )
+        assert( abs( ( self.Z_final[i].Q - self.Z_final[0].Q ) / self.Z_final[0].Q ) < 1.0e-5 )
+        if self.calc_deriv and self.Z_final[0].dQ > 0:
+            assert( self.Z_final[0].dQ == 0 or  abs( ( self.Z_final[i].dQ - self.Z_final[0].dQ ) / self.Z_final[0].dQ ) < 1.0e-5 )
 
     # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
     if self.calc_deriv:
@@ -124,7 +124,7 @@ def _run_cross_checks( self ):
         for i in range( self.N ):
             for j in range( self.N ):
                 bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
-        bpp_tot_based_on_deriv = -self.dZ_final[0] * self.params.Kd_BP / self.Z_final[0]
+        bpp_tot_based_on_deriv = -self.Z_final[0].dQ * self.params.Kd_BP / self.Z_final[0].Q
         if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
 
 ##################################################################################################
@@ -170,16 +170,19 @@ def initialize_dynamic_programming_matrices( self ):
     '''
     N = self.N
     # initialize dynamic programming matrices
-    self.Z_BP     = DynamicProgrammingData( N );
-    self.Z_linear = DynamicProgrammingData( N );
-    self.Z_cut    = DynamicProgrammingData( N );
-    self.Z_coax   = DynamicProgrammingData( N );
-    self.C_eff    = DynamicProgrammingData( N );
-    for i in range( N ): #length of fragment
-        self.Z_linear.Q[i][i] = 1
-        self.C_eff.Q[i][i]                 = self.params.C_init
-    self.C_eff_no_coax_singlet = deepcopy( self.C_eff )
-    self.C_eff_no_BP_singlet   = deepcopy( self.C_eff )
+    self.Z_BP     = DynamicProgrammingMatrix( N );
+    self.Z_linear = DynamicProgrammingMatrix( N, diag_val = 1.0 );
+    self.Z_cut    = DynamicProgrammingMatrix( N );
+    self.Z_coax   = DynamicProgrammingMatrix( N );
+    self.C_eff    = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
+    self.C_eff_no_coax_singlet = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
+    self.C_eff_no_BP_singlet   = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
+
+##################################################################################################
+def initialize_zero_matrix( N ):
+    X = WrappedArray( N )
+    for i in range( N ): X[ i ] = WrappedArray( N )
+    return X
 
 ##################################################################################################
 class BasePairType:
@@ -190,9 +193,7 @@ class BasePairType:
         self.nt1 = nt1
         self.nt2 = nt2
         self.Kd_BP = Kd_BP
-        self.Z_BP_DP  = DynamicProgrammingData( N );
-        self.Z_BP  = self.Z_BP_DP.Q
-        self.dZ_BP = self.Z_BP_DP.dQ;
+        self.Z_BP  = DynamicProgrammingMatrix( N );
         self.match_lowercase = ( nt1 == '' and nt2 == '' )
 
 ##################################################################################################
@@ -226,7 +227,7 @@ def _calc_mfe( self ):
     bps_MFE = [[]]*N
     get_Z_final( self, calc_contrib = True )
     for i in range( 1 ):
-        (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final_contrib[i] )
+        (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final[i].contribs )
         assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
     print
     print 'Doing backtrack to get minimum free energy structure:'

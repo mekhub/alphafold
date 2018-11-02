@@ -24,21 +24,17 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
         p_bps_contrib = [ [p_contrib,[]] ]
 
         for backtrack_info in contrib[1]: # each 'branch'
-            ( Z_backtrack_id, i, j )  = backtrack_info
-            if Z_backtrack_id == self.Z_BP:
+            ( Z_backtrack, i, j )  = backtrack_info
+            if Z_backtrack == self.Z_BP:
                 update_Z_BP( self, i, j, calc_contrib = True )
-                backtrack_contrib = self.Z_BP.contrib
                 p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i%N,j%N)] ] for p_bp in p_bps_contrib ]
-            elif Z_backtrack_id == self.C_eff:
+            elif Z_backtrack == self.C_eff:
                 update_C_eff( self, i, j, calc_contrib = True )
-                backtrack_contrib = self.C_eff.contrib
-            elif Z_backtrack_id == self.C_eff_no_coax_singlet:
+            elif Z_backtrack == self.C_eff_no_coax_singlet:
                 update_C_eff( self, i, j, calc_contrib = True )
-                backtrack_contrib = self.C_eff_no_coax_singlet.contrib
-            elif Z_backtrack_id == self.Z_linear:
+            elif Z_backtrack == self.Z_linear:
                 update_Z_linear( self, i, j, calc_contrib = True )
-                backtrack_contrib = self.Z_linear.contrib
-            p_bps_component = backtrack( self, backtrack_contrib[i%N][j%N], mode )
+            p_bps_component = backtrack( self, Z_backtrack[i%N][j%N].contribs, mode )
             if len( p_bps_component ) == 0: continue
             # put together all branches
             p_bps_contrib_new = []
