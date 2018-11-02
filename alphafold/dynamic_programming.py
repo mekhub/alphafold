@@ -38,8 +38,7 @@ class DynamicProgrammingData:
 
     def __iadd__(self, other):
         self.Q += other.Q
-        if  len( other.contribs ) > 0: self.contribs += other.contribs
-        elif len( other.info ) > 0: self.contribs.append( [other.Q, other.info] )
+        if len( other.info ) > 0: self.contribs.append( [other.Q, other.info] )
         return self
 
     def __mul__(self, other):
