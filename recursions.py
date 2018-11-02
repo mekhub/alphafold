@@ -27,9 +27,7 @@ def update_Z( i, j, N, \
 
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
-            C_eff[i][j].Q += C_eff[i][(k-1) % N].Q * l * Z_BP[k % N][j].Q * l_BP
-            C_eff[i][j].contrib.append( [ C_eff[i][(k-1) % N].Q * l * Z_BP[k % N][j].Q * l_BP, \
-                                          [[ C_eff, i, k-1 ], [Z_BP, k, j ]]] )
+            C_eff[i][j] += C_eff[i][(k-1) % N] * l * Z_BP[k % N][j] * l_BP
 
     if not is_cutpoint[(j-1) % N]:
         Z_linear[i][j] += Z_linear[i][(j - 1) % N]
@@ -38,9 +36,7 @@ def update_Z( i, j, N, \
 
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
-            Z_linear[i][j].Q += Z_linear[i][(k-1) % N].Q * Z_BP[k % N][j].Q
-            Z_linear[i][j].contrib.append( [ Z_linear[i][(k-1) % N].Q * Z_BP[k % N][j].Q, \
-                                             [ [Z_linear, i, k-1], [Z_BP, k, j ]]] )
+            Z_linear[i][j] += Z_linear[i][(k-1) % N] * Z_BP[k % N][j]
 
 def get_Z_final(N,
                 sequence, is_cutpoint, any_cutpoint, \
@@ -52,16 +48,13 @@ def get_Z_final(N,
         if not is_cutpoint[(i + N - 1) % N]:
             for c in range( i, i + N - 1):
                 if is_cutpoint[c % N]:
-                    Z_final[i].Q += Z_linear[i][c % N].Q * Z_linear[(c+1) % N][ i - 1 ].Q #any split segments, combined independently
-                    Z_final[i].contrib.append( [ Z_linear[i][c % N].Q * Z_linear[(c+1) % N][ i - 1 ].Q,\
-                                                [ [Z_linear, i, c ], [Z_linear, c+1, i-1] ] ] )
+                    Z_final[i] += Z_linear[i][c % N] * Z_linear[(c+1) % N][ i - 1 ] #any split segments, combined independently
 
         if is_cutpoint[(i + N - 1) % N]:
             Z_final[i] += Z_linear[i][(i-1) % N]
         else:
             # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
-            Z_final[i].Q += C_eff[i][(i - 1) % N].Q * l / C_std
-            Z_final[i].contrib.append( [ C_eff[i][(i - 1) % N].Q * l / C_std, [[C_eff, i, i-1]] ] )
+            Z_final[i] += C_eff[i][(i - 1) % N] * l / C_std
 
 
     return Z_final

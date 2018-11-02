@@ -36,22 +36,22 @@
      0.000      0.000      0.000      0.000      0.000      0.000      0.000
 
 Doing backtrack to get minimum free energy structure:
-(...)..     0.909090909091 [MFE]
+.......     0.909090909091 [MFE]
 
 Doing 10 stochastic backtracks to get Boltzmann-weighted ensemble
-(...)..     0.909090909091 [stochastic]
-(...)..     0.909090909091 [stochastic]
-(...)..     0.909090909091 [stochastic]
+.......     0.909090909091 [stochastic]
+.......     0.909090909091 [stochastic]
+.......     0.909090909091 [stochastic]
+.......     0.909090909091 [stochastic]
+.......     0.909090909091 [stochastic]
+.......     0.909090909091 [stochastic]
 .......     0.0909090909091 [stochastic]
-(...)..     0.909090909091 [stochastic]
-(...)..     0.909090909091 [stochastic]
-(...)..     0.909090909091 [stochastic]
-(...)..     0.909090909091 [stochastic]
-(...)..     0.909090909091 [stochastic]
-(...)..     0.909090909091 [stochastic]
+.......     0.0909090909091 [stochastic]
+.......     0.909090909091 [stochastic]
+.......     0.909090909091 [stochastic]
 
 .......     0.0909090909091 [enumerative]
-(...)..     0.909090909091 [enumerative]
+.......     0.909090909091 [enumerative]
 p_tot =  1.0
 sequence = CAAAGAA
 cutpoint =        
@@ -84,22 +84,22 @@ bpp[0,4] =  0.909090909091  [expected]
      0.962      0.000      0.000
 
 Doing backtrack to get minimum free energy structure:
-(.)     0.961538461538 [MFE]
+...     0.961538461538 [MFE]
 
 Doing 10 stochastic backtracks to get Boltzmann-weighted ensemble
-(.)     0.961538461538 [stochastic]
-(.)     0.961538461538 [stochastic]
-(.)     0.961538461538 [stochastic]
-(.)     0.961538461538 [stochastic]
-(.)     0.961538461538 [stochastic]
-(.)     0.961538461538 [stochastic]
-(.)     0.961538461538 [stochastic]
-(.)     0.961538461538 [stochastic]
-(.)     0.961538461538 [stochastic]
-(.)     0.961538461538 [stochastic]
+...     0.961538461538 [stochastic]
+...     0.961538461538 [stochastic]
+...     0.961538461538 [stochastic]
+...     0.961538461538 [stochastic]
+...     0.961538461538 [stochastic]
+...     0.0384615384615 [stochastic]
+...     0.961538461538 [stochastic]
+...     0.961538461538 [stochastic]
+...     0.961538461538 [stochastic]
+...     0.961538461538 [stochastic]
 
 ...     0.0384615384615 [enumerative]
-(.)     0.961538461538 [enumerative]
+...     0.961538461538 [enumerative]
 p_tot =  1.0
 sequence = CAG
 cutpoint =   X
@@ -142,7 +142,7 @@ Doing 10 stochastic backtracks to get Boltzmann-weighted ensemble
 ()     1.0 [stochastic]
 ()     1.0 [stochastic]
 
-()     1.0 [enumerative]
+..     1.0 [enumerative]
 p_tot =  1.0
 sequence = CG
 cutpoint = XX
@@ -179,23 +179,23 @@ bpp[0,4] =  1.0  [expected]
      0.778      0.000      0.000      0.000
 
 Doing backtrack to get minimum free energy structure:
-(())     0.555555555556 [MFE]
+.().     0.555555555556 [MFE]
 
 Doing 10 stochastic backtracks to get Boltzmann-weighted ensemble
-(..)     0.222222222222 [stochastic]
-(())     0.555555555556 [stochastic]
-(())     0.555555555556 [stochastic]
-(())     0.555555555556 [stochastic]
+.().     0.555555555556 [stochastic]
+.().     0.555555555556 [stochastic]
+....     0.222222222222 [stochastic]
+.().     0.555555555556 [stochastic]
 .().     0.222222222222 [stochastic]
-(())     0.555555555556 [stochastic]
-(..)     0.222222222222 [stochastic]
-(..)     0.222222222222 [stochastic]
-(())     0.555555555556 [stochastic]
-(..)     0.222222222222 [stochastic]
+....     0.222222222222 [stochastic]
+.().     0.555555555556 [stochastic]
+.().     0.555555555556 [stochastic]
+.().     0.222222222222 [stochastic]
+.().     0.555555555556 [stochastic]
 
-.().     0.222222222222 [enumerative]
-(())     0.555555555556 [enumerative]
-(..)     0.222222222222 [enumerative]
+....     0.222222222222 [enumerative]
+....     0.555555555556 [enumerative]
+....     0.222222222222 [enumerative]
 p_tot =  1.0
 sequence = GCGC
 cutpoint =  X X
@@ -236,24 +236,24 @@ bpp[0,4] =  0.777777777778  [expected]
      0.000      0.000      0.394      0.000      0.000
 
 Doing backtrack to get minimum free energy structure:
-(.)..     0.393700787402 [MFE]
+..(.)     0.393700787402 [MFE]
 
 Doing 10 stochastic backtracks to get Boltzmann-weighted ensemble
+.....     0.393700787402 [stochastic]
+.....     0.393700787402 [stochastic]
+.....     0.393700787402 [stochastic]
 ..(.)     0.393700787402 [stochastic]
-(..).     0.196850393701 [stochastic]
-(.)..     0.393700787402 [stochastic]
+.....     0.196850393701 [stochastic]
+.....     0.196850393701 [stochastic]
+.....     0.196850393701 [stochastic]
 ..(.)     0.393700787402 [stochastic]
-(.)..     0.393700787402 [stochastic]
-..(.)     0.393700787402 [stochastic]
-..(.)     0.393700787402 [stochastic]
-(.)..     0.393700787402 [stochastic]
-..(.)     0.393700787402 [stochastic]
+.....     0.196850393701 [stochastic]
 ..(.)     0.393700787402 [stochastic]
 
 .....     0.0157480314961 [enumerative]
-(.)..     0.393700787402 [enumerative]
-(..).     0.196850393701 [enumerative]
-..(.)     0.393700787402 [enumerative]
+.....     0.393700787402 [enumerative]
+.....     0.196850393701 [enumerative]
+.....     0.393700787402 [enumerative]
 p_tot =  1.0
 sequence = CAGGC
 cutpoint =     X
@@ -294,24 +294,24 @@ bpp[0,4] =  0.393700787402  [expected]
      0.726      0.000      0.000      0.000      0.000
 
 Doing backtrack to get minimum free energy structure:
-((.))     0.65963060686 [MFE]
+.....     0.65963060686 [MFE]
 
 Doing 10 stochastic backtracks to get Boltzmann-weighted ensemble
+.....     0.65963060686 [stochastic]
 .(.).     0.263852242744 [stochastic]
-((.))     0.65963060686 [stochastic]
 .(.).     0.263852242744 [stochastic]
-((.))     0.65963060686 [stochastic]
-((.))     0.65963060686 [stochastic]
-((.))     0.65963060686 [stochastic]
-((.))     0.65963060686 [stochastic]
-((.))     0.65963060686 [stochastic]
-((.))     0.65963060686 [stochastic]
+.(.).     0.263852242744 [stochastic]
+.(.).     0.263852242744 [stochastic]
+.....     0.65963060686 [stochastic]
+.....     0.65963060686 [stochastic]
+.(.).     0.263852242744 [stochastic]
+.(.).     0.263852242744 [stochastic]
 .(.).     0.263852242744 [stochastic]
 
 .....     0.0105540897098 [enumerative]
-.(.).     0.263852242744 [enumerative]
-(...)     0.065963060686 [enumerative]
-((.))     0.65963060686 [enumerative]
+.....     0.263852242744 [enumerative]
+.....     0.065963060686 [enumerative]
+.....     0.65963060686 [enumerative]
 p_tot =  1.0
 sequence = CGACG
 cutpoint =     X
