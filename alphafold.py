@@ -28,35 +28,33 @@ def partition( sequences, circle = False ):
     Z_BP  = DynamicProgrammingMatrix( N );
     Z_linear = DynamicProgrammingMatrix( N, diag_val = 1.0 );
 
-    is_cutpoint = WrappedArray( N, False )
+    ligated = WrappedArray( N, True )
     if isinstance( sequences, list ):
         L = 0
         for i in range( len(sequences)-1 ):
             L = L + len( sequences[i] )
-            is_cutpoint[ L-1 ] = True
-    if not circle: is_cutpoint[ N-1 ] = True
+            ligated[ L-1 ] = False
+    if not circle: ligated[ N-1 ] = False
 
-    any_cutpoint = initialize_zero_matrix( N )
+    all_ligated = initialize_zero_matrix( N )
     for i in range( N ): #index of subfragment
         found_cutpoint = False
-        any_cutpoint[ i ][ i ] = False
+        all_ligated[ i ][ i ] = True
         for offset in range( N ): #length of subfragment
             j = (i + offset) % N;  # N cyclizes
-            any_cutpoint[ i ][ j ] = found_cutpoint
-            if is_cutpoint[ j ]: found_cutpoint = True
+            all_ligated[ i ][ j ] = ( not found_cutpoint )
+            if not ligated[ j ]: found_cutpoint = True
 
     # do the dynamic programming
     for offset in range( 1, N ): #length of subfragment
         for i in range( N ): #index of subfragment
             j = (i + offset) % N;  # N cyclizes
-            update_Z( i, j, N,
-                      sequence, is_cutpoint, any_cutpoint, \
+            update_Z( i, j, N, sequence, ligated, all_ligated, \
                       C_init, l, l_BP, Kd_BP, C_std, min_loop_length, \
                       Z_BP, C_eff, Z_linear )
 
     # get the answer (in N ways!)
-    Z_final = get_Z_final(N,
-                          sequence, is_cutpoint, any_cutpoint, \
+    Z_final = get_Z_final(N, sequence, ligated, all_ligated, \
                           C_init, l, l_BP, Kd_BP, C_std, min_loop_length, \
                           Z_BP, C_eff, Z_linear )
 
@@ -151,7 +149,7 @@ def partition( sequences, circle = False ):
     print 'sequence =', sequence
     cutpoint = ''
     for i in range( N ):
-        if is_cutpoint[ i ]: cutpoint += 'X'
+        if not ligated[ i ]: cutpoint += 'X'
         else: cutpoint += ' '
     print 'cutpoint =', cutpoint
     print 'circle   = ', circle

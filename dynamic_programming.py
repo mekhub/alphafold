@@ -7,10 +7,8 @@ class DynamicProgrammingMatrix:
     def __init__( self, N, val = 0.0, diag_val = 0.0 ):
         self.N = N
         self.DPmatrix = WrappedArray( N )
-        print self.DPmatrix
         for i in range( N ):
             self.DPmatrix[i] = WrappedArray( N )
-            print self.DPmatrix
             for j in range( N ):
                 self.DPmatrix[i][j] = DynamicProgrammingData( val )
                 self.DPmatrix[i][j].info.append( (self,i,j) )
