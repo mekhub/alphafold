@@ -11,7 +11,7 @@ def get_random_contrib( contribs ):
 ##################################################################################################
 def backtrack( self, contribs_input, mode = 'mfe' ):
     if len( contribs_input ) == 0: return []
-    print 'contribs_input', contribs_input
+    #print 'contribs_input', contribs_input
     contrib_sum = sum( contrib[0] for contrib in contribs_input )
     if   mode == 'enumerative': contribs = deepcopy( contribs_input )
     elif mode == 'mfe':         contribs = [ max( contribs_input ) ]
@@ -25,17 +25,17 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
 
         for backtrack_info in contrib[1]: # each 'branch'
             ( Z_backtrack_id, i, j )  = backtrack_info
-            if Z_backtrack_id == id(self.Z_BP):
+            if Z_backtrack_id == self.Z_BP:
                 update_Z_BP( self, i, j, calc_contrib = True )
                 backtrack_contrib = self.Z_BP.contrib
                 p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i%N,j%N)] ] for p_bp in p_bps_contrib ]
-            elif Z_backtrack_id == id(self.C_eff):
+            elif Z_backtrack_id == self.C_eff:
                 update_C_eff( self, i, j, calc_contrib = True )
                 backtrack_contrib = self.C_eff.contrib
-            elif Z_backtrack_id == id(self.C_eff_no_coax_singlet):
+            elif Z_backtrack_id == self.C_eff_no_coax_singlet:
                 update_C_eff( self, i, j, calc_contrib = True )
                 backtrack_contrib = self.C_eff_no_coax_singlet.contrib
-            elif Z_backtrack_id == id(self.Z_linear):
+            elif Z_backtrack_id == self.Z_linear:
                 update_Z_linear( self, i, j, calc_contrib = True )
                 backtrack_contrib = self.Z_linear.contrib
             p_bps_component = backtrack( self, backtrack_contrib[i%N][j%N], mode )

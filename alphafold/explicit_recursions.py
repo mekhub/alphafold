@@ -61,7 +61,7 @@ def update_Z_BP( self, i, j, calc_contrib = False ):
             #
             Z_BPq.Q[i][j]  += (1.0/Kd_BPq ) * ( C_eff_for_BP.Q [(i+1) % N][(j-1) % N] * l * l * l_BP)
             if calc_deriv: Z_BPq.dQ[i][j] += (1.0/Kd_BPq ) * ( C_eff_for_BP.dQ[(i+1) % N][(j-1) % N] * l * l * l_BP)
-            if calc_contrib: self.Z_BP.contrib[i][j].append( ( (1.0/Kd_BPq ) * ( C_eff_for_BP.Q [(i+1) % N][(j-1) % N] * l * l * l_BP), [(id(C_eff_for_BP), i+1, j-1)] ) )
+            if calc_contrib: self.Z_BP.contrib[i][j].append( ( (1.0/Kd_BPq ) * ( C_eff_for_BP.Q [(i+1) % N][(j-1) % N] * l * l * l_BP), [(C_eff_for_BP, i+1, j-1)] ) )
 
             # base pair forms a stacked pair with previous pair
             #      ___
@@ -190,7 +190,7 @@ def update_C_eff( self, i, j, calc_contrib = False ):
     if not is_cutpoint[(j-1) % N]:
         C_eff.Q[i][j]  += C_eff.Q[i][(j-1) % N] * l
         if calc_deriv: C_eff.dQ[i][j] += C_eff.dQ[i][(j-1) % N] * l
-        if calc_contrib: self.C_eff.contrib[i][j].append( (C_eff.Q[i][(j-1) % N] * l, [(id(self.C_eff),i,j-1)] ) )
+        if calc_contrib: self.C_eff.contrib[i][j].append( (C_eff.Q[i][(j-1) % N] * l, [(self.C_eff,i,j-1)] ) )
 
     # j is base paired, and its partner is k > i. (look below for case with i and j base paired)
     #                 ___
@@ -218,7 +218,7 @@ def update_C_eff( self, i, j, calc_contrib = False ):
     # some helper arrays that prevent closure of any 3WJ with a single coaxial stack and single helix with not intervening loop nucleotides
     self.C_eff_no_coax_singlet.Q[i][j] =  C_eff.Q[i][j]  + C_init *  Z_BP.Q[i][j] * l_BP
     self.C_eff_no_coax_singlet.dQ[i][j] = C_eff.dQ[i][j] + C_init * Z_BP.dQ[i][j] * l_BP
-    if calc_contrib: self.C_eff_no_coax_singlet.contrib[i][j] = self.C_eff.contrib[i][j] + [ (C_init * Z_BP.Q[i][j] * l_BP, [(id(self.Z_BP),i,j)] )]
+    if calc_contrib: self.C_eff_no_coax_singlet.contrib[i][j] = self.C_eff.contrib[i][j] + [ (C_init * Z_BP.Q[i][j] * l_BP, [(self.Z_BP,i,j)] )]
 
     self.C_eff_no_BP_singlet.Q[i][j] =  C_eff.Q[i][j] + C_init *  Z_coax.Q[i][j] * l_coax
     self.C_eff_no_BP_singlet.dQ[i][j] = C_eff.dQ[i][j] + C_init * Z_coax.dQ[i][j] * l_coax
@@ -273,7 +273,7 @@ def update_Z_linear( self, i, j, calc_contrib = False ):
     #
     Z_linear.Q[i][j]  += Z_BP.Q[i][j]
     if calc_deriv: Z_linear.dQ[i][j] += Z_BP.dQ[i][j]
-    if calc_contrib: self.Z_linear.contrib[i][j].append( (Z_BP.Q[i][j], [(id(self.Z_BP),i,j)]) )
+    if calc_contrib: self.Z_linear.contrib[i][j].append( (Z_BP.Q[i][j], [(self.Z_BP,i,j)]) )
 
     # j is base paired, and its partner is k > i
     #                 ___
@@ -335,7 +335,7 @@ def get_Z_final( self, calc_contrib = False ):
             #
             Z_final[i]  += Z_linear.Q[i][(i-1) % N]
             if calc_deriv: dZ_final[i] += Z_linear.dQ[i][(i-1) % N]
-            if calc_contrib: Z_final_contrib[i].append( (Z_linear.Q[i][(i-1) % N], [(id(self.Z_linear), i, i-1)]) )
+            if calc_contrib: Z_final_contrib[i].append( (Z_linear.Q[i][(i-1) % N], [(self.Z_linear, i, i-1)]) )
         else:
             # Need to 'ligate' across i-1 to i
             # Scaling Z_final by Kd_lig/C_std to match previous literature conventions

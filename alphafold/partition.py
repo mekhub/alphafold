@@ -27,14 +27,15 @@ class AlphaFoldParams:
         return ( self.C_init, self.l, self.Kd_BP, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.l_coax, self.C_std, self.min_loop_length, self.allow_strained_3WJ )
 
 ##################################################################################################
-def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False ):
+def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, use_explicit_recursions = True, backtrack = False ):
     '''
     Wrapper function into Partition() class
     '''
+    #if use_explicit_recursions: from explicit_recursions import *  # overrides simpler objected-oriented formulae in recursions.py
     p = Partition( sequences, params, calc_deriv )
     p.circle  = circle
     p.run()
-    #p.calc_mfe()
+    if backtrack: p.calc_mfe()
     if verbose: p.show_matrices()
     p.show_results()
     p.run_cross_checks()
@@ -224,7 +225,6 @@ def _calc_mfe( self ):
     p_MFE = [0.0]*N
     bps_MFE = [[]]*N
     get_Z_final( self, calc_contrib = True )
-    print 'Z_linear',id( self.Z_linear), 'C_eff',id( self.C_eff ),'Z_BP',id( self.Z_BP), 'C_eff_no_coax_singlet',id( self.C_eff_no_coax_singlet)
     for i in range( 1 ):
         (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final_contrib[i] )
         assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
