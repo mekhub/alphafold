@@ -43,17 +43,19 @@ class DynamicProgrammingData:
         prod = DynamicProgrammingData()
         if isinstance( other, DynamicProgrammingData ):
             prod.Q       = self.Q * other.Q
-            contribs1 = initialize_contribs( self )
-            contribs2 = initialize_contribs( other )
-            for contrib1 in contribs1:
-                for contrib2 in contribs2:
-                    prod.contrib.append( [ contrib1[0]*contrib2[0],
-                                           contrib1[1]+contrib2[1] ] )
+            info = []
+            if len( self.info )  > 0:
+                info.append( self.info )
+                prod.info = self.info
+            if len( other.info ) > 0:
+                info.append( other.info )
+                prod.info = other.info
+            if len( info ) > 0: prod.contrib = [ [ prod.Q, info ] ]
         else:
             prod.Q = self.Q * other
             for contrib in self.contrib:
                 prod.contrib.append( [contrib[0]*other, contrib[1] ] )
-        prod.info = self.info
+            prod.info = self.info
         return prod
 
     def __truediv__( self, other ):
@@ -65,12 +67,3 @@ class DynamicProgrammingData:
     __floordiv__ = __truediv__
     __div__ = __truediv__
 
-
-def initialize_contribs( DP ):
-    '''
-    Contribs (or dummy contribs) when taking products
-    '''
-    contribs = DP.contrib
-    if len( contribs ) == 0:
-        contribs =[ [1.0,[]] ] if len( DP.info ) == 0 else [ [1.0,[DP.info]] ]
-    return contribs
