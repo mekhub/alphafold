@@ -60,6 +60,7 @@ class Partition:
         self.params = params
         self.circle = False  # user can update later --> circularize sequence
         self.calc_deriv = calc_deriv
+        self.calc_contrib = False
         self.bps_MFE = []
         return
 
@@ -226,7 +227,8 @@ def _calc_mfe( self ):
     N = self.N
     p_MFE = [0.0]*N
     bps_MFE = [[]]*N
-    get_Z_final( self, calc_contrib = True )
+    self.calc_contrib = True
+    get_Z_final( self )
     for i in range( 1 ):
         (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final[i].contribs )
         assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
