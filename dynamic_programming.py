@@ -11,7 +11,7 @@ class DynamicProgrammingMatrix:
             self.DPmatrix.append( [] )
             for j in range( N ):
                 self.DPmatrix[i].append( DynamicProgrammingData( val ) )
-                self.DPmatrix[i][j].info = (self,i,j)
+                self.DPmatrix[i][j].info.append( (self,i,j) )
 
         for i in range( N ): self.DPmatrix[i][i].Q = diag_val
 
@@ -36,21 +36,17 @@ class DynamicProgrammingData:
     def __iadd__(self, other):
         self.Q += other.Q
         if  len( other.contrib ) > 0: self.contrib += other.contrib
-        elif len( other.info ) > 0: self.contrib.append( [other.Q, [other.info]] )
+        elif len( other.info ) > 0: self.contrib.append( [other.Q, other.info] )
         return self
 
     def __mul__(self, other):
         prod = DynamicProgrammingData()
         if isinstance( other, DynamicProgrammingData ):
             prod.Q       = self.Q * other.Q
-            info = []
-            if len( self.info )  > 0:
-                info.append( self.info )
-                prod.info = self.info
-            if len( other.info ) > 0:
-                info.append( other.info )
-                prod.info = other.info
-            if len( info ) > 0: prod.contrib = [ [ prod.Q, info ] ]
+            info = self.info + other.info
+            if len( info ) > 0:
+                prod.contrib = [ [ prod.Q, info ] ]
+                prod.info = info
         else:
             prod.Q = self.Q * other
             for contrib in self.contrib:
