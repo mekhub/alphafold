@@ -30,13 +30,13 @@ class DynamicProgrammingData:
     def __init__( self, val = 0.0 ):
         self.Q = val
         self.dQ = 0.0
-        self.contrib = []
+        self.contribs = []
         self.info = []
 
     def __iadd__(self, other):
         self.Q += other.Q
-        if  len( other.contrib ) > 0: self.contrib += other.contrib
-        elif len( other.info ) > 0: self.contrib.append( [other.Q, other.info] )
+        if  len( other.contribs ) > 0: self.contribs += other.contribs
+        elif len( other.info ) > 0: self.contribs.append( [other.Q, other.info] )
         return self
 
     def __mul__(self, other):
@@ -45,12 +45,12 @@ class DynamicProgrammingData:
             prod.Q       = self.Q * other.Q
             info = self.info + other.info
             if len( info ) > 0:
-                prod.contrib = [ [ prod.Q, info ] ]
+                prod.contribs = [ [ prod.Q, info ] ]
                 prod.info = info
         else:
             prod.Q = self.Q * other
-            for contrib in self.contrib:
-                prod.contrib.append( [contrib[0]*other, contrib[1] ] )
+            for contrib in self.contribs:
+                prod.contribs.append( [contrib[0]*other, contrib[1] ] )
             prod.info = self.info
         return prod
 

@@ -92,8 +92,8 @@ def partition( sequences, circle = False ):
             for backtrack_info in contrib[1]: # each 'branch'
                 ( Z_backtrack, i, j )  = backtrack_info
                 if Z_backtrack == Z_BP: p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i,j)] ] for p_bp in p_bps_contrib ]
-                backtrack_contrib = Z_backtrack[i%N][j%N].contrib
-                p_bps_component = backtrack( backtrack_contrib, mode )
+                backtrack_contribs = Z_backtrack[i%N][j%N].contribs
+                p_bps_component = backtrack( backtrack_contribs, mode )
                 if len( p_bps_component ) == 0: continue
                 # put together all branches
                 p_bps_contrib_new = []
@@ -120,7 +120,7 @@ def partition( sequences, circle = False ):
     p_MFE = [0.0]*N
     bps_MFE = [[]]*N
 
-    for i in range( N ): (bps_MFE[i], p_MFE[i] ) = mfe( Z_final[i].contrib )
+    for i in range( N ): (bps_MFE[i], p_MFE[i] ) = mfe( Z_final[i].contribs )
     for i in range( N ): assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
     print
     print 'Doing backtrack to get minimum free energy structure:'
@@ -132,13 +132,13 @@ def partition( sequences, circle = False ):
     N_backtrack = 10
     print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble'
     for i in range( N_backtrack ):
-        (bps,p)= boltzmann_sample( Z_final[0].contrib )
+        (bps,p)= boltzmann_sample( Z_final[0].contribs )
         print secstruct(bps,N), "   ", p, "[stochastic]"
     print
 
     ######################################
     # Enumerative backtrack tests
-    p_bps = backtrack( Z_final[0].contrib , 'enumerative' )
+    p_bps = backtrack( Z_final[0].contribs , 'enumerative' )
     for (p,bps) in p_bps:  print secstruct(bps,N), "   ", p, "[enumerative]"
     p_tot = sum( p_bp[0] for p_bp in p_bps )
     print 'p_tot = ',p_tot
