@@ -83,7 +83,6 @@ def partition( sequences, circle = False ):
         if   mode == 'enumerative': contribs = deepcopy( contribs_input )
         elif mode == 'mfe':         contribs = [ max( contribs_input ) ]
         elif mode == 'stochastic' : contribs = [ get_random_contrib( contribs_input ) ]
-
         p_bps = [] # list of tuples of (p_structure, bps_structure) for each structure
         for contrib in contribs: # each option ('contribution' to this partition function of this sub-region)
             if ( contrib[0] == 0.0 ): continue
@@ -91,7 +90,7 @@ def partition( sequences, circle = False ):
             p_bps_contrib = [ [p_contrib,[]] ]
             for backtrack_info in contrib[1]: # each 'branch'
                 ( Z_backtrack, i, j )  = backtrack_info
-                if Z_backtrack == Z_BP: p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i,j)] ] for p_bp in p_bps_contrib ]
+                if Z_backtrack == Z_BP: p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i%N,j%N)] ] for p_bp in p_bps_contrib ]
                 backtrack_contribs = Z_backtrack[i%N][j%N].contribs
                 p_bps_component = backtrack( backtrack_contribs, mode )
                 if len( p_bps_component ) == 0: continue
