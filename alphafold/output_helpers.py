@@ -10,6 +10,7 @@ def _show_results( self ):
 
 def _show_matrices( self ):
     output_DP( "Z_BP", self.Z_BP )
+    output_DP( "C_eff_basic", self.C_eff_basic )
     output_DP( "C_eff", self.C_eff, self.Z_final )
     #output_DP( "dC_eff", self.dC_eff, self.dZ_final )
     output_DP( "Z_coax", self.Z_coax )
@@ -33,7 +34,7 @@ def output_square( tag, X ):
     print "-----", tag, "-----"
     for i in range( N ):
         for j in range( N ):
-            print ' %9.3f' % X[i][j].Q,
+            print ' %9.3f' % X[i][j],
         print
 
 def output_test( Z, Z_ref = 0, bpp = [], bpp_idx= [], bpp_expected = 0):

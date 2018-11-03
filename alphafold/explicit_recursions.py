@@ -10,7 +10,7 @@ def update_Z_cut( self, i, j ):
     Analogous to 'exterior' Z in Mathews calc & Dirks multistrand calc.
     '''
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
     offset = ( j - i ) % N
     for c in range( i, i+offset ):
         if is_cutpoint[c % N]:
@@ -31,11 +31,11 @@ def update_Z_cut( self, i, j ):
 def update_Z_BPq( self, base_pair_type, i, j ):
     '''
     Z_BPq is the partition function for all structures that base pair i and j with base_pair_type q
-    Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
+    Relies on previous Z contributions available for subfragments.
     '''
 
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     ( C_eff_for_coax, C_eff_for_BP ) = (C_eff, C_eff ) if allow_strained_3WJ else (self.C_eff_no_BP_singlet, self.C_eff_no_coax_singlet )
@@ -146,7 +146,7 @@ def update_Z_BP( self, i, j ):
     filled in already for i,j.
     '''
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
 
     if calc_contrib: Z_BP[i][j].contribs = []
 
@@ -162,7 +162,7 @@ def update_Z_coax( self, i, j ):
     Z_coax(i,j) is the partition function for all structures that form coaxial stacks between (i,k) and (k+1,j) for some k
     '''
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
     offset = ( j - i ) % N
 
     #  all structures that form coaxial stacks between (i,k) and (k+1,j) for some k
@@ -178,12 +178,12 @@ def update_Z_coax( self, i, j ):
             Z_coax[i][j].dQ += (Z_BP[i][k % N].dQ * Z_BP[(k+1) % N][j].Q + Z_BP[i][k % N].Q * Z_BP[(k+1) % N][j].dQ) * K_coax
 
 ##################################################################################################
-def update_C_eff( self, i, j ):
+def update_C_eff_basic( self, i, j ):
     '''
     C_eff tracks the effective molarity of a loop starting at i and ending at j
     Assumes a model where each additional element multiplicatively reduces the effective molarity, by
       the variables l, l_BP, C_eff_stacked_pair, K_coax, etc.
-    Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
+    Relies on previous Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear available for subfragments.
     Relies on Z_BP being already filled out for i,j
     TODO: In near future, will include possibility of multiple C_eff terms, which combined together will
       allow for free energy costs of loop closure to scale approximately log-linearly rather than
@@ -192,9 +192,9 @@ def update_C_eff( self, i, j ):
     offset = ( j - i ) % self.N
 
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
 
-    if ( calc_contrib ): self.C_eff[i][j].contribs = []
+    if ( calc_contrib ): self.C_eff_basic[i][j].contribs = []
 
     exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and (not is_cutpoint[j] )
 
@@ -203,9 +203,9 @@ def update_C_eff( self, i, j ):
     #    i ~~~~~~ j-1 - j
     #
     if not is_cutpoint[(j-1) % N]:
-        C_eff[i][j].Q  += C_eff[i][(j-1) % N].Q * l
-        if calc_deriv: C_eff[i][j].dQ += C_eff[i][(j-1) % N].dQ * l
-        if calc_contrib: self.C_eff[i][j].contribs.append( (C_eff[i][(j-1) % N].Q * l, [(self.C_eff,i,j-1)] ) )
+        C_eff_basic[i][j].Q  += C_eff[i][(j-1) % N].Q * l
+        if calc_deriv: C_eff_basic[i][j].dQ += C_eff[i][(j-1) % N].dQ * l
+        if calc_contrib: self.C_eff_basic[i][j].contribs.append( (C_eff[i][(j-1) % N].Q * l, [(self.C_eff,i,j-1)] ) )
 
     # j is base paired, and its partner is k > i. (look below for case with i and j base paired)
     #                 ___
@@ -215,8 +215,8 @@ def update_C_eff( self, i, j ):
     C_eff_for_BP = self.C_eff_no_coax_singlet if exclude_strained_3WJ else C_eff
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
-            C_eff[i][j].Q  += C_eff_for_BP[i][(k-1) % N].Q * l * Z_BP[k % N][j].Q * l_BP
-            if calc_deriv: C_eff[i][j].dQ += ( C_eff_for_BP[i][(k-1) % N].dQ * Z_BP[k % N][j].Q + C_eff_for_BP[i][(k-1) % N].Q * Z_BP[k % N][j].dQ ) * l * l_BP
+            C_eff_basic[i][j].Q  += C_eff_for_BP[i][(k-1) % N].Q * l * Z_BP[k % N][j].Q * l_BP
+            if calc_deriv: C_eff_basic[i][j].dQ += ( C_eff_for_BP[i][(k-1) % N].dQ * Z_BP[k % N][j].Q + C_eff_for_BP[i][(k-1) % N].Q * Z_BP[k % N][j].dQ ) * l * l_BP
 
     # j is coax-stacked, and its partner is k > i.  (look below for case with i and j coaxially stacked)
     #               _______
@@ -227,17 +227,34 @@ def update_C_eff( self, i, j ):
     C_eff_for_coax = self.C_eff_no_BP_singlet if exclude_strained_3WJ else C_eff
     for k in range( i+1, i+offset):
         if not is_cutpoint[ (k-1) % N]:
-            C_eff[i][j].Q  += C_eff_for_coax[i][(k-1) % N].Q * Z_coax[k % N][j].Q * l * l_coax
-            if calc_deriv: C_eff[i][j].dQ += (C_eff_for_coax[i][(k-1) % N].dQ * Z_coax[k % N][j].Q + C_eff_for_coax[i][(k-1) % N].Q * Z_coax[k % N][j].dQ) * l * l_coax
+            C_eff_basic[i][j].Q  += C_eff_for_coax[i][(k-1) % N].Q * Z_coax[k % N][j].Q * l * l_coax
+            if calc_deriv: C_eff_basic[i][j].dQ += (C_eff_for_coax[i][(k-1) % N].dQ * Z_coax[k % N][j].Q + C_eff_for_coax[i][(k-1) % N].Q * Z_coax[k % N][j].dQ) * l * l_coax
+
+##################################################################################################
+def update_C_eff_no_coax_singlet( self, i, j ):
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
 
     # some helper arrays that prevent closure of any 3WJ with a single coaxial stack and single helix with not intervening loop nucleotides
-    self.C_eff_no_coax_singlet[i][j].Q =  C_eff[i][j].Q  + C_init *  Z_BP[i][j].Q * l_BP
-    self.C_eff_no_coax_singlet[i][j].dQ = C_eff[i][j].dQ + C_init * Z_BP[i][j].dQ * l_BP
-    if calc_contrib: self.C_eff_no_coax_singlet[i][j].contribs = self.C_eff[i][j].contribs + [ (C_init * Z_BP[i][j].Q * l_BP, [(self.Z_BP,i,j)] )]
+    self.C_eff_no_coax_singlet[i][j].Q =  C_eff_basic[i][j].Q  + C_init *  Z_BP[i][j].Q * l_BP
+    self.C_eff_no_coax_singlet[i][j].dQ = C_eff_basic[i][j].dQ + C_init * Z_BP[i][j].dQ * l_BP
+    if calc_contrib: self.C_eff_no_coax_singlet[i][j].contribs = self.C_eff_basic[i][j].contribs + [ (C_init * Z_BP[i][j].Q * l_BP, [(self.Z_BP,i,j)] )]
 
-    self.C_eff_no_BP_singlet[i][j].Q =  C_eff[i][j].Q + C_init *  Z_coax[i][j].Q * l_coax
-    self.C_eff_no_BP_singlet[i][j].dQ = C_eff[i][j].dQ + C_init * Z_coax[i][j].dQ * l_coax
+##################################################################################################
+def update_C_eff_no_BP_singlet( self, i, j ):
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
 
+    self.C_eff_no_BP_singlet[i][j].Q =  C_eff_basic[i][j].Q + C_init *  Z_coax[i][j].Q * l_coax
+    self.C_eff_no_BP_singlet[i][j].dQ = C_eff_basic[i][j].dQ + C_init * Z_coax[i][j].dQ * l_coax
+
+##################################################################################################
+def update_C_eff( self, i, j ):
+    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
+
+    C_eff[i][j].Q  = C_eff_basic[i][j].Q
+    if calc_deriv: C_eff[i][j].dQ = C_eff_basic[i][j].dQ
 
     # j is base paired, and its partner is i
     #      ___
@@ -262,13 +279,13 @@ def update_C_eff( self, i, j ):
 def update_Z_linear( self, i, j ):
     '''
     Z_linear tracks the total partition function from i to j, assuming all intervening residues are covalently connected (or base-paired).
-    Relies on previous Z_BP, C_eff, Z_linear available for subfragments.
+    Relies on previous Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear available for subfragments.
     Relies on Z_BP being already filled out for i,j
     '''
     offset = ( j - i ) % self.N
 
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
 
     if calc_contrib: self.Z_linear[i][j].contribs = []
 
@@ -326,7 +343,7 @@ def get_Z_final( self ):
     # Get the answer (in N ways!) --> so final output is actually Z_final(i), an array.
     # Equality of the array is tested in run_cross_checks()
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
-     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
+     sequence, is_cutpoint, any_intervening_cutpoint, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
 
     Z_final =[]
 
@@ -420,6 +437,7 @@ def unpack_variables( self ):
     '''
     return self.params.get_variables() + \
            ( self.N, self.sequence, self.is_cutpoint, self.any_intervening_cutpoint,  \
-             self.Z_BP,self.C_eff,self.Z_linear,self.Z_cut,self.Z_coax,\
+             self.Z_BP,self.C_eff_basic,self.C_eff_no_BP_singlet,self.C_eff_no_coax_singlet,self.C_eff,\
+             self.Z_linear,self.Z_cut,self.Z_coax,\
              self.calc_deriv, self.calc_contrib )
 

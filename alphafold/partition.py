@@ -84,6 +84,9 @@ class Partition:
                 update_Z_BP( self, i, j )
                 update_Z_coax( self, i, j )
                 # C_eff makes use of information on Z_BP, so compute last
+                update_C_eff_basic( self, i, j )
+                update_C_eff_no_BP_singlet( self, i, j )
+                update_C_eff_no_coax_singlet( self, i, j )
                 update_C_eff( self, i, j )
                 update_Z_linear( self, i, j )
 
@@ -176,9 +179,10 @@ def initialize_dynamic_programming_matrices( self ):
     self.Z_linear = DynamicProgrammingMatrix( N, diag_val = 1.0 );
     self.Z_cut    = DynamicProgrammingMatrix( N );
     self.Z_coax   = DynamicProgrammingMatrix( N );
-    self.C_eff    = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
+    self.C_eff_basic           = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
     self.C_eff_no_coax_singlet = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
     self.C_eff_no_BP_singlet   = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
+    self.C_eff                 = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
 
 ##################################################################################################
 def initialize_zero_matrix( N ):

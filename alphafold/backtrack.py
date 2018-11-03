@@ -29,9 +29,9 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
                 update_Z_BP( self, i, j )
                 p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i%N,j%N)] ] for p_bp in p_bps_contrib ]
             elif Z_backtrack == self.C_eff:
-                update_C_eff( self, i, j, calc_contrib = True )
-            elif Z_backtrack == self.C_eff_no_coax_singlet:
                 update_C_eff( self, i, j )
+            elif Z_backtrack == self.C_eff_no_coax_singlet:
+                update_C_eff_no_coax_singlet( self, i, j )
             elif Z_backtrack == self.Z_linear:
                 update_Z_linear( self, i, j )
             self.calc_contrib = False
