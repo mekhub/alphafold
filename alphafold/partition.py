@@ -7,11 +7,10 @@ from alphafold.backtrack import mfe
 from alphafold.parameters import AlphaFoldParams
 
 ##################################################################################################
-def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, use_explicit_recursions = True, backtrack = False ):
+def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, backtrack = False ):
     '''
     Wrapper function into Partition() class
     '''
-    #if use_explicit_recursions: from explicit_recursions import *  # overrides simpler objected-oriented formulae in recursions.py
     p = Partition( sequences, params, calc_deriv )
     p.circle  = circle
     p.run()
@@ -64,26 +63,11 @@ class Partition:
         get_bpp_matrix( self ) # fill base pair probability matrix
         return
 
-    def calc_mfe( self ): _calc_mfe( self )
     # boring member functions -- defined later.
+    def calc_mfe( self ): _calc_mfe( self )
     def show_results( self ): _show_results( self )
     def show_matrices( self ): _show_matrices( self )
     def run_cross_checks( self ): _run_cross_checks( self )
-
-##################################################################################################
-def get_bpp_matrix( self ):
-    '''
-    Getting base pair probability matrix.
-    Gets carried out pretty fast since we've already computed the sum over structures in i..j encapsulated by a pair (i,j), as well
-      as structures in j..i encapsulated by those pairs.
-    So: it becomes easy to calculate partition function over all structures with base pair (i,j), and then divide by total Z.
-    '''
-
-    # base pair probability matrix
-    self.bpp = initialize_zero_matrix( self.N )
-    for i in range( self.N ):
-        for j in range( self.N ):
-            self.bpp[i][j] = self.Z_BP[i][j].Q * self.Z_BP[j][i].Q * self.params.Kd_BP / self.Z_final[0].Q
 
 ##################################################################################################
 def initialize_sequence_information( self ):
@@ -121,24 +105,27 @@ def initialize_sequence_information( self ):
 
 ##################################################################################################
 class BasePairType:
-    def __init__( self, nt1, nt2, Kd_BP, N ):
+    def __init__( self, nt1, nt2, Kd_BP, match_lowercase = False ):
         '''
-        Uh, a little weird to have Z in here.
+        Two sequence characters that get matched to base pair, e.g., 'C' and 'G';
+           and the dissociation constant K_d (in M) associated with initial pair formation.
+        match_lowercase means match 'x' to 'x', 'y' to 'y', etc.
+        TODO: also store chemical modification info.
         '''
         self.nt1 = nt1
         self.nt2 = nt2
         self.Kd_BP = Kd_BP
-        self.match_lowercase = ( nt1 == '' and nt2 == '' )
+        self.match_lowercase = ( nt1 == '*' and nt2 == '*' and match_lowercase )
 
 ##################################################################################################
 def initialize_base_pair_types( self ):
     N = self.N
     self.base_pair_types = []
-    self.base_pair_types.append( BasePairType( 'C', 'G', self.params.Kd_BP, N ) )
-    self.base_pair_types.append( BasePairType( 'G', 'C', self.params.Kd_BP, N ) )
-    self.base_pair_types.append( BasePairType( 'A', 'U', self.params.Kd_BP, N ) )
-    self.base_pair_types.append( BasePairType( 'U', 'A', self.params.Kd_BP, N ) )
-    self.base_pair_types.append( BasePairType( '', '', self.params.Kd_BP, N ) ) # generic match
+    self.base_pair_types.append( BasePairType( 'C', 'G', self.params.Kd_BP ) )
+    self.base_pair_types.append( BasePairType( 'G', 'C', self.params.Kd_BP ) )
+    self.base_pair_types.append( BasePairType( 'A', 'U', self.params.Kd_BP ) )
+    self.base_pair_types.append( BasePairType( 'U', 'A', self.params.Kd_BP ) )
+    self.base_pair_types.append( BasePairType( '*', '*', self.params.Kd_BP, match_lowercase = True ) )
 
 ##################################################################################################
 def initialize_dynamic_programming_matrices( self ):
@@ -148,6 +135,8 @@ def initialize_dynamic_programming_matrices( self ):
          Z_BP(i,i)     = 0
          C_eff(i,i)    = C_init (units of M)
          Z_linear(i,i) = 1
+    And: the order of initialization in the list Z_all will
+      determine the actual order of updates during dynamic programmming at each (i,j).
     '''
     N = self.N
 
@@ -206,12 +195,29 @@ def initialize_all_ligated( ligated ):
     return all_ligated
 
 ##################################################################################################
+def get_bpp_matrix( self ):
+    '''
+    Getting base pair probability matrix.
+    Gets carried out pretty fast since we've already computed the sum over structures in i..j encapsulated by a pair (i,j), as well
+      as structures in j..i encapsulated by those pairs.
+    So: it becomes easy to calculate partition function over all structures with base pair (i,j), and then divide by total Z.
+    '''
+    self.bpp = initialize_zero_matrix( self.N )
+    for i in range( self.N ):
+        for j in range( self.N ):
+            self.bpp[i][j] = self.Z_BP[i][j].Q * self.Z_BP[j][i].Q * self.params.Kd_BP / self.Z_final[0].Q
+
+##################################################################################################
 def _calc_mfe( self ):
+    #
+    # Wrapper into mfe(), written out in backtrack.py
+    #
     N = self.N
     p_MFE = [0.0]*N
     bps_MFE = [[]]*N
     self.calc_contrib = True
     for i in range( N ): self.Z_final.update( self, i )
+
     #for i in range( N ):   TODO: fill in all contribs!!
     for i in range( 1 ):
         (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final[i].contribs )
@@ -239,5 +245,3 @@ def _run_cross_checks( self ):
                 bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
         bpp_tot_based_on_deriv = -self.Z_final[0].dQ * self.params.Kd_BP / self.Z_final[0].Q
         if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
-
-
