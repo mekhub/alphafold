@@ -38,8 +38,7 @@ class Partition:
         self.sequences = sequences
         self.params = params
         self.circle = False  # user can update later --> circularize sequence
-        self.calc_deriv = calc_deriv
-        self.calc_contrib = False
+        self.options = PartitionOptions( calc_deriv = calc_deriv )
         self.bps_MFE = []
         self.use_explicit_recursions = False
         return
@@ -105,6 +104,12 @@ def initialize_sequence_information( self ):
     self.all_ligated = initialize_all_ligated( ligated )
 
 ##################################################################################################
+class PartitionOptions:
+    def __init__( self, calc_deriv = False, calc_contrib = False ):
+        self.calc_deriv   = calc_deriv
+        self.calc_contrib = calc_contrib
+
+##################################################################################################
 class BasePairType:
     def __init__( self, nt1, nt2, Kd_BP, match_lowercase = False ):
         '''
@@ -152,7 +157,7 @@ def initialize_dynamic_programming_matrices( self ):
     self.Z_all = Z_all = []
 
     # some preliminary helpers
-    self.Z_cut    = DynamicProgrammingMatrix( N, DPlist = Z_all, update_func = update_Z_cut );
+    self.Z_cut    = DynamicProgrammingMatrix( N, DPlist = Z_all, update_func = update_Z_cut, options = self.options );
 
     # base pairs and co-axial stacks
     self.Z_BPq = {}
@@ -160,21 +165,21 @@ def initialize_dynamic_programming_matrices( self ):
         # the bpt = base_pair_type holds the base_pair_type info in the lambda (Python FAQ)
         update_func = lambda partition,i,j,bpt=base_pair_type: update_Z_BPq(partition,i,j,bpt)
         self.Z_BPq[ base_pair_type ] = DynamicProgrammingMatrix( N, DPlist = Z_all,
-                                                                 update_func = update_func )
-    self.Z_BP     = DynamicProgrammingMatrix( N, DPlist = Z_all, update_func = update_Z_BP );
-    self.Z_coax   = DynamicProgrammingMatrix( N, DPlist = Z_all, update_func = update_Z_coax );
+                                                                 update_func = update_func, options = self.options )
+    self.Z_BP     = DynamicProgrammingMatrix( N, DPlist = Z_all, update_func = update_Z_BP, options = self.options );
+    self.Z_coax   = DynamicProgrammingMatrix( N, DPlist = Z_all, update_func = update_Z_coax, options = self.options );
 
     # C_eff makes use of information on Z_BP, so compute last
     C_init = self.params.C_init
-    self.C_eff_basic           = DynamicProgrammingMatrix( N, diag_val = C_init, DPlist = Z_all, update_func = update_C_eff_basic );
-    self.C_eff_no_BP_singlet   = DynamicProgrammingMatrix( N, diag_val = C_init, DPlist = Z_all, update_func = update_C_eff_no_BP_singlet );
-    self.C_eff_no_coax_singlet = DynamicProgrammingMatrix( N, diag_val = C_init, DPlist = Z_all, update_func = update_C_eff_no_coax_singlet );
-    self.C_eff                 = DynamicProgrammingMatrix( N, diag_val = C_init, DPlist = Z_all, update_func = update_C_eff );
+    self.C_eff_basic           = DynamicProgrammingMatrix( N, diag_val = C_init, DPlist = Z_all, update_func = update_C_eff_basic, options = self.options );
+    self.C_eff_no_BP_singlet   = DynamicProgrammingMatrix( N, diag_val = C_init, DPlist = Z_all, update_func = update_C_eff_no_BP_singlet, options = self.options );
+    self.C_eff_no_coax_singlet = DynamicProgrammingMatrix( N, diag_val = C_init, DPlist = Z_all, update_func = update_C_eff_no_coax_singlet, options = self.options );
+    self.C_eff                 = DynamicProgrammingMatrix( N, diag_val = C_init, DPlist = Z_all, update_func = update_C_eff, options = self.options );
 
-    self.Z_linear = DynamicProgrammingMatrix( N, diag_val = 1.0, DPlist = Z_all, update_func = update_Z_linear );
+    self.Z_linear = DynamicProgrammingMatrix( N, diag_val = 1.0, DPlist = Z_all, update_func = update_Z_linear, options = self.options );
 
     # Last DP 1-D list (not a 2-D N x N matrix)
-    self.Z_final = DynamicProgrammingList( N, update_func = update_Z_final )
+    self.Z_final = DynamicProgrammingList( N, update_func = update_Z_final, options = self.options  )
 
 ##################################################################################################
 def initialize_zero_matrix( N ):
@@ -222,7 +227,7 @@ def _calc_mfe( self ):
     N = self.N
     p_MFE = [0.0]*N
     bps_MFE = [[]]*N
-    self.calc_contrib = True
+    self.options.calc_contrib = True
     for i in range( N ): self.Z_final.update( self, i )
 
     #for i in range( N ):   TODO: fill in all contribs!!
@@ -241,14 +246,15 @@ def _run_cross_checks( self ):
     # stringent test that partition function is correct -- all the Z(i,i) agree.
     for i in range( self.N ):
         assert( abs( ( self.Z_final[i].Q - self.Z_final[0].Q ) / self.Z_final[0].Q ) < 1.0e-5 )
-        if self.calc_deriv and self.Z_final[0].dQ > 0:
+        if self.options.calc_deriv and self.Z_final[0].dQ > 0:
             assert( self.Z_final[0].dQ == 0 or  abs( ( self.Z_final[i].dQ - self.Z_final[0].dQ ) / self.Z_final[0].dQ ) < 1.0e-5 )
 
     # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
-    if self.calc_deriv:
+    if self.options.calc_deriv:
         bpp_tot = 0.0
         for i in range( self.N ):
             for j in range( self.N ):
                 bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
         bpp_tot_based_on_deriv = -self.Z_final[0].dQ * self.params.Kd_BP / self.Z_final[0].Q
+        print 'bpp_tot',bpp_tot,'bpp_tot_based_on_deriv',bpp_tot_based_on_deriv
         if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )

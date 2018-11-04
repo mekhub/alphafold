@@ -419,5 +419,5 @@ def unpack_variables( self ):
            ( self.N, self.sequence, self.ligated, self.all_ligated,  \
              self.Z_BP,self.C_eff_basic,self.C_eff_no_BP_singlet,self.C_eff_no_coax_singlet,self.C_eff,\
              self.Z_linear,self.Z_cut,self.Z_coax,\
-             self.calc_deriv, self.calc_contrib )
+             self.options.calc_deriv, self.options.calc_contrib )
 

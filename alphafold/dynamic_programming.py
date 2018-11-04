@@ -1,4 +1,5 @@
 from copy import deepcopy
+import sys, traceback
 
 class DynamicProgrammingMatrix:
     '''
@@ -6,7 +7,7 @@ class DynamicProgrammingMatrix:
       does wrapping modulo N,
       knows how to update values at i,j
     '''
-    def __init__( self, N, val = 0.0, diag_val = 0.0, DPlist = None, update_func = None ):
+    def __init__( self, N, val = 0.0, diag_val = 0.0, DPlist = None, update_func = None, options = None ):
         self.N = N
         #self.DPmatrix = WrappedArray( N ) # TODO
         self.data = [None]*N
@@ -16,9 +17,11 @@ class DynamicProgrammingMatrix:
             for j in range( N ):
                 self.data[i][j] = DynamicProgrammingData( val )
                 self.data[i][j].info.append( (self,i,j) )
+                self.data[i][j].options = options
 
         for i in range( N ): self.data[i][i].Q = diag_val
         if DPlist != None: DPlist.append( self )
+        self.options = options
         self.update_func = update_func
 
     def __getitem__( self, idx ):
@@ -38,12 +41,13 @@ class DynamicProgrammingList:
       knows how to update values at i,j
     Used for Z_final
     '''
-    def __init__( self, N, val = 0.0, update_func = None ):
+    def __init__( self, N, val = 0.0, update_func = None, options = None ):
         self.N = N
         self.data = []
         for i in range( N ):
             self.data.append( DynamicProgrammingData( val ) )
-
+            self.data[i].options = options
+        self.options = options
         self.update_func = update_func
 
     def __getitem__( self, idx ):
@@ -67,6 +71,7 @@ class DynamicProgrammingData:
         self.dQ = 0.0
         self.contribs = []
         self.info = []
+        self.options = None
 
     def zero( self ):
         self.Q = 0.0
@@ -75,32 +80,37 @@ class DynamicProgrammingData:
 
     def __iadd__(self, other):
         self.Q  += other.Q
-        self.dQ += other.dQ
-        if len( other.info ) > 0: self.contribs.append( [other.Q, other.info] )
+        if self.options and self.options.calc_deriv:
+            self.dQ += other.dQ
+        if self.options and self.options.calc_contrib:
+            if len( other.info ) > 0: self.contribs.append( [other.Q, other.info] )
         return self
 
     def __mul__(self, other):
+        if not self.options: assert( self.options )
         prod = DynamicProgrammingData()
+        prod.options = self.options
         if isinstance( other, DynamicProgrammingData ):
             prod.Q  = self.Q * other.Q
-            prod.dQ = self.Q * other.dQ + self.dQ * other.Q
-            info = self.info + other.info
-            if len( info ) > 0:
-                prod.contribs = [ [ prod.Q, info ] ]
-                prod.info = info
+            if self.options and self.options.calc_deriv:
+                prod.dQ = self.Q * other.dQ + self.dQ * other.Q
+            if self.options and self.options.calc_contrib:
+                info = self.info + other.info
+                if len( info ) > 0:
+                    prod.contribs = [ [ prod.Q, info ] ]
+                    prod.info = info
         else:
             prod.Q  = self.Q * other
-            prod.dQ = self.dQ * other
-            for contrib in self.contribs:
-                prod.contribs.append( [contrib[0]*other, contrib[1] ] )
-            prod.info = self.info
+            if self.options and self.options.calc_deriv:
+                prod.dQ = self.dQ * other
+            if self.options and self.options.calc_contrib:
+                for contrib in self.contribs:
+                    prod.contribs.append( [contrib[0]*other, contrib[1] ] )
+                prod.info = self.info
         return prod
 
     def __truediv__( self, other ):
-        quot = deepcopy( self )
-        quot.Q /= other
-        quot.dQ/= other
-        return quot
+        return self * ( 1.0/other )
 
     __rmul__ = __mul__
     __floordiv__ = __truediv__

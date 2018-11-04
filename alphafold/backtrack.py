@@ -25,7 +25,7 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
 
         for backtrack_info in contrib[1]: # each 'branch'
             ( Z_backtrack, i, j )  = backtrack_info
-            self.calc_contrib = True
+            self.options.calc_contrib = True
             if Z_backtrack == self.Z_BP:
                 update_Z_BP( self, i, j )
                 p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i%N,j%N)] ] for p_bp in p_bps_contrib ]
@@ -40,7 +40,7 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
                     if Z_backtrack == self.Z_BPq[ base_pair_type ]:
                         update_Z_BPq( self, i, j, base_pair_type )
                         break
-            self.calc_contrib = False
+            self.options.calc_contrib = False
             p_bps_component = backtrack( self, Z_backtrack[i%N][j%N].contribs, mode )
             if len( p_bps_component ) == 0: continue
             # put together all branches
