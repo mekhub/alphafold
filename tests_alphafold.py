@@ -13,6 +13,7 @@ def test_alphafold():
 
     sequence = 'CNG'
     (Z, bpp, bps_MFE, dZ) = partition( sequence, calc_deriv = True, backtrack = True )
+    assert( bps_MFE == [(0,2)] )
     output_test( Z, 1 + C_init * l**2 * l_BP/ Kd_BP, \
                  bpp, [0,2], (C_init * l**2 * l_BP/Kd_BP)/( 1 + C_init * l**2 * l_BP/Kd_BP ) )
 

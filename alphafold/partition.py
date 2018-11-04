@@ -241,14 +241,16 @@ def _calc_mfe( self ):
     bps_MFE = [[]]*N
     self.calc_contrib = True
     get_Z_final( self )
+    #for i in range( N ):   TODO: fill in all contribs!!
     for i in range( 1 ):
         (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final[i].contribs )
         assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
+        # TODO check bps are also the same! (use set equality!)
     print
     print 'Doing backtrack to get minimum free energy structure:'
     print  secstruct(bps_MFE[0],N), "   ", p_MFE[0], "[MFE]"
     print
-    self.bps_MFE = bps_MFE
+    self.bps_MFE = bps_MFE[0]
 
 
 

@@ -21,6 +21,7 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
         if ( contrib[0] == 0.0 ): continue
         p_contrib = contrib[0]/contrib_sum
         p_bps_contrib = [ [p_contrib,[]] ]
+        print contribs, self.Z_BP
 
         for backtrack_info in contrib[1]: # each 'branch'
             ( Z_backtrack, i, j )  = backtrack_info
