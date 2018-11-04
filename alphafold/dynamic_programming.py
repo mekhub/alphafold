@@ -15,9 +15,8 @@ class DynamicProgrammingMatrix:
             #self.data[i] = WrappedArray( N ) # TODO
             self.data[i] = [None]*N
             for j in range( N ):
-                self.data[i][j] = DynamicProgrammingData( val )
+                self.data[i][j] = DynamicProgrammingData( val, options = options )
                 self.data[i][j].info.append( (self,i,j) )
-                self.data[i][j].options = options
 
         for i in range( N ): self.data[i][i].Q = diag_val
         if DPlist != None: DPlist.append( self )
@@ -45,8 +44,7 @@ class DynamicProgrammingList:
         self.N = N
         self.data = []
         for i in range( N ):
-            self.data.append( DynamicProgrammingData( val ) )
-            self.data[i].options = options
+            self.data.append( DynamicProgrammingData( val, options = options ) )
         self.options = options
         self.update_func = update_func
 
@@ -69,12 +67,12 @@ class DynamicProgrammingData:
      dQ  = derivative (later will generalize to gradient w.r.t. all parameters)
      contrib = contributions
     '''
-    def __init__( self, val = 0.0 ):
+    def __init__( self, val = 0.0, options = None ):
         self.Q = val
         self.dQ = 0.0
         self.contribs = []
         self.info = []
-        self.options = None
+        self.options = options
 
     def zero( self ):
         self.Q = 0.0
