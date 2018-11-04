@@ -53,6 +53,9 @@ class DynamicProgrammingList:
     def __getitem__( self, idx ):
         return self.data[ idx ]
 
+    def __setitem__( self, idx, val ):
+        self.data[ idx ] = val
+
     def __len__( self ): return len( self.data )
 
     def update( self, partition, i ):
