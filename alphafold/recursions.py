@@ -60,9 +60,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         #   \       /
         #    i ... j
         #
-        Z_BPq[i][j].Q  += (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N].Q * l * l * l_BP)
-        if calc_deriv: Z_BPq[i][j].dQ += (1.0/Kd_BPq ) * ( C_eff_for_BP[(i+1) % N][(j-1) % N].dQ * l * l * l_BP)
-        if calc_contrib: Z_BPq[i][j].contribs.append( ( (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N].Q * l * l * l_BP), [(C_eff_for_BP, i+1, j-1)] ) )
+        Z_BPq[i][j]  += (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N] * l * l * l_BP)
 
         # base pair forms a stacked pair with previous pair
         #      ___
@@ -72,16 +70,14 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         #    i ... j
         #
         # TODO: generalize C_eff_stacked_pair to be function of base pairs q (at i,j) and r (at i+1,j-1)
-        Z_BPq[i][j].Q  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N].Q
-        if calc_deriv: Z_BPq[i][j].dQ += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N].dQ
+        Z_BPq[i][j]  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[(i+1) % N][(j-1) % N]
 
     # base pair brings together two strands that were previously disconnected
     #
     #   \       /
     #    i ... j
     #
-    Z_BPq [i][j].Q += (C_std/Kd_BPq) * Z_cut[i][j].Q
-    if calc_deriv: Z_BPq[i][j].dQ += (C_std/Kd_BPq) * Z_cut[i][j].dQ
+    Z_BPq [i][j] += (C_std/Kd_BPq) * Z_cut[i][j]
 
     if (ligated[i]) and (ligated[j-1]):
 
@@ -93,10 +89,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         #    i ... j - j-1 ~
         #
         for k in range( i+2, i+offset-1 ):
-            if ligated[k % N]:
-                Z_BPq [i][j].Q += Z_BP[(i+1) % N][k % N].Q * C_eff_for_coax[(k+1) % N][(j-1) % N].Q * l**2 * l_coax * K_coax / Kd_BPq
-                if calc_deriv: Z_BPq[i][j].dQ += (Z_BP[(i+1) % N][k % N].dQ * C_eff_for_coax[(k+1) % N][(j-1) % N].Q +
-                                Z_BP[(i+1) % N][k % N].Q * C_eff_for_coax[(k+1) % N][(j-1) % N].dQ ) * l**2 * l_coax * K_coax / Kd_BPq
+            if ligated[k % N]: Z_BPq [i][j] += Z_BP[(i+1) % N][k % N] * C_eff_for_coax[(k+1) % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BPq
 
         # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
         #            ___
@@ -106,10 +99,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         #  ~ i+1 - i ... j
         #
         for k in range( i+2, i+offset-1 ):
-            if ligated[(k-1) % N]:
-                Z_BPq [i][j].Q += C_eff_for_coax[(i+1) % N][(k-1) % N].Q * Z_BP[k % N][(j-1) % N].Q * l**2 * l_coax * K_coax / Kd_BPq
-                if calc_deriv: Z_BPq[i][j].dQ += (C_eff_for_coax[(i+1) % N][(k-1) % N].dQ * Z_BP[k % N][(j-1) % N].Q +
-                                C_eff_for_coax[(i+1) % N][(k-1) % N].Q * Z_BP[k % N][(j-1) % N].dQ ) * l**2 * l_coax * K_coax / Kd_BPq
+            if ligated[(k-1) % N]: Z_BPq [i][j] += C_eff_for_coax[(i+1) % N][(k-1) % N] * Z_BP[k % N][(j-1) % N] * l**2 * l_coax * K_coax / Kd_BPq
 
     # "left stack" but no loop closed on right (free strands hanging off j end)
     #      ___
@@ -119,9 +109,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     #    i ... j -
     #
     if ligated[ i ]:
-        for k in range( i+2, i+offset ):
-            Z_BPq[i][j].Q += Z_BP[(i+1) % N][k % N].Q * Z_cut[k % N][j].Q * C_std * K_coax / Kd_BPq
-            if calc_deriv: Z_BPq[i][j].dQ += (Z_BP[(i+1) % N][k % N].dQ * Z_cut[k % N][j].Q + Z_BP[(i+1) % N][k % N].Q * Z_cut[k % N][j].dQ ) * C_std * K_coax / Kd_BPq
+        for k in range( i+2, i+offset ): Z_BPq[i][j] += Z_BP[(i+1) % N][k % N] * Z_cut[k % N][j] * C_std * K_coax / Kd_BPq
 
     # "right stack" but no loop closed on left (free strands hanging off i end)
     #       ___
@@ -131,9 +119,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     #   - i ... j
     #
     if ligated[(j-1) % N]:
-        for k in range( i, i+offset-1 ):
-            Z_BPq[i][j].Q += Z_cut[i][k % N].Q * Z_BP[k % N][(j-1) % N].Q * C_std * K_coax / Kd_BPq
-            if calc_deriv: Z_BPq[i][j].dQ+= ( Z_cut[i][k % N].dQ * Z_BP[k % N][(j-1) % N].Q  + Z_cut[i][k % N].Q * Z_BP[k % N][(j-1) % N].dQ ) * C_std * K_coax / Kd_BPq
+        for k in range( i, i+offset-1 ): Z_BPq[i][j] += Z_cut[i][k % N] * Z_BP[k % N][(j-1) % N] * C_std * K_coax / Kd_BPq
 
     # key 'special sauce' for derivative w.r.t. Kd_BP
     if calc_deriv: Z_BPq[i][j].dQ += -(1.0/Kd_BPq) * Z_BPq[i][j].Q
