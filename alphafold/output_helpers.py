@@ -2,7 +2,7 @@ def _show_results( self ):
     print 'sequence =', self.sequence
     cutpoint = ''
     for i in range( self.N ):
-        if self.is_cutpoint[ i ]: cutpoint += 'X'
+        if not self.ligated[ i ]: cutpoint += 'X'
         else: cutpoint += '-'
     print 'cutpoint =', cutpoint
     print 'circle   = ', self.circle

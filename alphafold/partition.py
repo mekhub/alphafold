@@ -69,7 +69,7 @@ class Partition:
         '''
         Do the dynamic programming to fill partition function matrices
         '''
-        initialize_sequence_information( self ) # N, sequence, is_cutpoint, any_intervening_cutpoint
+        initialize_sequence_information( self ) # N, sequence, ligated, all_ligated
         initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, Z_cut, Z_coax; dZ_BP, dC_eff, dZ_linear, dZ_cut, dZ_coax )
         initialize_base_pair_types( self )
 
@@ -147,22 +147,24 @@ def initialize_sequence_information( self ):
     any_intervening_cutpoint = any cutpoint exists between i and j (N X N)
     '''
     # initialize sequence
-    if isinstance( self.sequences, str ): self.sequence = self.sequences
+    sequences = self.sequences
+    if isinstance( sequences, str ): self.sequence = sequences
     else:
         self.sequence = ''
-        for i in range( len( self.sequences ) ): self.sequence += self.sequences[i]
+        for i in range( len( sequences ) ): self.sequence += sequences[i]
     self.N = len( self.sequence )
+    N = self.N
 
-    # initialize cutpoint information
-    self.is_cutpoint = [False] * self.N
-    if isinstance( self.sequences, list ):
+    ligated = [True]*N # WrappedArray( N, True )
+    if isinstance( sequences, list ):
         L = 0
-        for i in range( len(self.sequences)-1 ):
-            L = L + len( self.sequences[i] )
-            self.is_cutpoint[ L-1 ] = True
-    if not self.circle: self.is_cutpoint[ self.N-1 ] = True
+        for i in range( len(sequences)-1 ):
+            L = L + len( sequences[i] )
+            ligated[ L-1 ] = False
+    if not self.circle: ligated[ N-1 ] = False
 
-    self.any_intervening_cutpoint = initialize_any_intervening_cutpoint( self.is_cutpoint )
+    self.ligated = ligated
+    self.all_ligated = initialize_all_ligated( ligated )
 
 ##################################################################################################
 def initialize_dynamic_programming_matrices( self ):
@@ -213,18 +215,23 @@ def initialize_base_pair_types( self ):
     self.base_pair_types.append( BasePairType( '', '', self.params.Kd_BP, N ) ) # generic match
 
 ##################################################################################################
-def initialize_any_intervening_cutpoint( is_cutpoint ):
-    N = len( is_cutpoint )
-    any_intervening_cutpoint = [[]]*N
-    for i in range( N ): any_intervening_cutpoint[i] = [False]*N
+def initialize_all_ligated( ligated ):
+    '''
+    all_ligated is needed to keep track of whether an apical loop is long enough
+    to be 'closed' into a hairpin by base pair formation.
+    TODO: alternatively could create a 'hairpin_OK' matrix -- that
+          would be more analogous to pre-scanning for protein/ligand binding sites too.
+    '''
+    N = len( ligated )
+    all_ligated = initialize_zero_matrix( N )
     for i in range( N ): #index of subfragment
         found_cutpoint = False
-        any_intervening_cutpoint[ i ][ i ] = False
+        all_ligated[ i ][ i ] = True
         for offset in range( N ): #length of subfragment
             j = (i + offset) % N;  # N cyclizes
-            any_intervening_cutpoint[ i ][ j ] = found_cutpoint
-            if is_cutpoint[ j ]: found_cutpoint = True
-    return any_intervening_cutpoint
+            all_ligated[ i ][ j ] = ( not found_cutpoint )
+            if not ligated[ j ]: found_cutpoint = True
+    return all_ligated
 
 ##################################################################################################
 def _calc_mfe( self ):
