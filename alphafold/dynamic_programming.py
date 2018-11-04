@@ -1,16 +1,17 @@
 from copy import deepcopy
 
-
 class DynamicProgrammingMatrix:
     '''
-    Dynamic Programming Matrix that automatically does wrapping modulo N
+    Dynamic Programming 2-D Matrix that automatically:
+      does wrapping modulo N,
+      knows how to update values at i,j
     '''
     def __init__( self, N, val = 0.0, diag_val = 0.0, DPlist = None, update_func = None ):
         self.N = N
-        #self.DPmatrix = WrappedArray( N )
+        #self.DPmatrix = WrappedArray( N ) # TODO
         self.DPmatrix = [None]*N
         for i in range( N ):
-            #self.DPmatrix[i] = WrappedArray( N )
+            #self.DPmatrix[i] = WrappedArray( N ) # TODO
             self.DPmatrix[i] = [None]*N
             for j in range( N ):
                 self.DPmatrix[i][j] = DynamicProgrammingData( val )
@@ -25,7 +26,34 @@ class DynamicProgrammingMatrix:
 
     def __len__( self ): return len( self.DPmatrix )
 
-    def update( self, partition, i, j ): self.update_func( partition, i, j )
+    def update( self, partition, i, j ):
+        self.DPmatrix[ i ][ j ].zero()
+        self.update_func( partition, i, j )
+
+
+class DynamicProgrammingList:
+    '''
+    Dynamic Programming 1-D list that automatically:
+      does wrapping modulo N,
+      knows how to update values at i,j
+    Used for Z_final
+    '''
+    def __init__( self, N, val = 0.0, update_func = None ):
+        self.N = N
+        self.DPlist = []
+        for i in range( N ):
+            self.DPlist.append( DynamicProgrammingData( val ) )
+
+        self.update_func = update_func
+
+    def __getitem__( self, idx ):
+        return self.DPlist[ idx ]
+
+    def __len__( self ): return len( self.DPlist )
+
+    def update( self, partition, i ):
+        self.DPlist[ i ].zero()
+        self.update_func( partition, i )
 
 class DynamicProgrammingData:
     '''
@@ -39,6 +67,11 @@ class DynamicProgrammingData:
         self.dQ = 0.0
         self.contribs = []
         self.info = []
+
+    def zero( self ):
+        self.Q = 0.0
+        self.dQ = 0.0
+        self.contribs = []
 
     def __iadd__(self, other):
         self.Q += other.Q

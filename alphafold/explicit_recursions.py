@@ -339,95 +339,90 @@ def update_Z_linear( self, i, j ):
             if calc_deriv: Z_linear[i][j].dQ += Z_linear[i][(k-1) % N].dQ * Z_coax[k % N][j].Q + Z_linear[i][(k-1) % N].Q * Z_coax[k % N][j].dQ
 
 ##################################################################################################
-def get_Z_final( self ):
+def update_Z_final( self, i ):
     # Z_final is total partition function, and is computed at end of filling dynamic programming arrays
     # Get the answer (in N ways!) --> so final output is actually Z_final(i), an array.
     # Equality of the array is tested in run_cross_checks()
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax, calc_deriv, calc_contrib ) = unpack_variables( self )
 
-    Z_final =[]
+    Z_final = self.Z_final
+    if not ligated[(i - 1) % N]:
+        #
+        #      i ------- i-1
+        #
+        #     or equivalently
+        #        ________
+        #       /        \
+        #       \        /
+        #        i-1    i
+        #
+        Z_final[i].Q  += Z_linear[i][(i-1) % N].Q
+        if calc_deriv: Z_final[i].dQ += Z_linear[i][(i-1) % N].dQ
+        if calc_contrib: Z_final[i].contribs.append( (Z_linear[i][(i-1) % N].Q, [(self.Z_linear, i, i-1)]) )
+    else:
+        # Need to 'ligate' across i-1 to i
+        # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
 
-    for i in range( N ):
-        Z_final.append( DynamicProgrammingData() )
+        # Need to remove Z_coax contribution from C_eff, since its covered by C_eff_stacked_pair below.
+        Z_final[i].Q  += self.C_eff_no_coax_singlet[i][(i - 1) % N].Q * l / C_std
+        if calc_deriv: Z_final[i].dQ += self.C_eff_no_coax_singlet[i][(i - 1) % N].dQ * l / C_std
 
-        if not ligated[(i + N - 1) % N]:
+        for c in range( i, i + N - 1):
+            if not ligated[c % N]:
+                #any split segments, combined independently
+                #
+                #   c+1 --- i-1 - i --- c
+                #               *
+                Z_final[i].Q  += Z_linear[i][c % N].Q * Z_linear[(c+1) % N][(i-1) % N ].Q
+                if calc_deriv: Z_final[i].dQ += ( Z_linear[i][c % N].dQ * Z_linear[(c+1) % N][(i-1) % N ].Q + Z_linear[i][c % N].Q * Z_linear[(c+1) % N][(i-1) % N ].dQ )
+
+        # base pair forms a stacked pair with previous pair
+        #
+        #   - j+1 - j -
+        #      :    :
+        #      :    :
+        #   - i-1 - i -
+        #         *
+        for j in range( i+1, (i + N - 1) ):
+            if ligated[ j % N ]:
+                Z_final[i].Q  += C_eff_stacked_pair * Z_BP[i % N][j % N].Q * Z_BP[(j+1) % N][(i - 1) % N].Q
+                if calc_deriv: Z_final[i].dQ += C_eff_stacked_pair * (Z_BP[i % N][j % N].dQ * Z_BP[(j+1) % N][(i - 1) % N].Q + Z_BP[i % N][j % N].Q * Z_BP[(j+1) % N][(i - 1) % N].dQ )
+
+        C_eff_for_coax = C_eff if allow_strained_3WJ else self.C_eff_no_BP_singlet
+
+        # New co-axial stack might form across ligation junction
+        for j in range( i + 1, i + N - 2):
+            # If the two coaxially stacked base pairs are connected by a loop.
             #
-            #      i ------- i-1
-            #
-            #     or equivalently
-            #        ________
-            #       /        \
-            #       \        /
-            #        i-1    i
-            #
-            Z_final[i].Q  += Z_linear[i][(i-1) % N].Q
-            if calc_deriv: Z_final[i].dQ += Z_linear[i][(i-1) % N].dQ
-            if calc_contrib: Z_final[i].contribs.append( (Z_linear[i][(i-1) % N].Q, [(self.Z_linear, i, i-1)]) )
-        else:
-            # Need to 'ligate' across i-1 to i
-            # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
-
-            # Need to remove Z_coax contribution from C_eff, since its covered by C_eff_stacked_pair below.
-            Z_final[i].Q  += self.C_eff_no_coax_singlet[i][(i - 1) % N].Q * l / C_std
-            if calc_deriv: Z_final[i].dQ += self.C_eff_no_coax_singlet[i][(i - 1) % N].dQ * l / C_std
-
-            for c in range( i, i + N - 1):
-                if not ligated[c % N]:
-                    #any split segments, combined independently
-                    #
-                    #   c+1 --- i-1 - i --- c
-                    #               *
-                    Z_final[i].Q  += Z_linear[i][c % N].Q * Z_linear[(c+1) % N][(i-1) % N ].Q
-                    if calc_deriv: Z_final[i].dQ += ( Z_linear[i][c % N].dQ * Z_linear[(c+1) % N][(i-1) % N ].Q + Z_linear[i][c % N].Q * Z_linear[(c+1) % N][(i-1) % N ].dQ )
-
-            # base pair forms a stacked pair with previous pair
-            #
-            #   - j+1 - j -
-            #      :    :
-            #      :    :
-            #   - i-1 - i -
+            #       ~~~~
+            #   -- k    j --
+            #  /   :    :   \
+            #  \   :    :   /
+            #   - i-1 - i --
             #         *
-            for j in range( i+1, (i + N - 1) ):
-                if ligated[ j % N ]:
-                    Z_final[i].Q  += C_eff_stacked_pair * Z_BP[i % N][j % N].Q * Z_BP[(j+1) % N][(i - 1) % N].Q
-                    if calc_deriv: Z_final[i].dQ += C_eff_stacked_pair * (Z_BP[i % N][j % N].dQ * Z_BP[(j+1) % N][(i - 1) % N].Q + Z_BP[i % N][j % N].Q * Z_BP[(j+1) % N][(i - 1) % N].dQ )
+            for k in range( j + 2, i + N - 1):
+                if not ligated[j % N]: continue
+                if not ligated[(k-1) % N]: continue
+                Z_final[i].Q  += Z_BP[i][j % N].Q * C_eff_for_coax[(j+1) % N][(k-1) % N].Q * Z_BP[k % N][(i-1) % N].Q * l * l * l_coax * K_coax
+                if calc_deriv: Z_final[i].dQ += (Z_BP[i][j % N].dQ *  C_eff_for_coax[(j+1) % N][(k-1) % N].Q *  Z_BP[k % N][(i-1) % N].Q +
+                                               Z_BP[i][j % N].Q * C_eff_for_coax[(j+1) % N][(k-1) % N].dQ *  Z_BP[k % N][(i-1) % N].Q +
+                                               Z_BP[i][j % N].Q *  C_eff_for_coax[(j+1) % N][(k-1) % N].Q * Z_BP[k % N][(i-1) % N].dQ) * l * l * l_coax * K_coax
 
-            C_eff_for_coax = C_eff if allow_strained_3WJ else self.C_eff_no_BP_singlet
+            # If the two stacked base pairs are in split segments
+            #
+            #      \    /
+            #   -- k    j --
+            #  /   :    :   \
+            #  \   :    :   /
+            #   - i-1 - i --
+            #         *
+            for k in range( j + 1, i + N - 1):
+                Z_final[i].Q  += Z_BP[i][j % N].Q * Z_cut[j % N][k % N].Q * Z_BP[k % N][(i-1) % N].Q * K_coax
+                if calc_deriv: Z_final[i].dQ += (Z_BP[i][j % N].dQ * Z_cut[j % N][k % N].Q * Z_BP[k % N][(i-1) % N].Q +
+                                               Z_BP[i][j % N].Q * Z_cut[j % N][k % N].dQ * Z_BP[k % N][(i-1) % N].Q +
+                                               Z_BP[i][j % N].Q * Z_cut[j % N][k % N].Q * Z_BP[k % N][(i-1) % N].dQ) * K_coax
 
-            # New co-axial stack might form across ligation junction
-            for j in range( i + 1, i + N - 2):
-                # If the two coaxially stacked base pairs are connected by a loop.
-                #
-                #       ~~~~
-                #   -- k    j --
-                #  /   :    :   \
-                #  \   :    :   /
-                #   - i-1 - i --
-                #         *
-                for k in range( j + 2, i + N - 1):
-                    if not ligated[j % N]: continue
-                    if not ligated[(k-1) % N]: continue
-                    Z_final[i].Q  += Z_BP[i][j % N].Q * C_eff_for_coax[(j+1) % N][(k-1) % N].Q * Z_BP[k % N][(i-1) % N].Q * l * l * l_coax * K_coax
-                    if calc_deriv: Z_final[i].dQ += (Z_BP[i][j % N].dQ *  C_eff_for_coax[(j+1) % N][(k-1) % N].Q *  Z_BP[k % N][(i-1) % N].Q +
-                                                   Z_BP[i][j % N].Q * C_eff_for_coax[(j+1) % N][(k-1) % N].dQ *  Z_BP[k % N][(i-1) % N].Q +
-                                                   Z_BP[i][j % N].Q *  C_eff_for_coax[(j+1) % N][(k-1) % N].Q * Z_BP[k % N][(i-1) % N].dQ) * l * l * l_coax * K_coax
-
-                # If the two stacked base pairs are in split segments
-                #
-                #      \    /
-                #   -- k    j --
-                #  /   :    :   \
-                #  \   :    :   /
-                #   - i-1 - i --
-                #         *
-                for k in range( j + 1, i + N - 1):
-                    Z_final[i].Q  += Z_BP[i][j % N].Q * Z_cut[j % N][k % N].Q * Z_BP[k % N][(i-1) % N].Q * K_coax
-                    if calc_deriv: Z_final[i].dQ += (Z_BP[i][j % N].dQ * Z_cut[j % N][k % N].Q * Z_BP[k % N][(i-1) % N].Q +
-                                                   Z_BP[i][j % N].Q * Z_cut[j % N][k % N].dQ * Z_BP[k % N][(i-1) % N].Q +
-                                                   Z_BP[i][j % N].Q * Z_cut[j % N][k % N].Q * Z_BP[k % N][(i-1) % N].dQ) * K_coax
-
-    self.Z_final = Z_final
 
 ##################################################################################################
 def unpack_variables( self ):
