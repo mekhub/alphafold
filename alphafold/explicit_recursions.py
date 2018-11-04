@@ -49,7 +49,7 @@ def update_Z_BPq( self, base_pair_type, i, j ):
     else:
         if not ( sequence[i] == base_pair_type.nt1 and sequence[ j ] == base_pair_type.nt2 ): return
 
-    (Z_BPq, Kd_BPq)  = ( base_pair_type.Z_BP, base_pair_type.Kd_BP )
+    (Z_BPq, Kd_BPq)  = ( self.Z_BPq[ base_pair_type ], base_pair_type.Kd_BP )
 
     if (ligated[ i ]) and (ligated[ (j-1) % N]):
         # base pair closes a loop
@@ -151,7 +151,7 @@ def update_Z_BP( self, i, j ):
     if calc_contrib: Z_BP[i][j].contribs = []
 
     for base_pair_type in self.base_pair_types:
-        Z_BPq = base_pair_type.Z_BP
+        Z_BPq = self.Z_BPq[ base_pair_type ]
         Z_BP[i][j].Q  += Z_BPq[i][j].Q
         if calc_deriv: Z_BP[i][j].dQ += Z_BPq[i][j].dQ
         #Z_BP_contrib[i][j] += Z_BPq_contrib[i][j]

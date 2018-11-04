@@ -70,8 +70,8 @@ class Partition:
         Do the dynamic programming to fill partition function matrices
         '''
         initialize_sequence_information( self ) # N, sequence, ligated, all_ligated
-        initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, Z_cut, Z_coax; dZ_BP, dC_eff, dZ_linear, dZ_cut, dZ_coax )
-        initialize_base_pair_types( self )
+        initialize_base_pair_types( self ) # C-G base pair, etc.
+        initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, Z_cut, Z_coax, etc. )
 
         # do the dynamic programming
         for offset in range( 1, self.N ): #length of subfragment
@@ -178,6 +178,8 @@ def initialize_dynamic_programming_matrices( self ):
     N = self.N
     # initialize dynamic programming matrices
     self.Z_BP     = DynamicProgrammingMatrix( N );
+    self.Z_BPq = {}
+    for base_pair_type in self.base_pair_types:self. Z_BPq[ base_pair_type ] = DynamicProgrammingMatrix( N )
     self.Z_linear = DynamicProgrammingMatrix( N, diag_val = 1.0 );
     self.Z_cut    = DynamicProgrammingMatrix( N );
     self.Z_coax   = DynamicProgrammingMatrix( N );
@@ -201,7 +203,6 @@ class BasePairType:
         self.nt1 = nt1
         self.nt2 = nt2
         self.Kd_BP = Kd_BP
-        self.Z_BP  = DynamicProgrammingMatrix( N );
         self.match_lowercase = ( nt1 == '' and nt2 == '' )
 
 ##################################################################################################
