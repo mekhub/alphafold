@@ -9,11 +9,9 @@ class DynamicProgrammingMatrix:
     '''
     def __init__( self, N, val = 0.0, diag_val = 0.0, DPlist = None, update_func = None, options = None ):
         self.N = N
-        #self.DPmatrix = WrappedArray( N ) # TODO
-        self.data = [None]*N
+        self.data = WrappedArray(N)
         for i in range( N ):
-            #self.data[i] = WrappedArray( N ) # TODO
-            self.data[i] = [None]*N
+            self.data[i] = WrappedArray( N )
             for j in range( N ):
                 self.data[i][j] = DynamicProgrammingData( val, options = options )
                 self.data[i][j].info.append( (self,i,j) )
@@ -42,9 +40,9 @@ class DynamicProgrammingList:
     '''
     def __init__( self, N, val = 0.0, update_func = None, options = None ):
         self.N = N
-        self.data = []
+        self.data = WrappedArray( N )
         for i in range( N ):
-            self.data.append( DynamicProgrammingData( val, options = options ) )
+            self.data[i] = DynamicProgrammingData( val, options = options )
         self.options = options
         self.update_func = update_func
 
@@ -123,7 +121,7 @@ class WrappedArray:
     For all the various cross-checks, like equality of partition function starting at any
      i and wrapping around to N and then back 1 and then i-1, need to keep applying modulo N.
     '''
-    def __init__( self, N, val = 0.0 ):
+    def __init__( self, N, val = None ):
         self.data = [val] * N
         self.N = N
     def __getitem__( self, idx ):
