@@ -90,9 +90,9 @@ class DynamicProgrammingData:
         return self
 
     def __mul__(self, other):
-        if not self.options: assert( self.options )
         prod = DynamicProgrammingData()
         prod.options = self.options
+        if not prod.options: prod.options = other.options
         if isinstance( other, DynamicProgrammingData ):
             prod.Q  = self.Q * other.Q
             if self.options and self.options.calc_deriv:

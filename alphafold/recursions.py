@@ -15,16 +15,13 @@ def update_Z_cut( self, i, j ):
     for c in range( i, i+offset ):
         if not ligated[c % N]:
             # strand 1  (i --> c), strand 2  (c+1 -- > j)
-            Z_seg1  = Z_seg2  = 1
-            if calc_deriv: dZ_seg1 = dZ_seg2 = 0
+            Z_seg1  = DynamicProgrammingData( 1.0 )
+            Z_seg2  = DynamicProgrammingData( 1.0 )
             if c != i :
-                Z_seg1  = Z_linear[(i+1) % N][c % N].Q
-                if calc_deriv: dZ_seg1 = Z_linear[(i+1) % N][c % N].dQ
+                Z_seg1  = Z_linear[(i+1) % N][c % N]
             if (c+1)%N != j:
-                Z_seg2  = Z_linear[(c+1) % N][(j-1) % N].Q
-                if calc_deriv: dZ_seg2 = Z_linear[(c+1) % N][(j-1) % N].dQ
-            Z_cut[i][j].Q += Z_seg1 * Z_seg2
-            if calc_deriv: Z_cut[i][j].dQ += dZ_seg1 * Z_seg2 + Z_seg1 * dZ_seg2
+                Z_seg2  = Z_linear[(c+1) % N][(j-1) % N]
+            Z_cut[i][j] += Z_seg1 * Z_seg2
             #Z_cut[i][j].contribs.append( Z_linear
 
 ##################################################################################################l
