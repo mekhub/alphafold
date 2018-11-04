@@ -62,7 +62,7 @@ def update_Z_BPq( self, base_pair_type, i, j ):
         #
         Z_BPq[i][j].Q  += (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N].Q * l * l * l_BP)
         if calc_deriv: Z_BPq[i][j].dQ += (1.0/Kd_BPq ) * ( C_eff_for_BP[(i+1) % N][(j-1) % N].dQ * l * l * l_BP)
-        if calc_contrib: self.Z_BP[i][j].contribs.append( ( (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N].Q * l * l * l_BP), [(C_eff_for_BP, i+1, j-1)] ) )
+        if calc_contrib: Z_BPq[i][j].contribs.append( ( (1.0/Kd_BPq ) * ( C_eff_for_BP [(i+1) % N][(j-1) % N].Q * l * l * l_BP), [(C_eff_for_BP, i+1, j-1)] ) )
 
         # base pair forms a stacked pair with previous pair
         #      ___
@@ -154,7 +154,7 @@ def update_Z_BP( self, i, j ):
         Z_BPq = self.Z_BPq[ base_pair_type ]
         Z_BP[i][j].Q  += Z_BPq[i][j].Q
         if calc_deriv: Z_BP[i][j].dQ += Z_BPq[i][j].dQ
-        #Z_BP_contrib[i][j] += Z_BPq_contrib[i][j]
+        if calc_contrib: Z_BP[i][j].contribs.append( ( Z_BPq[i][j].Q, [(Z_BPq,i,j)] ) )
 
 ##################################################################################################
 def update_Z_coax( self, i, j ):

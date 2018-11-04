@@ -34,6 +34,11 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
                 update_C_eff_no_coax_singlet( self, i, j )
             elif Z_backtrack == self.Z_linear:
                 update_Z_linear( self, i, j )
+            else:
+                for base_pair_type in self.base_pair_types:
+                    if Z_backtrack == self.Z_BPq[ base_pair_type ]:
+                        update_Z_BPq( self, base_pair_type, i, j )
+                        break
             self.calc_contrib = False
             p_bps_component = backtrack( self, Z_backtrack[i%N][j%N].contribs, mode )
             if len( p_bps_component ) == 0: continue
