@@ -92,7 +92,7 @@ def initialize_sequence_information( self ):
     self.N = len( self.sequence )
     N = self.N
 
-    ligated = [True]*N # WrappedArray( N, True )
+    ligated = WrappedArray( N, True )
     if isinstance( sequences, list ):
         L = 0
         for i in range( len(sequences)-1 ):

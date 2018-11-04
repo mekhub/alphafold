@@ -9,25 +9,25 @@ class DynamicProgrammingMatrix:
     def __init__( self, N, val = 0.0, diag_val = 0.0, DPlist = None, update_func = None ):
         self.N = N
         #self.DPmatrix = WrappedArray( N ) # TODO
-        self.DPmatrix = [None]*N
+        self.data = [None]*N
         for i in range( N ):
-            #self.DPmatrix[i] = WrappedArray( N ) # TODO
-            self.DPmatrix[i] = [None]*N
+            #self.data[i] = WrappedArray( N ) # TODO
+            self.data[i] = [None]*N
             for j in range( N ):
-                self.DPmatrix[i][j] = DynamicProgrammingData( val )
-                self.DPmatrix[i][j].info.append( (self,i,j) )
+                self.data[i][j] = DynamicProgrammingData( val )
+                self.data[i][j].info.append( (self,i,j) )
 
-        for i in range( N ): self.DPmatrix[i][i].Q = diag_val
+        for i in range( N ): self.data[i][i].Q = diag_val
         if DPlist != None: DPlist.append( self )
         self.update_func = update_func
 
     def __getitem__( self, idx ):
-        return self.DPmatrix[ idx ]
+        return self.data[ idx ]
 
-    def __len__( self ): return len( self.DPmatrix )
+    def __len__( self ): return len( self.data )
 
     def update( self, partition, i, j ):
-        self.DPmatrix[ i ][ j ].zero()
+        self.data[ i ][ j ].zero()
         self.update_func( partition, i, j )
 
 
@@ -40,19 +40,19 @@ class DynamicProgrammingList:
     '''
     def __init__( self, N, val = 0.0, update_func = None ):
         self.N = N
-        self.DPlist = []
+        self.data = []
         for i in range( N ):
-            self.DPlist.append( DynamicProgrammingData( val ) )
+            self.data.append( DynamicProgrammingData( val ) )
 
         self.update_func = update_func
 
     def __getitem__( self, idx ):
-        return self.DPlist[ idx ]
+        return self.data[ idx ]
 
-    def __len__( self ): return len( self.DPlist )
+    def __len__( self ): return len( self.data )
 
     def update( self, partition, i ):
-        self.DPlist[ i ].zero()
+        self.data[ i ].zero()
         self.update_func( partition, i )
 
 class DynamicProgrammingData:
@@ -109,11 +109,11 @@ class WrappedArray:
      i and wrapping around to N and then back 1 and then i-1, need to keep applying modulo N.
     '''
     def __init__( self, N, val = 0.0 ):
-        self.array = [val] * N
+        self.data = [val] * N
         self.N = N
     def __getitem__( self, idx ):
-        return self.array[idx % self.N]
+        return self.data[idx % self.N]
     def __setitem__( self, idx, item ):
-        self.array[idx % self.N] = item
+        self.data[idx % self.N] = item
     def __len__( self ):
         return self.N
