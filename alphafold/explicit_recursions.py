@@ -27,11 +27,11 @@ def update_Z_cut( self, i, j ):
             if calc_deriv: Z_cut[i][j].dQ += dZ_seg1 * Z_seg2 + Z_seg1 * dZ_seg2
             #Z_cut[i][j].contribs.append( Z_linear
 
-##################################################################################################
-def update_Z_BPq( self, base_pair_type, i, j ):
+##################################################################################################l
+def update_Z_BPq( self, i, j, base_pair_type ):
     '''
-    Z_BPq is the partition function for all structures that base pair i and j with base_pair_type q
-    Relies on previous Z contributions available for subfragments.
+    Z_BPq is the partition function for all structures that base pair i and j with base_pair_type
+    Relies on previous Z contributions available for subfragments, and Z_cut for this fragment i,j
     '''
 
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
@@ -137,6 +137,7 @@ def update_Z_BPq( self, base_pair_type, i, j ):
 
     # key 'special sauce' for derivative w.r.t. Kd_BP
     if calc_deriv: Z_BPq[i][j].dQ += -(1.0/Kd_BPq) * Z_BPq[i][j].Q
+
 
 ##################################################################################################
 def update_Z_BP( self, i, j ):

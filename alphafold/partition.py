@@ -77,18 +77,7 @@ class Partition:
         for offset in range( 1, self.N ): #length of subfragment
             for i in range( self.N ):     #index of subfragment
                 j = (i + offset) % self.N;  # N cyclizes
-                # some preliminary helpers
-                update_Z_cut( self, i, j )
-                # base pairs and co-axial stacks
-                for base_pair_type in self.base_pair_types: update_Z_BPq( self, base_pair_type, i, j )
-                update_Z_BP( self, i, j )
-                update_Z_coax( self, i, j )
-                # C_eff makes use of information on Z_BP, so compute last
-                update_C_eff_basic( self, i, j )
-                update_C_eff_no_BP_singlet( self, i, j )
-                update_C_eff_no_coax_singlet( self, i, j )
-                update_C_eff( self, i, j )
-                update_Z_linear( self, i, j )
+                for Z in self.Z_all: Z.update( self, i, j )
 
         get_Z_final( self )    # (Z, dZ_final)
         get_bpp_matrix( self ) # fill base pair probability matrix
@@ -176,17 +165,30 @@ def initialize_dynamic_programming_matrices( self ):
          Z_linear(i,i) = 1
     '''
     N = self.N
-    # initialize dynamic programming matrices
-    self.Z_BP     = DynamicProgrammingMatrix( N );
+
+    # Collection of all dynamic programming matrices -- order in this list will
+    #  determine order of updates.
+    self.Z_all = []
+
+    # some preliminary helpers
+    self.Z_cut    = DynamicProgrammingMatrix( N, DPlist = self.Z_all, update_func = update_Z_cut );
+
+    # base pairs and co-axial stacks
     self.Z_BPq = {}
-    for base_pair_type in self.base_pair_types:self. Z_BPq[ base_pair_type ] = DynamicProgrammingMatrix( N )
-    self.Z_linear = DynamicProgrammingMatrix( N, diag_val = 1.0 );
-    self.Z_cut    = DynamicProgrammingMatrix( N );
-    self.Z_coax   = DynamicProgrammingMatrix( N );
-    self.C_eff_basic           = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
-    self.C_eff_no_coax_singlet = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
-    self.C_eff_no_BP_singlet   = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
-    self.C_eff                 = DynamicProgrammingMatrix( N, diag_val = self.params.C_init );
+    for base_pair_type in self.base_pair_types:
+        # the bpt = base_pair_type holds the base_pair_type info in the lambda (Python FAQ)
+        update_func = lambda partition,i,j,bpt=base_pair_type: update_Z_BPq(partition,i,j,bpt)
+        self.Z_BPq[ base_pair_type ] = DynamicProgrammingMatrix( N, DPlist = self.Z_all,
+                                                                 update_func = update_func )
+    self.Z_BP     = DynamicProgrammingMatrix( N, DPlist = self.Z_all, update_func = update_Z_BP );
+    self.Z_coax   = DynamicProgrammingMatrix( N, DPlist = self.Z_all, update_func = update_Z_coax );
+
+    # C_eff makes use of information on Z_BP, so compute last
+    self.C_eff_basic           = DynamicProgrammingMatrix( N, diag_val = self.params.C_init, DPlist = self.Z_all, update_func = update_C_eff_basic );
+    self.C_eff_no_BP_singlet   = DynamicProgrammingMatrix( N, diag_val = self.params.C_init, DPlist = self.Z_all, update_func = update_C_eff_no_BP_singlet );
+    self.C_eff_no_coax_singlet = DynamicProgrammingMatrix( N, diag_val = self.params.C_init, DPlist = self.Z_all, update_func = update_C_eff_no_coax_singlet );
+    self.C_eff                 = DynamicProgrammingMatrix( N, diag_val = self.params.C_init, DPlist = self.Z_all, update_func = update_C_eff );
+    self.Z_linear = DynamicProgrammingMatrix( N, diag_val = 1.0, DPlist = self.Z_all, update_func = update_Z_linear );
 
 ##################################################################################################
 def initialize_zero_matrix( N ):

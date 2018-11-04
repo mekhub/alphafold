@@ -38,7 +38,7 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
             else:
                 for base_pair_type in self.base_pair_types:
                     if Z_backtrack == self.Z_BPq[ base_pair_type ]:
-                        update_Z_BPq( self, base_pair_type, i, j )
+                        update_Z_BPq( self, i, j, base_pair_type )
                         break
             self.calc_contrib = False
             p_bps_component = backtrack( self, Z_backtrack[i%N][j%N].contribs, mode )

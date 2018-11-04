@@ -5,7 +5,7 @@ class DynamicProgrammingMatrix:
     '''
     Dynamic Programming Matrix that automatically does wrapping modulo N
     '''
-    def __init__( self, N, val = 0.0, diag_val = 0.0 ):
+    def __init__( self, N, val = 0.0, diag_val = 0.0, DPlist = None, update_func = None ):
         self.N = N
         #self.DPmatrix = WrappedArray( N )
         self.DPmatrix = [None]*N
@@ -17,11 +17,15 @@ class DynamicProgrammingMatrix:
                 self.DPmatrix[i][j].info.append( (self,i,j) )
 
         for i in range( N ): self.DPmatrix[i][i].Q = diag_val
+        if DPlist != None: DPlist.append( self )
+        self.update_func = update_func
 
     def __getitem__( self, idx ):
         return self.DPmatrix[ idx ]
 
     def __len__( self ): return len( self.DPmatrix )
+
+    def update( self, partition, i, j ): self.update_func( partition, i, j )
 
 class DynamicProgrammingData:
     '''
