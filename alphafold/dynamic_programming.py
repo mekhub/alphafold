@@ -74,20 +74,23 @@ class DynamicProgrammingData:
         self.contribs = []
 
     def __iadd__(self, other):
-        self.Q += other.Q
+        self.Q  += other.Q
+        self.dQ += other.dQ
         if len( other.info ) > 0: self.contribs.append( [other.Q, other.info] )
         return self
 
     def __mul__(self, other):
         prod = DynamicProgrammingData()
         if isinstance( other, DynamicProgrammingData ):
-            prod.Q       = self.Q * other.Q
+            prod.Q  = self.Q * other.Q
+            prod.dQ = self.Q * other.dQ + self.dQ * other.Q
             info = self.info + other.info
             if len( info ) > 0:
                 prod.contribs = [ [ prod.Q, info ] ]
                 prod.info = info
         else:
-            prod.Q = self.Q * other
+            prod.Q  = self.Q * other
+            prod.dQ = self.dQ * other
             for contrib in self.contribs:
                 prod.contribs.append( [contrib[0]*other, contrib[1] ] )
             prod.info = self.info
@@ -96,6 +99,7 @@ class DynamicProgrammingData:
     def __truediv__( self, other ):
         quot = deepcopy( self )
         quot.Q /= other
+        quot.dQ/= other
         return quot
 
     __rmul__ = __mul__
