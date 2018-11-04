@@ -1,17 +1,17 @@
 from output_helpers import _show_results, _show_matrices
 from copy import deepcopy
 from alphafold.secstruct import *
-from alphafold.explicit_recursions import *
 from alphafold.dynamic_programming import *
 from alphafold.backtrack import mfe
 from alphafold.parameters import AlphaFoldParams
 
 ##################################################################################################
-def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, backtrack = False ):
+def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, backtrack = False, use_explicit_recursions = False ):
     '''
     Wrapper function into Partition() class
     '''
     p = Partition( sequences, params, calc_deriv )
+    p.use_explicit_recursions = use_explicit_recursions
     p.circle  = circle
     p.run()
     if backtrack: p.calc_mfe()
@@ -41,6 +41,7 @@ class Partition:
         self.calc_deriv = calc_deriv
         self.calc_contrib = False
         self.bps_MFE = []
+        self.use_explicit_recursions = False
         return
 
     ##############################################################################################
@@ -138,6 +139,12 @@ def initialize_dynamic_programming_matrices( self ):
     And: the order of initialization in the list Z_all will
       determine the actual order of updates during dynamic programmming at each (i,j).
     '''
+
+    if self.use_explicit_recursions:
+        from explicit_recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
+    else:
+        from recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
+
     N = self.N
 
     # Collection of all N X N dynamic programming matrices -- order in this list will
