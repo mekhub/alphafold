@@ -17,4 +17,4 @@ if __name__=='__main__':
     if args.sequences != None: # run tests
         (Z, bpp, bps_MFE, dZ) = partition( args.sequences, circle = args.circle, verbose = args.verbose, backtrack = args.backtrack, calc_deriv = args.calc_deriv, use_explicit_recursions = args.explicit )
     else:
-        test_alphafold()
+        test_alphafold( verbose = args.verbose, use_explicit_recursions = args.explicit )
