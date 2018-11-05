@@ -30,7 +30,7 @@ lines_new = []
 for line in lines:
     line_new = ''
 
-    if line.count( '.dQ' ) > 0: # if i explicitly defined dQ already
+    if line.count( '.dQ' ) or line.count( '.Q') : # if explicitly defining Q, dQ already, don't try to override
         lines_new.append( line )
         continue
 
@@ -103,7 +103,7 @@ for line in lines:
     print line,
     print line_new,
 
-    # is this an assignment? then need to create a derivative line
+    # is this an assignment? then need to create derivative and contribution lines
     assign_pos = line_new.find('+=')
     if ( assign_pos < 0 ): assign_pos = line_new.find(' = ' )
     if assign_pos > -1:
@@ -121,6 +121,7 @@ for line in lines:
                 line_deriv += line_new[ Qpos[-1]+2:]
                 print line_deriv,
                 lines_new.append(line_deriv)
+            # contrib line
 
     print
 

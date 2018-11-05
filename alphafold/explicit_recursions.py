@@ -15,15 +15,14 @@ def update_Z_cut( self, i, j ):
     for c in range( i, i+offset ):
         if not ligated.data[c%N]:
             # strand 1  (i --> c), strand 2  (c+1 -- > j)
-            Z_seg1 = DynamicProgrammingData( 1.0, options = self.options )
-            Z_seg2 = DynamicProgrammingData( 1.0, options = self.options )
-            if c != i :      Z_seg1.Q = Z_linear.data[(i+1)%N].data[c%N].Q
-            if c != i :      Z_seg1.dQ = Z_linear.data[(i+1)%N].data[c%N].dQ
-            if (c+1)%N != j: Z_seg2.Q = Z_linear.data[(c+1)%N].data[(j-1)%N].Q
-            if (c+1)%N != j: Z_seg2.dQ = Z_linear.data[(c+1)%N].data[(j-1)%N].dQ
-            Z_cut.data[i%N].data[j%N].Q += Z_seg1.Q * Z_seg2.Q
-            Z_cut.data[i%N].data[j%N].dQ += Z_seg1.dQ * Z_seg2.Q
-            Z_cut.data[i%N].data[j%N].dQ += Z_seg1.Q * Z_seg2.dQ
+            if c == i and (c+1)%N == j: Z_cut[i][j].Q += 1.0
+            if c == i and (c+1)%N != j: Z_cut.data[i%N].data[j%N].Q += Z_linear.data[(c+1)%N].data[(j-1)%N].Q
+            if c == i and (c+1)%N != j: Z_cut.data[i%N].data[j%N].dQ += Z_linear.data[(c+1)%N].data[(j-1)%N].dQ
+            if c != i and (c+1)%N == j: Z_cut.data[i%N].data[j%N].Q += Z_linear.data[(i+1)%N].data[c%N].Q
+            if c != i and (c+1)%N == j: Z_cut.data[i%N].data[j%N].dQ += Z_linear.data[(i+1)%N].data[c%N].dQ
+            if c != i and (c+1)%N != j: Z_cut.data[i%N].data[j%N].Q += Z_linear.data[(i+1)%N].data[c%N].Q * Z_linear.data[(c+1)%N].data[(j-1)%N].Q
+            if c != i and (c+1)%N != j: Z_cut.data[i%N].data[j%N].dQ += Z_linear.data[(i+1)%N].data[c%N].dQ * Z_linear.data[(c+1)%N].data[(j-1)%N].Q
+            if c != i and (c+1)%N != j: Z_cut.data[i%N].data[j%N].dQ += Z_linear.data[(i+1)%N].data[c%N].Q * Z_linear.data[(c+1)%N].data[(j-1)%N].dQ
 
 ##################################################################################################l
 def update_Z_BPq( self, i, j, base_pair_type ):
