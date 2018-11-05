@@ -40,11 +40,11 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     if base_pair_type.match_lowercase:
         if not (sequence[i].islower() and sequence[j].islower() and sequence[i]==sequence[j] ): return
     else:
-        if not ( sequence[i] == base_pair_type.nt1 and sequence[ j ] == base_pair_type.nt2 ): return
+        if not ( sequence[i] == base_pair_type.nt1 and sequence[j] == base_pair_type.nt2 ): return
 
     (Z_BPq, Kd_BPq)  = ( self.Z_BPq[ base_pair_type ], base_pair_type.Kd_BP )
 
-    if (ligated[ i ]) and (ligated[ (j-1)]):
+    if (ligated[i]) and (ligated[j-1]):
         # base pair closes a loop
         #
         #    ~~~~~~
@@ -101,7 +101,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     #    |
     #    i ... j -
     #
-    if ligated[ i ]:
+    if ligated[i]:
         for k in range( i+2, i+offset ): Z_BPq[i][j] += Z_BP[i+1][k] * Z_cut[k][j] * C_std * K_coax / Kd_BPq
 
     # "right stack" but no loop closed on left (free strands hanging off i end)
@@ -117,7 +117,6 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     # key 'special sauce' for derivative w.r.t. Kd_BP
     if self.options.calc_deriv: Z_BPq[i][j].dQ += -(1.0/Kd_BPq) * Z_BPq[i][j].Q
 
-
 ##################################################################################################
 def update_Z_BP( self, i, j ):
     '''
@@ -129,7 +128,7 @@ def update_Z_BP( self, i, j ):
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
     for base_pair_type in self.base_pair_types:
-        Z_BP[i][j]  += self.Z_BPq[ base_pair_type ][i][j]
+        Z_BP[i][j]  += self.Z_BPq[base_pair_type][i][j]
 
 ##################################################################################################
 def update_Z_coax( self, i, j ):
@@ -148,7 +147,7 @@ def update_Z_coax( self, i, j ):
     #       -- i    j --
     #
     for k in range( i+1, i+offset-1 ):
-        if ligated[ k ]: Z_coax[i][j]  += Z_BP[i][k] * Z_BP[k+1][j] * K_coax
+        if ligated[k]: Z_coax[i][j]  += Z_BP[i][k] * Z_BP[k+1][j] * K_coax
 
 ##################################################################################################
 def update_C_eff_basic( self, i, j ):
@@ -167,7 +166,7 @@ def update_C_eff_basic( self, i, j ):
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
-    exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and (ligated[j] )
+    exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and ligated[j]
 
     # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
     #
@@ -182,7 +181,7 @@ def update_C_eff_basic( self, i, j ):
     #
     C_eff_for_BP = C_eff_no_coax_singlet if exclude_strained_3WJ else C_eff
     for k in range( i+1, i+offset):
-        if ligated[ (k-1)]: C_eff_basic[i][j] += C_eff_for_BP[i][k-1] * l * Z_BP[k][j] * l_BP
+        if ligated[k-1]: C_eff_basic[i][j] += C_eff_for_BP[i][k-1] * l * Z_BP[k][j] * l_BP
 
     # j is coax-stacked, and its partner is k > i.  (look below for case with i and j coaxially stacked)
     #               _______
@@ -192,7 +191,7 @@ def update_C_eff_basic( self, i, j ):
     #
     C_eff_for_coax = C_eff_no_BP_singlet if exclude_strained_3WJ else C_eff
     for k in range( i+1, i+offset):
-        if ligated[ (k-1)]: C_eff_basic[i][j] += C_eff_for_coax[i][k-1] * Z_coax[k][j] * l * l_coax
+        if ligated[k-1]: C_eff_basic[i][j] += C_eff_for_coax[i][k-1] * Z_coax[k][j] * l * l_coax
 
 ##################################################################################################
 def update_C_eff_no_coax_singlet( self, i, j ):
@@ -266,7 +265,7 @@ def update_Z_linear( self, i, j ):
     #    i ~~~~k-1 - k...j
     #
     for k in range( i+1, i+offset):
-        if ligated[ (k-1)]: Z_linear[i][j] += Z_linear[i][k-1] * Z_BP[k][j]
+        if ligated[k-1]: Z_linear[i][j] += Z_linear[i][k-1] * Z_BP[k][j]
 
     # j is coax-stacked, and its partner is i.
     #       ------------
@@ -284,7 +283,7 @@ def update_Z_linear( self, i, j ):
     #    i ~~~~k-1 - k   j
     #
     for k in range( i+1, i+offset):
-        if ligated[ (k-1)]: Z_linear[i][j] += Z_linear[i][k-1] * Z_coax[k][j]
+        if ligated[k-1]: Z_linear[i][j] += Z_linear[i][k-1] * Z_coax[k][j]
 
 ##################################################################################################
 def update_Z_final( self, i ):
@@ -328,7 +327,7 @@ def update_Z_final( self, i ):
         #   - i-1 - i -
         #         *
         for j in range( i+1, (i + N - 1) ):
-            if ligated[ j ]: Z_final[i] += C_eff_stacked_pair * Z_BP[i][j] * Z_BP[j+1][i-1]
+            if ligated[j]: Z_final[i] += C_eff_stacked_pair * Z_BP[i][j] * Z_BP[j+1][i-1]
 
         C_eff_for_coax = C_eff if allow_strained_3WJ else C_eff_no_BP_singlet
 
