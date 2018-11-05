@@ -2,6 +2,11 @@
 with open('recursions.py') as f:
     lines = f.readlines()
 
+
+not_data_objects = ['self.Z_BPq','sequence']
+not_2D_dynamic_programming_objects = ['all_ligated']
+dynamic_programming_lists = ['Z_final']
+
 lines_new = []
 for line in lines:
     line_new = ''
@@ -36,21 +41,25 @@ for line in lines:
                     words.append( word )
                     word = ''
         elif char == ']':
-            #bracket_word += char
-            if not words[-1].replace('(','') in ['self.Z_BPq','sequence']:
+
+            # OMG this is so hacky
+            if not words[-1].replace('(','') in not_data_objects:
                 line_new += '.data'
-                line_new += '[('+arg[:-1]+')%N]'
+                if len(arg[:-1]) == 1:
+                    line_new += '['+arg[:-1]+'%N]'
+                else:
+                    line_new += '[('+arg[:-1]+')%N]'
             else:
                 line_new += bracket_word
             args.append( arg[:-1] )
             if in_second_bracket:
-                if not (words[-1] in ['all_ligated'] ):
+                if not (words[-1] in not_2D_dynamic_programming_objects ):
                     all_args.append( (words[-1],args) )
                     args = []
                     line_new += '.Q'
             else:
                 just_finished_first_bracket = True
-                if words[-1] == 'Z_final':
+                if words[-1] in dynamic_programming_lists:
                     line_new += '.Q'
             in_bracket = False
             in_second_bracket = False
@@ -64,6 +73,7 @@ for line in lines:
         print line,
         print line_new,
         print all_args
+        print
 
     line_new = line_new.replace( 'DynamicProgrammingData( 1.0, options = self.options )','1.0' )
     lines_new.append( line_new )
