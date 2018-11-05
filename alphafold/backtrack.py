@@ -21,25 +21,13 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
         if ( contrib[0] == 0.0 ): continue
         p_contrib = contrib[0]/contrib_sum
         p_bps_contrib = [ [p_contrib,[]] ]
-        print contribs, self.Z_BP
 
         for backtrack_info in contrib[1]: # each 'branch'
             ( Z_backtrack, i, j )  = backtrack_info
+            if ( i == j ): continue
+            if Z_backtrack == self.Z_BP: p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i%N,j%N)] ] for p_bp in p_bps_contrib ]
             self.options.calc_contrib = True
-            if Z_backtrack == self.Z_BP:
-                update_Z_BP( self, i, j )
-                p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i%N,j%N)] ] for p_bp in p_bps_contrib ]
-            elif Z_backtrack == self.C_eff:
-                update_C_eff( self, i, j )
-            elif Z_backtrack == self.C_eff_no_coax_singlet:
-                update_C_eff_no_coax_singlet( self, i, j )
-            elif Z_backtrack == self.Z_linear:
-                update_Z_linear( self, i, j )
-            else:
-                for base_pair_type in self.base_pair_types:
-                    if Z_backtrack == self.Z_BPq[ base_pair_type ]:
-                        update_Z_BPq( self, i, j, base_pair_type )
-                        break
+            Z_backtrack.update( self, i, j )
             self.options.calc_contrib = False
             p_bps_component = backtrack( self, Z_backtrack[i%N][j%N].contribs, mode )
             if len( p_bps_component ) == 0: continue
