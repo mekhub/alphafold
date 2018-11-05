@@ -18,8 +18,12 @@ def update_Z_cut( self, i, j ):
             Z_seg1 = DynamicProgrammingData( 1.0, options = self.options )
             Z_seg2 = DynamicProgrammingData( 1.0, options = self.options )
             if c != i :      Z_seg1.Q = Z_linear.data[(i+1)%N].data[c%N].Q
+            if c != i :      Z_seg1.dQ = Z_linear.data[(i+1)%N].data[c%N].dQ
             if (c+1)%N != j: Z_seg2.Q = Z_linear.data[(c+1)%N].data[(j-1)%N].Q
+            if (c+1)%N != j: Z_seg2.dQ = Z_linear.data[(c+1)%N].data[(j-1)%N].dQ
             Z_cut.data[i%N].data[j%N].Q += Z_seg1.Q * Z_seg2.Q
+            Z_cut.data[i%N].data[j%N].dQ += Z_seg1.dQ * Z_seg2.Q
+            Z_cut.data[i%N].data[j%N].dQ += Z_seg1.Q * Z_seg2.dQ
 
 ##################################################################################################l
 def update_Z_BPq( self, i, j, base_pair_type ):
@@ -55,6 +59,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         #    i ... j
         #
         Z_BPq.data[i%N].data[j%N].Q  += (1.0/Kd_BPq ) * ( C_eff_for_BP.data[(i+1)%N].data[(j-1)%N].Q * l * l * l_BP)
+        Z_BPq.data[i%N].data[j%N].dQ  += (1.0/Kd_BPq ) * ( C_eff_for_BP.data[(i+1)%N].data[(j-1)%N].dQ * l * l * l_BP)
 
         # base pair forms a stacked pair with previous pair
         #      ___
@@ -65,6 +70,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         #
         # TODO: generalize C_eff_stacked_pair to be function of base pairs q (at i,j) and r (at i+1,j-1)
         Z_BPq.data[i%N].data[j%N].Q  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP.data[(i+1)%N].data[(j-1)%N].Q
+        Z_BPq.data[i%N].data[j%N].dQ  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP.data[(i+1)%N].data[(j-1)%N].dQ
 
     # base pair brings together two strands that were previously disconnected
     #
@@ -72,6 +78,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     #    i ... j
     #
     Z_BPq.data[i%N].data[j%N].Q += (C_std/Kd_BPq) * Z_cut.data[i%N].data[j%N].Q
+    Z_BPq.data[i%N].data[j%N].dQ += (C_std/Kd_BPq) * Z_cut.data[i%N].data[j%N].dQ
 
     if (ligated.data[i%N]) and (ligated.data[(j-1)%N]):
 
@@ -84,6 +91,8 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         #
         for k in range( i+2, i+offset-1 ):
             if ligated.data[k%N]: Z_BPq.data[i%N].data[j%N].Q += Z_BP.data[(i+1)%N].data[k%N].Q * C_eff_for_coax.data[(k+1)%N].data[(j-1)%N].Q * l**2 * l_coax * K_coax / Kd_BPq
+            if ligated.data[k%N]: Z_BPq.data[i%N].data[j%N].dQ += Z_BP.data[(i+1)%N].data[k%N].dQ * C_eff_for_coax.data[(k+1)%N].data[(j-1)%N].Q * l**2 * l_coax * K_coax / Kd_BPq
+            if ligated.data[k%N]: Z_BPq.data[i%N].data[j%N].dQ += Z_BP.data[(i+1)%N].data[k%N].Q * C_eff_for_coax.data[(k+1)%N].data[(j-1)%N].dQ * l**2 * l_coax * K_coax / Kd_BPq
 
         # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
         #            ___
@@ -94,6 +103,8 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         #
         for k in range( i+2, i+offset-1 ):
             if ligated.data[(k-1)%N]: Z_BPq.data[i%N].data[j%N].Q += C_eff_for_coax.data[(i+1)%N].data[(k-1)%N].Q * Z_BP.data[k%N].data[(j-1)%N].Q * l**2 * l_coax * K_coax / Kd_BPq
+            if ligated.data[(k-1)%N]: Z_BPq.data[i%N].data[j%N].dQ += C_eff_for_coax.data[(i+1)%N].data[(k-1)%N].dQ * Z_BP.data[k%N].data[(j-1)%N].Q * l**2 * l_coax * K_coax / Kd_BPq
+            if ligated.data[(k-1)%N]: Z_BPq.data[i%N].data[j%N].dQ += C_eff_for_coax.data[(i+1)%N].data[(k-1)%N].Q * Z_BP.data[k%N].data[(j-1)%N].dQ * l**2 * l_coax * K_coax / Kd_BPq
 
     # "left stack" but no loop closed on right (free strands hanging off j end)
     #      ___
@@ -104,6 +115,8 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     #
     if ligated.data[i%N]:
         for k in range( i+2, i+offset ): Z_BPq.data[i%N].data[j%N].Q += Z_BP.data[(i+1)%N].data[k%N].Q * Z_cut.data[k%N].data[j%N].Q * C_std * K_coax / Kd_BPq
+        for k in range( i+2, i+offset ): Z_BPq.data[i%N].data[j%N].dQ += Z_BP.data[(i+1)%N].data[k%N].dQ * Z_cut.data[k%N].data[j%N].Q * C_std * K_coax / Kd_BPq
+        for k in range( i+2, i+offset ): Z_BPq.data[i%N].data[j%N].dQ += Z_BP.data[(i+1)%N].data[k%N].Q * Z_cut.data[k%N].data[j%N].dQ * C_std * K_coax / Kd_BPq
 
     # "right stack" but no loop closed on left (free strands hanging off i end)
     #       ___
@@ -114,9 +127,11 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     #
     if ligated.data[(j-1)%N]:
         for k in range( i, i+offset-1 ): Z_BPq.data[i%N].data[j%N].Q += Z_cut.data[i%N].data[k%N].Q * Z_BP.data[k%N].data[(j-1)%N].Q * C_std * K_coax / Kd_BPq
+        for k in range( i, i+offset-1 ): Z_BPq.data[i%N].data[j%N].dQ += Z_cut.data[i%N].data[k%N].dQ * Z_BP.data[k%N].data[(j-1)%N].Q * C_std * K_coax / Kd_BPq
+        for k in range( i, i+offset-1 ): Z_BPq.data[i%N].data[j%N].dQ += Z_cut.data[i%N].data[k%N].Q * Z_BP.data[k%N].data[(j-1)%N].dQ * C_std * K_coax / Kd_BPq
 
     # key 'special sauce' for derivative w.r.t. Kd_BP
-    if self.options.calc_deriv: Z_BPq.data[i%N].data[j%N].Q.dQ += -(1.0/Kd_BPq) * Z_BPq.data[i%N].data[j%N].Q.Q
+    if self.options.calc_deriv: Z_BPq[i][j].dQ += -(1.0/Kd_BPq) * Z_BPq[i][j].Q
 
 ##################################################################################################
 def update_Z_BP( self, i, j ):
@@ -131,6 +146,7 @@ def update_Z_BP( self, i, j ):
     for base_pair_type in self.base_pair_types:
         Z_BPq = self.Z_BPq[base_pair_type]
         Z_BP.data[i%N].data[j%N].Q  += Z_BPq.data[i%N].data[j%N].Q
+        Z_BP.data[i%N].data[j%N].dQ  += Z_BPq.data[i%N].data[j%N].dQ
 
 ##################################################################################################
 def update_Z_coax( self, i, j ):
@@ -150,6 +166,8 @@ def update_Z_coax( self, i, j ):
     #
     for k in range( i+1, i+offset-1 ):
         if ligated.data[k%N]: Z_coax.data[i%N].data[j%N].Q  += Z_BP.data[i%N].data[k%N].Q * Z_BP.data[(k+1)%N].data[j%N].Q * K_coax
+        if ligated.data[k%N]: Z_coax.data[i%N].data[j%N].dQ  += Z_BP.data[i%N].data[k%N].dQ * Z_BP.data[(k+1)%N].data[j%N].Q * K_coax
+        if ligated.data[k%N]: Z_coax.data[i%N].data[j%N].dQ  += Z_BP.data[i%N].data[k%N].Q * Z_BP.data[(k+1)%N].data[j%N].dQ * K_coax
 
 ##################################################################################################
 def update_C_eff_basic( self, i, j ):
@@ -175,6 +193,7 @@ def update_C_eff_basic( self, i, j ):
     #    i ~~~~~~ j-1 - j
     #
     if ligated.data[(j-1)%N]: C_eff_basic.data[i%N].data[j%N].Q += C_eff.data[i%N].data[(j-1)%N].Q * l
+    if ligated.data[(j-1)%N]: C_eff_basic.data[i%N].data[j%N].dQ += C_eff.data[i%N].data[(j-1)%N].dQ * l
 
     # j is base paired, and its partner is k > i. (look below for case with i and j base paired)
     #                 ___
@@ -184,6 +203,8 @@ def update_C_eff_basic( self, i, j ):
     C_eff_for_BP = C_eff_no_coax_singlet if exclude_strained_3WJ else C_eff
     for k in range( i+1, i+offset):
         if ligated.data[(k-1)%N]: C_eff_basic.data[i%N].data[j%N].Q += C_eff_for_BP.data[i%N].data[(k-1)%N].Q * l * Z_BP.data[k%N].data[j%N].Q * l_BP
+        if ligated.data[(k-1)%N]: C_eff_basic.data[i%N].data[j%N].dQ += C_eff_for_BP.data[i%N].data[(k-1)%N].dQ * l * Z_BP.data[k%N].data[j%N].Q * l_BP
+        if ligated.data[(k-1)%N]: C_eff_basic.data[i%N].data[j%N].dQ += C_eff_for_BP.data[i%N].data[(k-1)%N].Q * l * Z_BP.data[k%N].data[j%N].dQ * l_BP
 
     # j is coax-stacked, and its partner is k > i.  (look below for case with i and j coaxially stacked)
     #               _______
@@ -194,6 +215,8 @@ def update_C_eff_basic( self, i, j ):
     C_eff_for_coax = C_eff_no_BP_singlet if exclude_strained_3WJ else C_eff
     for k in range( i+1, i+offset):
         if ligated.data[(k-1)%N]: C_eff_basic.data[i%N].data[j%N].Q += C_eff_for_coax.data[i%N].data[(k-1)%N].Q * Z_coax.data[k%N].data[j%N].Q * l * l_coax
+        if ligated.data[(k-1)%N]: C_eff_basic.data[i%N].data[j%N].dQ += C_eff_for_coax.data[i%N].data[(k-1)%N].dQ * Z_coax.data[k%N].data[j%N].Q * l * l_coax
+        if ligated.data[(k-1)%N]: C_eff_basic.data[i%N].data[j%N].dQ += C_eff_for_coax.data[i%N].data[(k-1)%N].Q * Z_coax.data[k%N].data[j%N].dQ * l * l_coax
 
 ##################################################################################################
 def update_C_eff_no_coax_singlet( self, i, j ):
@@ -202,7 +225,9 @@ def update_C_eff_no_coax_singlet( self, i, j ):
 
     # some helper arrays that prevent closure of any 3WJ with a single coaxial stack and single helix with not intervening loop nucleotides
     C_eff_no_coax_singlet.data[i%N].data[j%N].Q += C_eff_basic.data[i%N].data[j%N].Q
+    C_eff_no_coax_singlet.data[i%N].data[j%N].dQ += C_eff_basic.data[i%N].data[j%N].dQ
     C_eff_no_coax_singlet.data[i%N].data[j%N].Q += C_init * Z_BP.data[i%N].data[j%N].Q * l_BP
+    C_eff_no_coax_singlet.data[i%N].data[j%N].dQ += C_init * Z_BP.data[i%N].data[j%N].dQ * l_BP
 
 ##################################################################################################
 def update_C_eff_no_BP_singlet( self, i, j ):
@@ -210,7 +235,9 @@ def update_C_eff_no_BP_singlet( self, i, j ):
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
     C_eff_no_BP_singlet.data[i%N].data[j%N].Q += C_eff_basic.data[i%N].data[j%N].Q
+    C_eff_no_BP_singlet.data[i%N].data[j%N].dQ += C_eff_basic.data[i%N].data[j%N].dQ
     C_eff_no_BP_singlet.data[i%N].data[j%N].Q += C_init * Z_coax.data[i%N].data[j%N].Q * l_coax
+    C_eff_no_BP_singlet.data[i%N].data[j%N].dQ += C_init * Z_coax.data[i%N].data[j%N].dQ * l_coax
 
 ##################################################################################################
 def update_C_eff( self, i, j ):
@@ -218,6 +245,7 @@ def update_C_eff( self, i, j ):
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
     C_eff.data[i%N].data[j%N].Q += C_eff_basic.data[i%N].data[j%N].Q
+    C_eff.data[i%N].data[j%N].dQ += C_eff_basic.data[i%N].data[j%N].dQ
 
     # j is base paired, and its partner is i
     #      ___
@@ -227,6 +255,7 @@ def update_C_eff( self, i, j ):
     #    i ... j
     #
     C_eff.data[i%N].data[j%N].Q += C_init * Z_BP.data[i%N].data[j%N].Q * l_BP
+    C_eff.data[i%N].data[j%N].dQ += C_init * Z_BP.data[i%N].data[j%N].dQ * l_BP
 
     # j is coax-stacked, and its partner is i.
     #       ------------
@@ -235,6 +264,7 @@ def update_C_eff( self, i, j ):
     #       -- i    j --
     #
     C_eff.data[i%N].data[j%N].Q += C_init * Z_coax.data[i%N].data[j%N].Q * l_coax
+    C_eff.data[i%N].data[j%N].dQ += C_init * Z_coax.data[i%N].data[j%N].dQ * l_coax
 
 ##################################################################################################
 def update_Z_linear( self, i, j ):
@@ -253,6 +283,7 @@ def update_Z_linear( self, i, j ):
     #    i ~~~~~~ j-1 - j
     #
     if ligated.data[(j-1)%N]: Z_linear.data[i%N].data[j%N].Q += Z_linear.data[i%N].data[(j-1)%N].Q
+    if ligated.data[(j-1)%N]: Z_linear.data[i%N].data[j%N].dQ += Z_linear.data[i%N].data[(j-1)%N].dQ
 
     # j is base paired, and its partner is i
     #     ___
@@ -260,6 +291,7 @@ def update_Z_linear( self, i, j ):
     #    i...j
     #
     Z_linear.data[i%N].data[j%N].Q += Z_BP.data[i%N].data[j%N].Q
+    Z_linear.data[i%N].data[j%N].dQ += Z_BP.data[i%N].data[j%N].dQ
 
     # j is base paired, and its partner is k > i
     #                 ___
@@ -268,6 +300,8 @@ def update_Z_linear( self, i, j ):
     #
     for k in range( i+1, i+offset):
         if ligated.data[(k-1)%N]: Z_linear.data[i%N].data[j%N].Q += Z_linear.data[i%N].data[(k-1)%N].Q * Z_BP.data[k%N].data[j%N].Q
+        if ligated.data[(k-1)%N]: Z_linear.data[i%N].data[j%N].dQ += Z_linear.data[i%N].data[(k-1)%N].dQ * Z_BP.data[k%N].data[j%N].Q
+        if ligated.data[(k-1)%N]: Z_linear.data[i%N].data[j%N].dQ += Z_linear.data[i%N].data[(k-1)%N].Q * Z_BP.data[k%N].data[j%N].dQ
 
     # j is coax-stacked, and its partner is i.
     #       ------------
@@ -276,6 +310,7 @@ def update_Z_linear( self, i, j ):
     #       -- i    j --
     #
     Z_linear.data[i%N].data[j%N].Q += Z_coax.data[i%N].data[j%N].Q
+    Z_linear.data[i%N].data[j%N].dQ += Z_coax.data[i%N].data[j%N].dQ
 
     # j is coax-stacked, and its partner is k > i.
     #
@@ -286,6 +321,8 @@ def update_Z_linear( self, i, j ):
     #
     for k in range( i+1, i+offset):
         if ligated.data[(k-1)%N]: Z_linear.data[i%N].data[j%N].Q += Z_linear.data[i%N].data[(k-1)%N].Q * Z_coax.data[k%N].data[j%N].Q
+        if ligated.data[(k-1)%N]: Z_linear.data[i%N].data[j%N].dQ += Z_linear.data[i%N].data[(k-1)%N].dQ * Z_coax.data[k%N].data[j%N].Q
+        if ligated.data[(k-1)%N]: Z_linear.data[i%N].data[j%N].dQ += Z_linear.data[i%N].data[(k-1)%N].Q * Z_coax.data[k%N].data[j%N].dQ
 
 ##################################################################################################
 def update_Z_final( self, i ):
@@ -307,12 +344,14 @@ def update_Z_final( self, i ):
         #        i-1    i
         #
         Z_final.data[i%N].Q += Z_linear.data[i%N].data[(i-1)%N].Q
+        Z_final.data[i%N].dQ += Z_linear.data[i%N].data[(i-1)%N].dQ
     else:
         # Need to 'ligate' across i-1 to i
         # Scaling Z_final by Kd_lig/C_std to match previous literature conventions
 
         # Need to remove Z_coax contribution from C_eff, since its covered by C_eff_stacked_pair below.
         Z_final.data[i%N].Q += C_eff_no_coax_singlet.data[i%N].data[(i-1)%N].Q * l / C_std
+        Z_final.data[i%N].dQ += C_eff_no_coax_singlet.data[i%N].data[(i-1)%N].dQ * l / C_std
 
         #any split segments, combined independently
         #
@@ -320,6 +359,8 @@ def update_Z_final( self, i ):
         #               *
         for c in range( i, i + N - 1):
             if not ligated.data[c%N]: Z_final.data[i%N].Q += Z_linear.data[i%N].data[c%N].Q * Z_linear.data[(c+1)%N].data[(i-1)%N].Q
+            if not ligated.data[c%N]: Z_final.data[i%N].dQ += Z_linear.data[i%N].data[c%N].dQ * Z_linear.data[(c+1)%N].data[(i-1)%N].Q
+            if not ligated.data[c%N]: Z_final.data[i%N].dQ += Z_linear.data[i%N].data[c%N].Q * Z_linear.data[(c+1)%N].data[(i-1)%N].dQ
 
         # base pair forms a stacked pair with previous pair
         #
@@ -330,6 +371,8 @@ def update_Z_final( self, i ):
         #         *
         for j in range( i+1, (i + N - 1) ):
             if ligated.data[j%N]: Z_final.data[i%N].Q += C_eff_stacked_pair * Z_BP.data[i%N].data[j%N].Q * Z_BP.data[(j+1)%N].data[(i-1)%N].Q
+            if ligated.data[j%N]: Z_final.data[i%N].dQ += C_eff_stacked_pair * Z_BP.data[i%N].data[j%N].dQ * Z_BP.data[(j+1)%N].data[(i-1)%N].Q
+            if ligated.data[j%N]: Z_final.data[i%N].dQ += C_eff_stacked_pair * Z_BP.data[i%N].data[j%N].Q * Z_BP.data[(j+1)%N].data[(i-1)%N].dQ
 
         C_eff_for_coax = C_eff if allow_strained_3WJ else C_eff_no_BP_singlet
 
@@ -347,6 +390,9 @@ def update_Z_final( self, i ):
                 if not ligated.data[j%N]: continue
                 if not ligated.data[(k-1)%N]: continue
                 Z_final.data[i%N].Q += Z_BP.data[i%N].data[j%N].Q * C_eff_for_coax.data[(j+1)%N].data[(k-1)%N].Q * Z_BP.data[k%N].data[(i-1)%N].Q * l * l * l_coax * K_coax
+                Z_final.data[i%N].dQ += Z_BP.data[i%N].data[j%N].dQ * C_eff_for_coax.data[(j+1)%N].data[(k-1)%N].Q * Z_BP.data[k%N].data[(i-1)%N].Q * l * l * l_coax * K_coax
+                Z_final.data[i%N].dQ += Z_BP.data[i%N].data[j%N].Q * C_eff_for_coax.data[(j+1)%N].data[(k-1)%N].dQ * Z_BP.data[k%N].data[(i-1)%N].Q * l * l * l_coax * K_coax
+                Z_final.data[i%N].dQ += Z_BP.data[i%N].data[j%N].Q * C_eff_for_coax.data[(j+1)%N].data[(k-1)%N].Q * Z_BP.data[k%N].data[(i-1)%N].dQ * l * l * l_coax * K_coax
 
             # If the two stacked base pairs are in split segments
             #
@@ -358,6 +404,9 @@ def update_Z_final( self, i ):
             #         *
             for k in range( j + 1, i + N - 1):
                 Z_final.data[i%N].Q += Z_BP.data[i%N].data[j%N].Q * Z_cut.data[j%N].data[k%N].Q * Z_BP.data[k%N].data[(i-1)%N].Q * K_coax
+                Z_final.data[i%N].dQ += Z_BP.data[i%N].data[j%N].dQ * Z_cut.data[j%N].data[k%N].Q * Z_BP.data[k%N].data[(i-1)%N].Q * K_coax
+                Z_final.data[i%N].dQ += Z_BP.data[i%N].data[j%N].Q * Z_cut.data[j%N].data[k%N].dQ * Z_BP.data[k%N].data[(i-1)%N].Q * K_coax
+                Z_final.data[i%N].dQ += Z_BP.data[i%N].data[j%N].Q * Z_cut.data[j%N].data[k%N].Q * Z_BP.data[k%N].data[(i-1)%N].dQ * K_coax
 
 
 ##################################################################################################
