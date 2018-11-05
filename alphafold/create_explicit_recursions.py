@@ -20,7 +20,8 @@ for line in lines:
     word = ''
     bracket_word = ''
     for char in line:
-        if char == ' ' and not in_bracket:
+        if (char == ' ' or char == '\n') and not in_bracket:
+            if word in ['Z_seg1','Z_seg2']: line_new += '.Q'
             line_new += char
             if len( word ) > 0:
                 words.append( word )
@@ -69,14 +70,18 @@ for line in lines:
             word += char
             just_finished_first_bracket = False
 
+    # temporary hack.
+    line_new = line_new.replace( '.Q  = DynamicProgrammingData',' = DynamicProgrammingData' )
+    lines_new.append( line_new )
+
+    line_is_assignment =  line.count('+=') or line.count(' = ' )
+
     if len(all_args)>0:
         print line,
         print line_new,
-        print all_args
+        print all_args, ' line_is_assignment: ', line_is_assignment
         print
 
-    line_new = line_new.replace( 'DynamicProgrammingData( 1.0, options = self.options )','1.0' )
-    lines_new.append( line_new )
 
 with open('explicit_recursions.py','w') as f:
     f.writelines( lines_new )

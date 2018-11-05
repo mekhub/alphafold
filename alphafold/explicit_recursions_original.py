@@ -15,16 +15,16 @@ def update_Z_cut( self, i, j ):
     for c in range( i, i+offset ):
         if not ligated.data[c % N]:
             # strand 1  (i --> c), strand 2  (c+1 -- > j)
-            Z_seg1  = Z_seg2  = 1
-            if calc_deriv: dZ_seg1 = dZ_seg2 = 0
+            Z_seg1  = DynamicProgrammingData( 1.0 )
+            Z_seg2  = DynamicProgrammingData( 1.0 )
             if c != i :
-                Z_seg1  = Z_linear.data[(i+1) % N].data[c % N].Q
-                if calc_deriv: dZ_seg1 = Z_linear.data[(i+1) % N].data[c % N].dQ
+                Z_seg1.Q  = Z_linear.data[(i+1) % N].data[c % N].Q
+                if calc_deriv: Z_seg1.dQ = Z_linear.data[(i+1) % N].data[c % N].dQ
             if (c+1)%N != j:
-                Z_seg2  = Z_linear.data[(c+1) % N].data[(j-1) % N].Q
-                if calc_deriv: dZ_seg2 = Z_linear.data[(c+1) % N].data[(j-1) % N].dQ
-            Z_cut.data[i].data[j].Q += Z_seg1 * Z_seg2
-            if calc_deriv: Z_cut.data[i].data[j].dQ += dZ_seg1 * Z_seg2 + Z_seg1 * dZ_seg2
+                Z_seg2.Q  = Z_linear.data[(c+1) % N].data[(j-1) % N].Q
+                if calc_deriv: Z_seg2.dQ = Z_linear.data[(c+1) % N].data[(j-1) % N].dQ
+            Z_cut.data[i].data[j].Q += Z_seg1.Q * Z_seg2.Q
+            if calc_deriv: Z_cut.data[i].data[j].dQ += Z_seg1.dQ * Z_seg2.Q + Z_seg1.Q * Z_seg2.dQ
             #Z_cut.data[i].data[j].contribs.append( Z_linear
 
 ##################################################################################################l

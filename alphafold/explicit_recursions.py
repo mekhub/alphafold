@@ -15,10 +15,11 @@ def update_Z_cut( self, i, j ):
     for c in range( i, i+offset ):
         if not ligated.data[c%N]:
             # strand 1  (i --> c), strand 2  (c+1 -- > j)
-            Z_prod  = 1.0
-            if c != i :      Z_prod *= Z_linear.data[(i+1)%N].data[c%N].Q
-            if (c+1)%N != j: Z_prod *= Z_linear.data[(c+1)%N].data[(j-1)%N].Q
-            Z_cut.data[i%N].data[j%N].Q += Z_prod
+            Z_seg1 = DynamicProgrammingData( 1.0, options = self.options )
+            Z_seg2 = DynamicProgrammingData( 1.0, options = self.options )
+            if c != i :      Z_seg1.Q = Z_linear.data[(i+1)%N].data[c%N].Q
+            if (c+1)%N != j: Z_seg2.Q = Z_linear.data[(c+1)%N].data[(j-1)%N].Q
+            Z_cut.data[i%N].data[j%N].Q += Z_seg1.Q * Z_seg2.Q
 
 ##################################################################################################l
 def update_Z_BPq( self, i, j, base_pair_type ):
