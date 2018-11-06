@@ -2,14 +2,15 @@ def _show_results( self ):
     print 'sequence =', self.sequence
     cutpoint = ''
     for i in range( self.N ):
-        if self.is_cutpoint[ i ]: cutpoint += 'X'
+        if not self.ligated[ i ]: cutpoint += 'X'
         else: cutpoint += '-'
     print 'cutpoint =', cutpoint
     print 'circle   = ', self.circle
-    print 'Z =',self.Z_final[0]
+    print 'Z =',self.Z_final.val(0)
 
 def _show_matrices( self ):
     output_DP( "Z_BP", self.Z_BP )
+    output_DP( "C_eff_basic", self.C_eff_basic )
     output_DP( "C_eff", self.C_eff, self.Z_final )
     #output_DP( "dC_eff", self.dC_eff, self.dZ_final )
     output_DP( "Z_coax", self.Z_coax )
@@ -23,8 +24,8 @@ def output_DP( tag, X, X_final = []):
     for i in range( N ):
         for q in range( i ): print '          ', # padding to line up
         for j in range( N ):
-            print ' %9.3f' % X[i][(i+j) % N],
-        if len( X_final ) > 0: print '==> %9.3f' % X_final[i],
+            print ' %9.3f' % X.val(i,(i+j) % N)
+        if len( X_final ) > 0: print '==> %9.3f' % X_final.val(i)
         print
 
 def output_square( tag, X ):
