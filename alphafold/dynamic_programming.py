@@ -1,5 +1,5 @@
 from copy import deepcopy
-import sys, traceback
+from wrapped_array import WrappedArray
 
 class DynamicProgrammingMatrix:
     '''
@@ -26,10 +26,13 @@ class DynamicProgrammingMatrix:
 
     def __len__( self ): return len( self.data )
 
+    def val( self, i, j ): return self.data[i][j].Q
+    def deriv( self, i, j ): return self.data[i][j].dQ
+    def get_contribs( self, i, j ): return self.data[i][j].contribs
+
     def update( self, partition, i, j ):
         self.data[ i ][ j ].zero()
         self.update_func( partition, i, j )
-
 
 class DynamicProgrammingList:
     '''
@@ -53,6 +56,10 @@ class DynamicProgrammingList:
         self.data[ idx ] = val
 
     def __len__( self ): return len( self.data )
+
+    def val( self, i ): return self.data[i].Q
+    def deriv( self, i ): return self.data[i].dQ
+    def get_contribs( self, i ): return self.data[i].contribs
 
     def update( self, partition, i ):
         self.data[ i ].zero()

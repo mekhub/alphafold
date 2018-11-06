@@ -1,7 +1,7 @@
 from output_helpers import _show_results, _show_matrices
 from copy import deepcopy
 from alphafold.secstruct import *
-from alphafold.dynamic_programming import *
+from alphafold.wrapped_array import WrappedArray
 from alphafold.backtrack import mfe
 from alphafold.parameters import AlphaFoldParams
 
@@ -19,7 +19,7 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
     p.show_results()
     p.run_cross_checks()
 
-    return ( p.Z_final[0].Q, p.bpp, p.bps_MFE, p.Z_final[0].dQ )
+    return ( p.Z_final.val(0), p.bpp, p.bps_MFE, p.Z_final.deriv(0) )
 
 ##################################################################################################
 class Partition:
@@ -92,7 +92,11 @@ def initialize_sequence_information( self ):
     self.N = len( self.sequence )
     N = self.N
 
-    ligated = WrappedArray( N, True )
+    if self.use_explicit_recursions:
+        ligated = [True] * N
+    else:
+        ligated = WrappedArray( N, True )
+
     if isinstance( sequences, list ):
         L = 0
         for i in range( len(sequences)-1 ):
@@ -147,8 +151,10 @@ def initialize_dynamic_programming_matrices( self ):
 
     if self.use_explicit_recursions:
         from explicit_recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
+        from explicit_dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
     else:
         from recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
+        from dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
 
     N = self.N
 
@@ -183,6 +189,7 @@ def initialize_dynamic_programming_matrices( self ):
 
 ##################################################################################################
 def initialize_zero_matrix( N ):
+    from alphafold.dynamic_programming import WrappedArray
     X = WrappedArray( N )
     for i in range( N ): X[ i ] = WrappedArray( N )
     return X
@@ -217,7 +224,7 @@ def get_bpp_matrix( self ):
     self.bpp = initialize_zero_matrix( self.N )
     for i in range( self.N ):
         for j in range( self.N ):
-            self.bpp[i][j] = self.Z_BP[i][j].Q * self.Z_BP[j][i].Q * self.params.Kd_BP / self.Z_final[0].Q
+            self.bpp[i][j] = self.Z_BP.val(i,j) * self.Z_BP.val(j,i) * self.params.Kd_BP / self.Z_final.val(0)
 
 ##################################################################################################
 def _calc_mfe( self ):
@@ -228,11 +235,12 @@ def _calc_mfe( self ):
     p_MFE = [0.0]*N
     bps_MFE = [[]]*N
     self.options.calc_contrib = True
-    for i in range( N ): self.Z_final.update( self, i )
+    #for i in range( N ):   TODO: fill in all contribs!!
+    for i in range( 1 ): self.Z_final.update( self, i )
 
     #for i in range( N ):   TODO: fill in all contribs!!
     for i in range( 1 ):
-        (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final[i].contribs )
+        (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final.get_contribs(i) )
         assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
         # TODO check bps are also the same! (use set equality!)
     print
@@ -245,9 +253,9 @@ def _calc_mfe( self ):
 def _run_cross_checks( self ):
     # stringent test that partition function is correct -- all the Z(i,i) agree.
     for i in range( self.N ):
-        assert( abs( ( self.Z_final[i].Q - self.Z_final[0].Q ) / self.Z_final[0].Q ) < 1.0e-5 )
-        if self.options.calc_deriv and self.Z_final[0].dQ > 0:
-            assert( self.Z_final[0].dQ == 0 or  abs( ( self.Z_final[i].dQ - self.Z_final[0].dQ ) / self.Z_final[0].dQ ) < 1.0e-5 )
+        assert( abs( ( self.Z_final.val(i) - self.Z_final.val(0) ) / self.Z_final.val(0) ) < 1.0e-5 )
+        if self.options.calc_deriv and self.Z_final.deriv(0) > 0:
+            assert( self.Z_final.deriv(0) == 0 or  abs( ( self.Z_final.deriv(i) - self.Z_final.deriv(0) ) / self.Z_final.deriv(0) ) < 1.0e-5 )
 
     # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
     if self.options.calc_deriv:
@@ -255,6 +263,6 @@ def _run_cross_checks( self ):
         for i in range( self.N ):
             for j in range( self.N ):
                 bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
-        bpp_tot_based_on_deriv = -self.Z_final[0].dQ * self.params.Kd_BP / self.Z_final[0].Q
+        bpp_tot_based_on_deriv = -self.Z_final.deriv(0) * self.params.Kd_BP / self.Z_final.val(0)
         print 'bpp_tot',bpp_tot,'bpp_tot_based_on_deriv',bpp_tot_based_on_deriv
         if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )

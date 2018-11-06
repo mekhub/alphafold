@@ -4,7 +4,7 @@ with open('recursions.py') as f:
 
 
 not_data_objects = ['self.Z_BPq','sequence']
-not_2D_dynamic_programming_objects = ['all_ligated']
+not_2D_dynamic_programming_objects = ['all_ligated','ligated','self.Z_BPq','sequence']
 dynamic_programming_lists = ['Z_final']
 dynamic_programming_data = ['Z_seg1','Z_seg2']
 
@@ -30,8 +30,11 @@ lines_new = []
 for line in lines:
     line_new = ''
 
-    if line.count( '.dQ' ) or line.count( '.Q') : # if explicitly defining Q, dQ already, don't try to override
-        lines_new.append( line )
+    if line.count( '.dQ' ) or line.count( '.Q') :
+        # if explicitly defining Q, dQ already, special case!!!
+        line_new = line.replace( '[i][j].Q', '.Q[i][j]' )
+        line_new = line_new.replace( '[i][j].dQ', '.dQ[i][j]' )
+        lines_new.append( line_new )
         continue
 
     # most important thing -- need to look for get/set of Z_BP[i][j] (DynamicProgrammingMatrix)
@@ -60,6 +63,7 @@ for line in lines:
             bracket_word += char
             arg += char
         if char == '[':
+            if not (word in not_2D_dynamic_programming_objects ) and not just_finished_first_bracket: line_new += '.Q'
             bracket_word += char
             arg = ''
             in_bracket = True
@@ -71,10 +75,7 @@ for line in lines:
                     words.append( word )
                     word = ''
         elif char == ']':
-
-            # OMG this is so hacky
             if not words[-1].replace('(','') in not_data_objects:
-                line_new += '.data'
                 if len(arg[:-1]) == 1:
                     line_new += '['+arg[:-1]+'%N]'
                 else:
@@ -83,15 +84,11 @@ for line in lines:
                 line_new += bracket_word
             args.append( arg[:-1] )
             if in_second_bracket:
-                if not (words[-1] in not_2D_dynamic_programming_objects ):
-                    assert( len( args ) == 2 )
-                    all_args.append( (len(line_new),words[-1],args[0],args[1]) )
-                    args = []
-                    line_new += '.Q'
+                assert( len( args ) == 2 )
+                all_args.append( (len(line_new),words[-1],args[0],args[1]) )
+                args = []
             else:
                 just_finished_first_bracket = True
-                if words[-1] in dynamic_programming_lists:
-                    line_new += '.Q'
             in_bracket = False
             in_second_bracket = False
             bracket_word = ''
@@ -135,7 +132,9 @@ for line in lines:
             # contrib line
             lines_new.append( ' '*num_indent + 'if self.options.calc_contrib:\n' )
             print lines_new[-1],
-            line_contrib = ' '*4 + line_new[:Qpos[0]] +  '.contribs.append( ( ' # extra indent
+            line_contrib = ' '*4 + line_new[:Qpos[0]] +  '.contribs'
+            line_contrib += line_new[Qpos[0]+2 : assign_pos+3]
+            line_contrib +=' [ (' # extra indent
             line_contrib += line_new[assign_pos+3:-1] + ', ['
             for (n,info) in enumerate(all_args):
                 if info[ 0 ] <= assign_pos: continue
@@ -147,7 +146,7 @@ for line in lines:
                 else: line_contrib += '%s%%N' % info[3]
                 line_contrib+=')'
                 if n < len( all_args )-1: line_contrib += ', '
-            line_contrib += '] ) )\n'
+            line_contrib += '] ) ]\n'
             print line_contrib,
             lines_new.append( line_contrib)
     print

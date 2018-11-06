@@ -38,13 +38,13 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     if ( all_ligated[j][i] and ( ((i-j-1) % N)) < min_loop_length ): return
 
     if base_pair_type.match_lowercase:
-        if not (sequence[i].islower() and sequence[j].islower() and sequence[i] == sequence[j] ): return
+        if not ( sequence[i].islower() and sequence[j].islower() and sequence[i] == sequence[j] ): return
     else:
         if not ( sequence[i] == base_pair_type.nt1 and sequence[j] == base_pair_type.nt2 ): return
 
     (Z_BPq, Kd_BPq)  = ( self.Z_BPq[ base_pair_type ], base_pair_type.Kd_BP )
 
-    if (ligated[i]) and (ligated[j-1]):
+    if ligated[i] and ligated[j-1]:
         # base pair closes a loop
         #
         #    ~~~~~~
@@ -72,7 +72,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     #
     Z_BPq[i][j] += (C_std/Kd_BPq) * Z_cut[i][j]
 
-    if (ligated[i]) and (ligated[j-1]):
+    if ligated[i] and ligated[j-1]:
 
         # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
         #      ___

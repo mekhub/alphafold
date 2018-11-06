@@ -29,7 +29,7 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
             self.options.calc_contrib = True
             Z_backtrack.update( self, i, j )
             self.options.calc_contrib = False
-            p_bps_component = backtrack( self, Z_backtrack[i%N][j%N].contribs, mode )
+            p_bps_component = backtrack( self, Z_backtrack.get_contribs(i%N,j%N), mode )
             if len( p_bps_component ) == 0: continue
             # put together all branches
             p_bps_contrib_new = []
