@@ -61,15 +61,3 @@ class DynamicProgrammingList:
         self.dQ[ i ] = 0.0
         self.contribs[ i ] = []
         self.update_func( partition, i )
-
-class DynamicProgrammingData:
-    '''
-    Dynamic programming object, with derivs and contribution accumulation.
-     Q   = value
-     dQ  = derivative (later will generalize to gradient w.r.t. all parameters)
-     contrib = contributions
-    '''
-    def __init__( self, val = 0.0, options = None ):
-        self.Q = val
-        self.dQ = 0.0
-        self.contribs = []

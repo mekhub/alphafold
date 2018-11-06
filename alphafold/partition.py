@@ -6,12 +6,12 @@ from alphafold.backtrack import mfe
 from alphafold.parameters import AlphaFoldParams
 
 ##################################################################################################
-def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, backtrack = False, use_explicit_recursions = False ):
+def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, backtrack = False, use_simple_recursions = False ):
     '''
     Wrapper function into Partition() class
     '''
     p = Partition( sequences, params, calc_deriv )
-    p.use_explicit_recursions = use_explicit_recursions
+    p.use_simple_recursions = use_simple_recursions
     p.circle  = circle
     p.run()
     if backtrack: p.calc_mfe()
@@ -40,7 +40,7 @@ class Partition:
         self.circle = False  # user can update later --> circularize sequence
         self.options = PartitionOptions( calc_deriv = calc_deriv )
         self.bps_MFE = []
-        self.use_explicit_recursions = False
+        self.use_simple_recursions = False
         return
 
     ##############################################################################################
@@ -92,10 +92,8 @@ def initialize_sequence_information( self ):
     self.N = len( self.sequence )
     N = self.N
 
-    if self.use_explicit_recursions:
-        ligated = [True] * N
-    else:
-        ligated = WrappedArray( N, True )
+    ligated = [True] * N
+    if self.use_simple_recursions: ligated = WrappedArray( N, True )
 
     if isinstance( sequences, list ):
         L = 0
@@ -149,10 +147,9 @@ def initialize_dynamic_programming_matrices( self ):
       determine the actual order of updates during dynamic programmming at each (i,j).
     '''
 
-    if self.use_explicit_recursions:
-        from explicit_recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
-        from explicit_dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
-    else:
+    from explicit_recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
+    from explicit_dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
+    if self.use_simple_recursions: # over-ride with simpler recursions that are easier for user to input.
         from recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
         from dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
 
