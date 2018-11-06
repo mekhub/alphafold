@@ -43,14 +43,19 @@ for line in lines:
     words = []
     word = ''
     bracket_word = ''
+    at_beginning = True
+    num_indent = 0
     for char in line:
         if (char == ' ' or char == '\n') and not in_bracket:
+            if at_beginning: num_indent += 1
             if word in dynamic_programming_data: line_new += '.Q'
             line_new += char
             if len( word ) > 0:
                 words.append( word )
                 word = ''
             continue
+        else:
+            at_beginning = False
         if in_bracket:
             bracket_word += char
             arg += char
@@ -111,9 +116,13 @@ for line in lines:
         Qpos = find_substring( '.Q', line_new )
         if len( Qpos ) > 0 and Qpos[0] < assign_pos:
             assert( len( Qpos ) > 1 )
+
+            lines_new.append( ' '*num_indent + 'if self.options.calc_deriv:\n' )
+            print lines_new[-1],
+            line_beginning = ' '*4 + line_new[:Qpos[0]] + '.dQ' # extra indent
             # deriv line
             for i in range( 1, len( Qpos ) ):
-                line_deriv = line_new[:Qpos[0]] + '.dQ'
+                line_deriv = line_beginning
                 assert( Qpos[i] > assign_pos )
                 for j in range(1, len( Qpos) ):
                     line_deriv += line_new[Qpos[j-1]+2 : Qpos[j]]
@@ -124,7 +133,9 @@ for line in lines:
                 lines_new.append(line_deriv)
 
             # contrib line
-            line_contrib = line_new[:Qpos[0]] + '.contribs.append( ( '
+            lines_new.append( ' '*num_indent + 'if self.options.calc_contrib:\n' )
+            print lines_new[-1],
+            line_contrib = ' '*4 + line_new[:Qpos[0]] +  '.contribs.append( ( ' # extra indent
             line_contrib += line_new[assign_pos+3:-1] + ', ['
             for (n,info) in enumerate(all_args):
                 if info[ 0 ] <= assign_pos: continue
