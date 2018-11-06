@@ -38,7 +38,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     if ( all_ligated[j][i] and ( ((i-j-1) % N)) < min_loop_length ): return
 
     if base_pair_type.match_lowercase:
-        if not (sequence[i].islower() and sequence[j].islower() and sequence[i]==sequence[j] ): return
+        if not (sequence[i].islower() and sequence[j].islower() and sequence[i] == sequence[j] ): return
     else:
         if not ( sequence[i] == base_pair_type.nt1 and sequence[j] == base_pair_type.nt2 ): return
 

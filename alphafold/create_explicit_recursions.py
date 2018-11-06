@@ -79,7 +79,8 @@ for line in lines:
             args.append( arg[:-1] )
             if in_second_bracket:
                 if not (words[-1] in not_2D_dynamic_programming_objects ):
-                    all_args.append( (words[-1],args) )
+                    assert( len( args ) == 2 )
+                    all_args.append( (len(line_new),words[-1],args[0],args[1]) )
                     args = []
                     line_new += '.Q'
             else:
@@ -104,7 +105,7 @@ for line in lines:
     print line_new,
 
     # is this an assignment? then need to create derivative and contribution lines
-    assign_pos = line_new.find('+=')
+    assign_pos = line_new.find('+= ')
     if ( assign_pos < 0 ): assign_pos = line_new.find(' = ' )
     if assign_pos > -1:
         Qpos = find_substring( '.Q', line_new )
@@ -121,8 +122,23 @@ for line in lines:
                 line_deriv += line_new[ Qpos[-1]+2:]
                 print line_deriv,
                 lines_new.append(line_deriv)
-            # contrib line
 
+            # contrib line
+            line_contrib = line_new[:Qpos[0]] + '.contribs.append( ( '
+            line_contrib += line_new[assign_pos+3:-1] + ', ['
+            for (n,info) in enumerate(all_args):
+                if info[ 0 ] <= assign_pos: continue
+                line_contrib += '(%s,' % info[1]
+                if len(info[2])> 1:  line_contrib += '(%s)%%N' % info[2]
+                else: line_contrib += '%s%%N' % info[2]
+                line_contrib+=','
+                if len(info[3])>1:   line_contrib += '(%s)%%N' % info[3]
+                else: line_contrib += '%s%%N' % info[3]
+                line_contrib+=')'
+                if n < len( all_args )-1: line_contrib += ', '
+            line_contrib += '] ) )\n'
+            print line_contrib,
+            lines_new.append( line_contrib)
     print
 
 
