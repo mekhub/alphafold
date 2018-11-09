@@ -27,3 +27,54 @@ def bps( secstruct ):
     bps_list.sort()
     return bps_list
 
+def motifs( secstruct, N = 0 ):
+    '''
+    Parse secstruct into its structural motifs:
+      hairpins, interior loops, multiway junctions, exterior strands
+    '''
+    if isinstance( secstruct, list ):
+        bps_list = secstruct
+        assert( N > 0 ) # must provide N if secstruct is entered as a list.
+    else:
+        assert( isinstance( secstruct, str ) )
+        bps_list = bps( secstruct )
+        N = len( secstruct )
+    pair_map = {}
+    for i,j in bps_list:
+        pair_map[i] = j
+        pair_map[j] = i
+
+    motifs = []
+    motif = []
+    strand = []
+    linkage_in_motif = [False]*N
+    for i in range( N ):
+        if linkage_in_motif[ i ]: pass
+        # continue down a strand until we hit a base pair
+        strand.append( i )
+        if i != strand[ 0 ] and pair_map.has_key( i ):
+            # OK found a base pair, first strand is defined
+            motif.append( strand )
+            motif_start = strand[0]
+            j = pair_map[i]
+            strand = []
+            # now follow it around until either we come back (cycle) or hit N (exterior loop)
+            while j != motif_start:
+                strand.append( j )
+                j += 1
+                strand.append( j )
+                while not pair_map.has_key( j ) and j != N:
+                    j += 1
+                    if j < N: strand.append( j )
+                motif.append( strand )
+                strand = []
+                if j == N: break
+                j = pair_map[ j ]
+            for strand in motif:
+                assert( len( strand ) >= 2 )
+                for m in strand[:-1]: linkage_in_motif[ m ] = True
+            motifs.append( motif )
+            motif = []
+            strand = [i]
+    return motifs
+
