@@ -1,4 +1,7 @@
 def secstruct( bps, N ):
+    '''
+    Convert list of base pairs to dot-paren string. N is length of RNA.
+    '''
     secstruct_string = ['.']*N
     for bp in bps:
         i = min( bp )
@@ -8,6 +11,9 @@ def secstruct( bps, N ):
     return ''.join(secstruct_string)
 
 def bps( secstruct ):
+    '''
+    Convert dot-paren secstruct into sorted list of base pairs
+    '''
     bps_list = []
     N = len ( secstruct )
     leftbrackets = []
