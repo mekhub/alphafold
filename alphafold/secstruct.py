@@ -49,7 +49,10 @@ def motifs( secstruct, N = 0 ):
     strand = []
     linkage_in_motif = [False]*N
     for i in range( N ):
-        if linkage_in_motif[ i ]: pass
+        if i > 0 and linkage_in_motif[ i-1 ]:
+            # skip if we already put this nt in a previous motif.
+            strand = [i]
+            continue
         # continue down a strand until we hit a base pair
         strand.append( i )
         if i != strand[ 0 ] and pair_map.has_key( i ):
