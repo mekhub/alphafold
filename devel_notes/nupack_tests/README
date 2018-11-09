@@ -19,6 +19,9 @@ energy CG_3WJ  -multi -dangles none  -material rna1999
 energy CG_4WJ  -multi -dangles none  -material rna1999
 energy CG  -multi -dangles none -material rna1999
 energy CCCC_GGGG  -multi -dangles none -material rna1999
+energy CAG_CG_CG_3WJ  -multi -dangles none -material rna1999
+energy CAG_CAG_CG_3WJ  -multi -dangles none -material rna1999
+energy CUG_CUG_CG_3WJ  -multi -dangles none -material rna1999
 
 # Check:
 # CG energy should be:
@@ -37,3 +40,16 @@ energy CCCC_GGGG  -multi -dangles none -material rna1999
 # Yes that equals:
 # 1.61864858092054 + 1.61864858092054 +3.40 + 0.4*3 =  7.83729716184108
 #
+
+
+# Sequence:  CAG+CG+CG
+# Structure: (.(+)(+))
+# Energy (kcal/mol):
+# 7.83729716184108
+# Yup, A doesn't count -- no dangle/mismatch -- so same as above.
+
+# Sequence:  CAG+CAG+CG
+# Structure: (.(+).(+))
+# Energy (kcal/mol):
+#7.83729716184108
+# Ditto.
