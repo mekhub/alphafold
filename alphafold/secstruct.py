@@ -46,7 +46,7 @@ def motifs( secstruct, N = 0 ):
 
     motifs = []
     motif = []
-    strand = []
+    strand = [N-1]
     linkage_in_motif = [False]*N
     for i in range( N ):
         if i > 0 and linkage_in_motif[ i-1 ]:
@@ -64,20 +64,25 @@ def motifs( secstruct, N = 0 ):
             # now follow it around until either we come back (cycle) or hit N (exterior loop)
             while j != motif_start:
                 strand.append( j )
-                j += 1
+                j = (j + 1) % N
                 strand.append( j )
-                while not pair_map.has_key( j ) and j != N:
-                    j += 1
-                    if j < N: strand.append( j )
+                while not pair_map.has_key( j ) and j != motif_start:
+                    j = ( j + 1 ) % N
+                    #if j < N: strand.append( j )
                 motif.append( strand )
                 strand = []
-                if j == N: break
+                if j == motif_start: break
                 j = pair_map[ j ]
+            if motif[-1][-1] == motif[0][0]:
+                # merge last and first strand (they form a cycle that goes across the circle from N-1 back around to 0)
+                motif[0] = motif[-1][:-1] + motif[0]
+                motif = motif[:-1]
             for strand in motif:
                 assert( len( strand ) >= 2 )
                 for m in strand[:-1]: linkage_in_motif[ m ] = True
             motifs.append( motif )
             motif = []
             strand = [i]
+    motifs.sort()
     return motifs
 

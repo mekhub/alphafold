@@ -91,7 +91,10 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     # test secstruct
     assert( secstruct( [(0,5),(1,4)],7 ) == '((..)).' )
     assert( bps(  '((..)).' ) == [(0,5),(1,4)] )
-    assert( motifs( '.(((.)(.))).' ) == [[[0, 1], [10, 11]], [[1, 2], [9, 10]], [[2, 3], [5, 6], [8, 9]], [[3, 4, 5]], [[6, 7, 8]]] )
+    assert( motifs( '.(((.)(.))).' ) == [[[1, 2], [9, 10]], [[2, 3], [5, 6], [8, 9]], [[3, 4, 5]], [[6, 7, 8]], [[10, 11, 0, 1]]] )
+    assert( motifs( '(((.)(.))).'  ) == [[[0, 1], [8, 9]], [[1, 2], [4, 5], [7, 8]], [[2, 3, 4]], [[5, 6, 7]], [[9, 10, 0]]] )
+    assert( motifs( '.(((.)(.)))'  ) == [[[1, 2], [9, 10]], [[2, 3], [5, 6], [8, 9]], [[3, 4, 5]], [[6, 7, 8]], [[10, 0, 1]]] )
+    assert( motifs( '(((.)(.)))'   ) == [[[0, 1], [8, 9]], [[1, 2], [4, 5], [7, 8]], [[2, 3, 4]], [[5, 6, 7]], [[9, 0]]] )
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser( description = "Test nearest neighbor model partitition function for RNA sequence" )
