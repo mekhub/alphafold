@@ -88,6 +88,9 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     bpp_ref = ( C_init * l**2 *l_BP/Kd_BP * (1 + C_init * l**2 *l_BP/Kd_BP)  + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax ) / Z_ref
     output_test( Z, Z_ref, bpp, [1,3], bpp_ref  )
 
+    # test secstruct
+    assert( secstruct( [(0,5),(1,4)],7 ) == '((..)).' )
+    assert( bps(  '((..)).' ) == [(0,5),(1,4)] )
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser( description = "Test nearest neighbor model partitition function for RNA sequence" )
