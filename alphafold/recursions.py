@@ -22,7 +22,7 @@ def update_Z_cut( self, i, j ):
             if c != i and (c+1)%N == j: Z_cut[i][j] += Z_linear[i+1][c]
             if c != i and (c+1)%N != j: Z_cut[i][j] += Z_linear[i+1][c] * Z_linear[c+1][j-1]
 
-##################################################################################################l
+##################################################################################################
 def update_Z_BPq( self, i, j, base_pair_type ):
     '''
     Z_BPq is the partition function for all structures that base pair i and j with base_pair_type
