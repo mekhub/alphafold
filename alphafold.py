@@ -10,11 +10,13 @@ if __name__=='__main__':
     parser.add_argument("-c","-circ","--circle", action='store_true', default=False, help='Sequence is a circle')
     parser.add_argument("-v","--verbose", action='store_true', default=False, help='output dynamic programming matrices')
     parser.add_argument("--simple", action='store_true', default=False, help='Use simple recursions (slow!)')
+    parser.add_argument("--mfe", action='store_true', default=False, help='Backtrack to get MFE')
+    parser.add_argument("--bpp", action='store_true', default=False, help='Get base pairing probability')
+    parser.add_argument("--stochastic", type=int, default=0, help='Backtrack to get stochastic structures',nargs=1)
     parser.add_argument("--calc_deriv", action='store_true', default=False, help='Calculate derivative')
-    parser.add_argument("-b","--backtrack", action='store_true', default=False, help='Backtrack to get MFE')
     args     = parser.parse_args()
 
     if args.sequences != None: # run tests
-        (Z, bpp, bps_MFE, dZ) = partition( args.sequences, circle = args.circle, verbose = args.verbose, backtrack = args.backtrack, calc_deriv = args.calc_deriv, use_simple_recursions = args.simple )
+        (Z, bpp, bps_MFE, dZ) = partition( args.sequences, circle = args.circle, verbose = args.verbose, mfe = args.mfe, calc_deriv = args.calc_deriv, calc_bpp = args.bpp, use_simple_recursions = args.simple )
     else:
         test_alphafold( verbose = args.verbose, use_simple_recursions = args.simple )

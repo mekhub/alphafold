@@ -6,16 +6,18 @@ from alphafold.backtrack import mfe
 from alphafold.parameters import AlphaFoldParams
 
 ##################################################################################################
-def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, backtrack = False, use_simple_recursions = False ):
+def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, mfe = False, n_stochastic = 0, use_simple_recursions = False, calc_bpp = False ):
     '''
     Wrapper function into Partition() class
     '''
-    p = Partition( sequences, params, calc_deriv )
+    p = Partition( sequences, params, calc_deriv, calc_all_elements = calc_bpp )
     p.use_simple_recursions = use_simple_recursions
     p.circle  = circle
     p.run()
-    if backtrack: p.calc_mfe()
-    if verbose: p.show_matrices()
+    if calc_bpp:         p.get_bpp_matrix()
+    if mfe:              p.calc_mfe()
+    if n_stochastic > 0: p.stochastic_backtrack( n_stochastic )
+    if verbose:          p.show_matrices()
     p.show_results()
     p.run_cross_checks()
 
@@ -29,7 +31,7 @@ class Partition:
     TODO: replace dynamic programming matrices with a class that auto-updates derivatives, caches each contribution for backtracking, and automatically does the modulo N wrapping
     (C) R. Das, Stanford University, 2018
     '''
-    def __init__( self, sequences, params, calc_deriv = False ):
+    def __init__( self, sequences, params, calc_deriv = False, calc_all_elements = False ):
         '''
         Required user input.
         sequences = string with sequence, or array of strings (sequences of interacting strands)
@@ -39,8 +41,16 @@ class Partition:
         self.params = params
         self.circle = False  # user can update later --> circularize sequence
         self.options = PartitionOptions( calc_deriv = calc_deriv )
-        self.bps_MFE = []
         self.use_simple_recursions = False
+        self.calc_all_elements     = calc_all_elements
+        self.calc_bpp = False
+
+        # for output:
+        self.Z       = 0
+        self.bpp     = []
+        self.bps_MFE = []
+        self.struct_MFE = []
+        self.struct_stochastic = []
         return
 
     ##############################################################################################
@@ -55,16 +65,16 @@ class Partition:
         # do the dynamic programming
         for offset in range( 1, self.N ): #length of subfragment
             for i in range( self.N ):     #index of subfragment
+                if (not self.calc_all_elements) and ( i + offset ) >= self.N: continue
                 j = (i + offset) % self.N;  # N cyclizes
                 for Z in self.Z_all: Z.update( self, i, j )
 
         for i in range( self.N): self.Z_final.update( self, i )
 
-        get_bpp_matrix( self ) # fill base pair probability matrix
-        return
-
     # boring member functions -- defined later.
+    def get_bpp_matrix( self ): _get_bpp_matrix( self ) # fill base pair probability matrix
     def calc_mfe( self ): _calc_mfe( self )
+    def calc_stochastic( self, N ): _calc_stochastic( self, N )
     def show_results( self ): _show_results( self )
     def show_matrices( self ): _show_matrices( self )
     def run_cross_checks( self ): _run_cross_checks( self )
@@ -211,13 +221,14 @@ def initialize_all_ligated( ligated ):
     return all_ligated
 
 ##################################################################################################
-def get_bpp_matrix( self ):
+def _get_bpp_matrix( self ):
     '''
     Getting base pair probability matrix.
     Gets carried out pretty fast since we've already computed the sum over structures in i..j encapsulated by a pair (i,j), as well
       as structures in j..i encapsulated by those pairs.
     So: it becomes easy to calculate partition function over all structures with base pair (i,j), and then divide by total Z.
     '''
+    assert( self.calc_all_elements )
     self.bpp = initialize_zero_matrix( self.N )
     for i in range( self.N ):
         for j in range( self.N ):
@@ -229,33 +240,49 @@ def _calc_mfe( self ):
     # Wrapper into mfe(), written out in backtrack.py
     #
     N = self.N
-    p_MFE = [0.0]*N
+    p_MFE   = [0.0]*N
     bps_MFE = [[]]*N
-    self.options.calc_contrib = True
-    #for i in range( N ):   TODO: fill in all contribs!!
-    for i in range( 1 ): self.Z_final.update( self, i )
 
-    #for i in range( N ):   TODO: fill in all contribs!!
-    for i in range( 1 ):
+    # tells dynamic programming calculations to store contributions
+    self.options.calc_contrib = True
+
+    # there are actually numerous ways to calculate MFE if we did all N^2 elements -- let's check.
+    n_test = N if self.calc_all_elements else 1
+
+    for i in range( n_test ): self.Z_final.update( self, i )
+
+    for i in range( n_test ):
         (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final.get_contribs(i) )
         assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
-        # TODO check bps are also the same! (use set equality!)
+        assert( bps_MFE[i] == bps_MFE[0] )
+
     print
     print 'Doing backtrack to get minimum free energy structure:'
     print  secstruct(bps_MFE[0],N), "   ", p_MFE[0], "[MFE]"
     print
     self.bps_MFE = bps_MFE[0]
+    self.struct_MFE = secstruct( bps_MFE[0], N)
+
+##################################################################################################
+def _calc_stochastic( self, N ):
+    #
+    # TODO: Wrapper into stochastic(), written out in backtrack.py
+    #
+    return
 
 ##################################################################################################
 def _run_cross_checks( self ):
     # stringent test that partition function is correct -- all the Z(i,i) agree.
-    for i in range( self.N ):
-        assert( abs( ( self.Z_final.val(i) - self.Z_final.val(0) ) / self.Z_final.val(0) ) < 1.0e-5 )
-        if self.options.calc_deriv and self.Z_final.deriv(0) > 0:
+    if self.calc_all_elements:
+        for i in range( self.N ):
+            assert( abs( ( self.Z_final.val(i) - self.Z_final.val(0) ) / self.Z_final.val(0) ) < 1.0e-5 )
+
+    if self.calc_all_elements and self.options.calc_deriv and self.Z_final.deriv(0) > 0:
+        for i in range( self.N ):
             assert( self.Z_final.deriv(0) == 0 or  abs( ( self.Z_final.deriv(i) - self.Z_final.deriv(0) ) / self.Z_final.deriv(0) ) < 1.0e-5 )
 
     # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
-    if self.options.calc_deriv:
+    if self.options.calc_deriv and len(self.bpp)>0:
         bpp_tot = 0.0
         for i in range( self.N ):
             for j in range( self.N ):

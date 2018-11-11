@@ -25,7 +25,10 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
         for backtrack_info in contrib[1]: # each 'branch'
             ( Z_backtrack, i, j )  = backtrack_info
             if ( i == j ): continue
-            if Z_backtrack == self.Z_BP: p_bps_contrib = [ [p_bp[0], p_bp[1]+[(i%N,j%N)] ] for p_bp in p_bps_contrib ]
+            if Z_backtrack == self.Z_BP:
+                base_pair = [i%N,j%N]
+                base_pair.sort()
+                p_bps_contrib = [ [p_bp[0], p_bp[1]+[tuple( base_pair )] ] for p_bp in p_bps_contrib ]
             self.options.calc_contrib = True
             Z_backtrack.update( self, i, j )
             self.options.calc_contrib = False
@@ -45,7 +48,9 @@ def backtrack( self, contribs_input, mode = 'mfe' ):
 def mfe( self, Z_final_contrib ):
     p_bps = backtrack( self, Z_final_contrib, mode = 'mfe' )
     assert( len(p_bps) == 1 )
-    return (p_bps[0][1],p_bps[0][0])
+    p,bps = p_bps[0]
+    bps.sort()
+    return (bps,p)
 
 ##################################################################################################
 def boltzmann_sample( self, Z_final_contrib ):
