@@ -17,6 +17,6 @@ if __name__=='__main__':
     args     = parser.parse_args()
 
     if args.sequences != None: # run tests
-        (Z, bpp, bps_MFE, dZ) = partition( args.sequences, circle = args.circle, verbose = args.verbose, mfe = args.mfe, calc_deriv = args.calc_deriv, calc_bpp = args.bpp, use_simple_recursions = args.simple )
+        p = partition( args.sequences, circle = args.circle, verbose = args.verbose, mfe = args.mfe, calc_deriv = args.calc_deriv, calc_bpp = args.bpp, use_simple_recursions = args.simple )
     else:
         test_alphafold( verbose = args.verbose, use_simple_recursions = args.simple )

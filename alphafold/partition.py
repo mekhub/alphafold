@@ -9,6 +9,14 @@ from alphafold.parameters import AlphaFoldParams
 def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, mfe = False, n_stochastic = 0, use_simple_recursions = False, calc_bpp = False ):
     '''
     Wrapper function into Partition() class
+    Returns Partition object p which holds results like:
+
+      p.Z   = final partition function (where unfolded state has unity weight)
+      p.bpp = matrix of base pair probabilities (if requested by user with calc_bpp = True)
+      p.struct_MFE = minimum free energy secondary structure in dot-parens notation
+      p.bps_MFE  = minimum free energy secondary structure as sorted list of base pairs
+      p.dZ  = derivative of Z w.r.t. Kd_BP (will later generalize) (if requested by user with calc_deriv = True)
+
     '''
     p = Partition( sequences, params, calc_deriv, calc_all_elements = calc_bpp )
     p.use_simple_recursions = use_simple_recursions
@@ -21,7 +29,7 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
     p.show_results()
     p.run_cross_checks()
 
-    return ( p.Z_final.val(0), p.bpp, p.bps_MFE, p.Z_final.deriv(0) )
+    return p
 
 ##################################################################################################
 class Partition:
@@ -70,6 +78,9 @@ class Partition:
                 for Z in self.Z_all: Z.update( self, i, j )
 
         for i in range( self.N): self.Z_final.update( self, i )
+
+        self.Z  = self.Z_final.val(0)
+        self.dZ = self.Z_final.deriv(0)
 
     # boring member functions -- defined later.
     def get_bpp_matrix( self ): _get_bpp_matrix( self ) # fill base pair probability matrix
