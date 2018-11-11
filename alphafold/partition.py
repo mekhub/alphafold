@@ -2,7 +2,7 @@ from output_helpers import _show_results, _show_matrices
 from copy import deepcopy
 from alphafold.secstruct import *
 from alphafold.wrapped_array import WrappedArray
-from alphafold.backtrack import mfe
+from alphafold.backtrack import mfe, boltzmann_sample
 from alphafold.parameters import AlphaFoldParams
 
 ##################################################################################################
@@ -58,7 +58,7 @@ class Partition:
         self.bpp     = []
         self.bps_MFE = []
         self.struct_MFE = []
-        self.struct_stochastic = []
+        self.bps_stochastic = []
         return
 
     ##############################################################################################
@@ -85,7 +85,7 @@ class Partition:
     # boring member functions -- defined later.
     def get_bpp_matrix( self ): _get_bpp_matrix( self ) # fill base pair probability matrix
     def calc_mfe( self ): _calc_mfe( self )
-    def calc_stochastic( self, N ): _calc_stochastic( self, N )
+    def stochastic_backtrack( self, N ): _stochastic_backtrack( self, N )
     def show_results( self ): _show_results( self )
     def show_matrices( self ): _show_matrices( self )
     def run_cross_checks( self ): _run_cross_checks( self )
@@ -275,10 +275,19 @@ def _calc_mfe( self ):
     self.struct_MFE = secstruct( bps_MFE[0], N)
 
 ##################################################################################################
-def _calc_stochastic( self, N ):
+def _stochastic_backtrack( self, N_backtrack ):
     #
-    # TODO: Wrapper into stochastic(), written out in backtrack.py
+    # Get stochastic, Boltzmann-weighted structural samples from partition function
     #
+    self.options.calc_contrib = True
+    self.Z_final.update( self, 0 )
+    print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble'
+    for i in range( N_backtrack ):
+        bps, p = boltzmann_sample( self, self.Z_final.get_contribs(0) )
+        print secstruct(bps,self.N), "   ", p, "[stochastic]"
+        self.bps_stochastic.append( bps )
+    print
+
     return
 
 ##################################################################################################
