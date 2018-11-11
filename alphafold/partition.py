@@ -128,9 +128,9 @@ def initialize_sequence_information( self ):
 
 ##################################################################################################
 class PartitionOptions:
-    def __init__( self, calc_deriv = False, calc_contrib = False ):
+    def __init__( self, calc_deriv = False ):
         self.calc_deriv   = calc_deriv
-        self.calc_contrib = calc_contrib
+        self.calc_contrib = False
 
 ##################################################################################################
 class BasePairType:
