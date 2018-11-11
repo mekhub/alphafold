@@ -21,6 +21,9 @@ class DynamicProgrammingMatrix:
         self.options = options
         self.update_func = update_func
 
+        self.contribs_updated = [None]*N
+        for i in range( N ): self.contribs_updated[i] = [False]*N
+
     def __getitem__( self, idx ):
         return self.data[ idx ]
 
@@ -28,11 +31,19 @@ class DynamicProgrammingMatrix:
 
     def val( self, i, j ): return self.data[i][j].Q
     def deriv( self, i, j ): return self.data[i][j].dQ
-    def get_contribs( self, i, j ): return self.data[i][j].contribs
 
     def update( self, partition, i, j ):
         self.data[ i ][ j ].zero()
         self.update_func( partition, i, j )
+
+    def get_contribs( self, partition, i, j ):
+        if not self.contribs_updated[i][j]:
+            calc_contrib_save = partition.options.calc_contrib
+            partition.options.calc_contrib = True
+            self.update( partition, i, j )
+            partition.options.calc_contrib = calc_contrib_save
+            self.contribs_updated[i][j] = True
+        return self.data[i][j].contribs
 
 class DynamicProgrammingList:
     '''
@@ -48,6 +59,7 @@ class DynamicProgrammingList:
             self.data[i] = DynamicProgrammingData( val, options = options )
         self.options = options
         self.update_func = update_func
+        self.contribs_updated = [False]*N
 
     def __getitem__( self, idx ):
         return self.data[ idx ]
@@ -59,7 +71,15 @@ class DynamicProgrammingList:
 
     def val( self, i ): return self.data[i].Q
     def deriv( self, i ): return self.data[i].dQ
-    def get_contribs( self, i ): return self.data[i].contribs
+
+    def get_contribs( self, partition, i ):
+        if not self.contribs_updated[i]:
+            calc_contrib_save = partition.options.calc_contrib
+            partition.options.calc_contrib = True
+            self.update( partition, i )
+            partition.options.calc_contrib = calc_contrib_save
+            self.contribs_updated[i] = True
+        return self.data[i].contribs
 
     def update( self, partition, i ):
         self.data[ i ].zero()
@@ -137,3 +157,4 @@ class WrappedArray:
         self.data[idx % self.N] = item
     def __len__( self ):
         return self.N
+

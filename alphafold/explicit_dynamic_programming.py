@@ -22,18 +22,29 @@ class DynamicProgrammingMatrix:
             self.contribs[i] = []
             for j in range( N ): self.contribs[i].append( [] )
 
+        self.contribs_updated = [None]*N
+        for i in range( N ): self.contribs_updated[i] = [False]*N
+
         if DPlist != None: DPlist.append( self )
         self.update_func = update_func
 
     def val( self, i, j ): return self.Q[i][j]
     def deriv( self, i, j ): return self.dQ[i][j]
-    def get_contribs( self, i, j ): return self.contribs[i][j]
 
     def update( self, partition, i, j ):
         self.Q[ i ][ j ] = 0
         self.dQ[ i ][ j ] = 0
         self.contribs[ i ][ j ] = []
         self.update_func( partition, i, j )
+
+    def get_contribs( self, partition, i, j ):
+        if not self.contribs_updated[i][j]:
+            calc_contrib_save = partition.options.calc_contrib
+            partition.options.calc_contrib = True
+            self.update( partition, i, j )
+            partition.options.calc_contrib = calc_contrib_save
+            self.contribs_updated[i][j] = True
+        return self.contribs[i][j]
 
 class DynamicProgrammingList:
     '''
@@ -48,16 +59,25 @@ class DynamicProgrammingList:
         self.dQ = [ 0.0 ]*N
         self.contribs = [None] * N
         for i in range( N ): self.contribs[i] = []
+        self.contribs_updated = [False]*N
         self.update_func = update_func
 
     def __len__( self ): return self.N
 
     def val( self, i ): return self.Q[i]
     def deriv( self, i ): return self.dQ[i]
-    def get_contribs( self, i ): return self.contribs[i]
 
     def update( self, partition, i ):
         self.Q[ i ] = 0.0
         self.dQ[ i ] = 0.0
         self.contribs[ i ] = []
         self.update_func( partition, i )
+
+    def get_contribs( self, partition, i ):
+        if not self.contribs_updated[i]:
+            calc_contrib_save = partition.options.calc_contrib
+            partition.options.calc_contrib = True
+            self.update( partition, i )
+            partition.options.calc_contrib = calc_contrib_save
+            self.contribs_updated[i] = True
+        return self.contribs[i]

@@ -254,16 +254,11 @@ def _calc_mfe( self ):
     p_MFE   = [0.0]*N
     bps_MFE = [[]]*N
 
-    # tells dynamic programming calculations to store contributions
-    self.options.calc_contrib = True
-
     # there are actually numerous ways to calculate MFE if we did all N^2 elements -- let's check.
     n_test = N if self.calc_all_elements else 1
 
-    for i in range( n_test ): self.Z_final.update( self, i )
-
     for i in range( n_test ):
-        (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final.get_contribs(i) )
+        (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final.get_contribs(self,i) )
         assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
         assert( bps_MFE[i] == bps_MFE[0] )
 
@@ -279,11 +274,9 @@ def _stochastic_backtrack( self, N_backtrack ):
     #
     # Get stochastic, Boltzmann-weighted structural samples from partition function
     #
-    self.options.calc_contrib = True
-    self.Z_final.update( self, 0 )
     print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble'
     for i in range( N_backtrack ):
-        bps, p = boltzmann_sample( self, self.Z_final.get_contribs(0) )
+        bps, p = boltzmann_sample( self, self.Z_final.get_contribs(self,0) )
         print secstruct(bps,self.N), "   ", p, "[stochastic]"
         self.bps_stochastic.append( bps )
     print
