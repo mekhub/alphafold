@@ -29,7 +29,7 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
                  p.bpp, [0,3], (1 + l**2 * l_BP**2 * C_init/Kd_BP + C_eff_stacked_pair/Kd_BP )/(2 + l**2 * l_BP**2 *C_init/Kd_BP + C_eff_stacked_pair/Kd_BP ) )
 
     sequence = 'CNGGC'
-    p = partition( sequence, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
+    p = partition( sequence, calc_deriv = True, calc_bpp = True, verbose = verbose,  use_simple_recursions = use_simple_recursions )
     output_test( p.Z, 1 + C_init * l**2 *l_BP/Kd_BP * ( 2 + l ), \
                  p.bpp, [0,2], C_init*l**2*l_BP/Kd_BP /(  1+C_init*l**2*l_BP/Kd_BP * ( 2 + l )) )
 
@@ -54,9 +54,10 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     print
 
     sequence = 'CNGCNG'
-    p = partition( sequence, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
+    p = partition( sequence, calc_deriv = True, calc_bpp = True, do_enumeration = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
     output_test( p.Z, (1 + C_init * l**2 *l_BP/Kd_BP)**2  + C_init * l**5 * l_BP/Kd_BP + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax, \
                  p.bpp, [0,2], (C_init * l**2 *l_BP/Kd_BP*(1 + C_init * l**2 *l_BP/Kd_BP) + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax)/((1 + C_init * l**2 *l_BP/Kd_BP)**2  + C_init * l**5 * l_BP/Kd_BP + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax) )
+    assert( set(p.struct_enumerate) == set(['......', '(.)...', '(....)', '...(.)', '(.)(.)', '(.)(.)']) )
 
 
     # testing extended alphabet & coaxial stacks
@@ -87,6 +88,8 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     Z_ref = (1 + C_init * l**2 *l_BP/Kd_BP)**2  +(C_init * l**2 *l_BP/Kd_BP)**2 * K_coax
     bpp_ref = ( C_init * l**2 *l_BP/Kd_BP * (1 + C_init * l**2 *l_BP/Kd_BP)  + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax ) / Z_ref
     output_test( p.Z, Z_ref, p.bpp, [1,3], bpp_ref  )
+
+
 
     # test secstruct
     assert( secstruct( [(0,5),(1,4)],7 ) == '((..)).' )

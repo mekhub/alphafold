@@ -13,24 +13,28 @@ def get_random_contrib( contribs ):
 def backtrack( self, contribs_input, mode = 'mfe' ):
     if len( contribs_input ) == 0: return []
     contrib_sum = sum( contrib[0] for contrib in contribs_input )
-    if   mode == 'enumerative': contribs = deepcopy( contribs_input )
+    if   mode == 'enumerative':
+        contribs = [ contrib for contrib in contribs_input ] # like a deepcopy
     elif mode == 'mfe':         contribs = [ max( contribs_input ) ]
     elif mode == 'stochastic' : contribs = [ get_random_contrib( contribs_input ) ]
     p_bps = [] # list of tuples of (p_structure, bps_structure) for each structure
     N = self.N
+
     for contrib in contribs: # each option ('contribution' to this partition function of this sub-region)
         if ( contrib[0] == 0.0 ): continue
         p_contrib = contrib[0]/contrib_sum
         p_bps_contrib = [ [p_contrib,[]] ]
 
-        for backtrack_info in contrib[1]: # each 'branch'
+        # each 'branch'; e.g., C_eff(i,k) Z_BP(k+1, j) has a C_eff and a Z_BP branch
+        for backtrack_info in contrib[1]:
             ( Z_backtrack, i, j )  = backtrack_info
             if ( i == j ): continue
             if Z_backtrack == self.Z_BP:
                 base_pair = [i%N,j%N]
                 base_pair.sort()
                 p_bps_contrib = [ [p_bp[0], p_bp[1]+[tuple( base_pair )] ] for p_bp in p_bps_contrib ]
-            p_bps_component = backtrack( self, Z_backtrack.get_contribs(self,i%N,j%N), mode )
+            backtrack_contribs = Z_backtrack.get_contribs(self,i%N,j%N)
+            p_bps_component = backtrack( self, backtrack_contribs, mode )
             if len( p_bps_component ) == 0: continue
             # put together all branches
             p_bps_contrib_new = []
@@ -56,3 +60,6 @@ def boltzmann_sample( self, Z_final_contrib ):
     assert( len(p_bps) == 1 )
     return (p_bps[0][1],p_bps[0][0])
 
+##################################################################################################
+def enumerative_backtrack( self ):
+    return backtrack( self, self.Z_final.get_contribs(self,0), 'enumerative' )

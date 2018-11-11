@@ -2,11 +2,12 @@ from output_helpers import _show_results, _show_matrices
 from copy import deepcopy
 from alphafold.secstruct import *
 from alphafold.wrapped_array import WrappedArray
-from alphafold.backtrack import mfe, boltzmann_sample
+from alphafold.backtrack import mfe, boltzmann_sample, enumerative_backtrack
 from alphafold.parameters import AlphaFoldParams
 
 ##################################################################################################
-def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False, calc_deriv = False, mfe = False, n_stochastic = 0, use_simple_recursions = False, calc_bpp = False ):
+def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False,  mfe = False, calc_bpp = False,
+               n_stochastic = 0, do_enumeration = False, calc_deriv = False, use_simple_recursions = False  ):
     '''
     Wrapper function into Partition() class
     Returns Partition object p which holds results like:
@@ -25,6 +26,7 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
     if calc_bpp:         p.get_bpp_matrix()
     if mfe:              p.calc_mfe()
     if n_stochastic > 0: p.stochastic_backtrack( n_stochastic )
+    if do_enumeration:   p.enumerative_backtrack()
     if verbose:          p.show_matrices()
     p.show_results()
     p.run_cross_checks()
@@ -57,8 +59,9 @@ class Partition:
         self.Z       = 0
         self.bpp     = []
         self.bps_MFE = []
-        self.struct_MFE = []
-        self.bps_stochastic = []
+        self.struct_MFE = ''
+        self.struct_stochastic = []
+        self.struct_enumerate  = []
         return
 
     ##############################################################################################
@@ -86,6 +89,7 @@ class Partition:
     def get_bpp_matrix( self ): _get_bpp_matrix( self ) # fill base pair probability matrix
     def calc_mfe( self ): _calc_mfe( self )
     def stochastic_backtrack( self, N ): _stochastic_backtrack( self, N )
+    def enumerative_backtrack( self ): _enumerative_backtrack( self )
     def show_results( self ): _show_results( self )
     def show_matrices( self ): _show_matrices( self )
     def run_cross_checks( self ): _run_cross_checks( self )
@@ -278,9 +282,23 @@ def _stochastic_backtrack( self, N_backtrack ):
     for i in range( N_backtrack ):
         bps, p = boltzmann_sample( self, self.Z_final.get_contribs(self,0) )
         print secstruct(bps,self.N), "   ", p, "[stochastic]"
-        self.bps_stochastic.append( bps )
+        self.struct_stochastic.append( secstruct(bps,self.N) )
     print
 
+    return
+
+##################################################################################################
+def _enumerative_backtrack( self ):
+    #
+    # Enumerate all structures, and track their probabilities
+    #
+    p_bps = enumerative_backtrack( self )
+    for (p,bps) in p_bps:
+        print secstruct(bps,self.N), "   ", p, "[enumerative]"
+        self.struct_enumerate.append( secstruct(bps,self.N) )
+    p_tot = sum( p_bp[0] for p_bp in p_bps )
+    print 'p_tot = ',p_tot
+    assert( abs(p_tot - 1.0) < 1.0e-5 )
     return
 
 ##################################################################################################
