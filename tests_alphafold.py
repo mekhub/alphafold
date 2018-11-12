@@ -2,6 +2,7 @@
 import argparse
 from alphafold.output_helpers import *
 from alphafold.partition import *
+from alphafold.parameters import AlphaFoldParams
 
 def test_alphafold( verbose = False, use_simple_recursions = False ):
     (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ ) = AlphaFoldParams().get_variables()
@@ -46,8 +47,8 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     #################################################
     params_perturb = AlphaFoldParams()
     delta = 1.0e-10
-    params_perturb.Kd_BP += delta
-    p_perturb = partition( sequence, params_perturb ) # note that Z sums over only base pair (not dissociated strands!)
+    for base_pair_type in params_perturb.base_pair_types: base_pair_type.Kd_BP += delta
+    p_perturb = partition( sequence, params = params_perturb ) # note that Z sums over only base pair (not dissociated strands!)
     dZ_numerical = (p_perturb.Z - p.Z)/delta
     print "dZ_dKd (numerical) =",dZ_numerical, ";  dZ_dKd (analytic) =",p.dZ
     assert( abs( dZ_numerical - p.dZ )/ abs( p.dZ ) < 1.0e-5 )
@@ -64,7 +65,7 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     sequence = ['xy','yz','zx']
     params_allow_strained_3WJ = AlphaFoldParams()
     params_allow_strained_3WJ.allow_strained_3WJ = True
-    p = partition( sequence, params_allow_strained_3WJ, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
+    p = partition( sequence, params = params_allow_strained_3WJ, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
     Z_ref = 3*(C_std/Kd_BP)**2 * (1 + K_coax)  + \
             (C_std/Kd_BP)**2 * (C_init/Kd_BP) * l**3 * l_BP**3  + \
             3*(C_std/Kd_BP)**2 * (C_init/Kd_BP) * K_coax * l_coax*l**2 * l_BP
