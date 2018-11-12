@@ -56,6 +56,7 @@ class Partition:
         self.use_simple_recursions = False
         self.calc_all_elements     = calc_all_elements
         self.calc_bpp = False
+        self.base_pair_types = params.base_pair_types
 
         # for output:
         self.Z       = 0
@@ -72,7 +73,6 @@ class Partition:
         Do the dynamic programming to fill partition function matrices
         '''
         initialize_sequence_information( self ) # N, sequence, ligated, all_ligated
-        initialize_base_pair_types( self ) # C-G base pair, etc.
         initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, Z_cut, Z_coax, etc. )
 
         # do the dynamic programming
@@ -137,30 +137,6 @@ class PartitionOptions:
     def __init__( self, calc_deriv = False ):
         self.calc_deriv   = calc_deriv
         self.calc_contrib = False
-
-##################################################################################################
-class BasePairType:
-    def __init__( self, nt1, nt2, Kd_BP, match_lowercase = False ):
-        '''
-        Two sequence characters that get matched to base pair, e.g., 'C' and 'G';
-           and the dissociation constant K_d (in M) associated with initial pair formation.
-        match_lowercase means match 'x' to 'x', 'y' to 'y', etc.
-        TODO: also store chemical modification info.
-        '''
-        self.nt1 = nt1
-        self.nt2 = nt2
-        self.Kd_BP = Kd_BP
-        self.match_lowercase = ( nt1 == '*' and nt2 == '*' and match_lowercase )
-
-##################################################################################################
-def initialize_base_pair_types( self ):
-    N = self.N
-    self.base_pair_types = []
-    self.base_pair_types.append( BasePairType( 'C', 'G', self.params.Kd_BP ) )
-    self.base_pair_types.append( BasePairType( 'G', 'C', self.params.Kd_BP ) )
-    self.base_pair_types.append( BasePairType( 'A', 'U', self.params.Kd_BP ) )
-    self.base_pair_types.append( BasePairType( 'U', 'A', self.params.Kd_BP ) )
-    self.base_pair_types.append( BasePairType( '*', '*', self.params.Kd_BP, match_lowercase = True ) )
 
 ##################################################################################################
 def initialize_dynamic_programming_matrices( self ):
@@ -262,14 +238,15 @@ def _calc_mfe( self ):
 
     # there are actually numerous ways to calculate MFE if we did all N^2 elements -- let's check.
     n_test = N if self.calc_all_elements else 1
+    print
+    print 'Doing backtrack to get minimum free energy structure:'
+    print self.sequence
 
     for i in range( n_test ):
         (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final.get_contribs(self,i) )
         assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
         assert( bps_MFE[i] == bps_MFE[0] )
 
-    print
-    print 'Doing backtrack to get minimum free energy structure:'
     print  secstruct(bps_MFE[0],N), "   ", p_MFE[0], "[MFE]"
     print
     self.bps_MFE = bps_MFE[0]
@@ -280,7 +257,9 @@ def _stochastic_backtrack( self, N_backtrack ):
     #
     # Get stochastic, Boltzmann-weighted structural samples from partition function
     #
+    print
     print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble'
+    print self.sequence
     for i in range( N_backtrack ):
         bps, p = boltzmann_sample( self, self.Z_final.get_contribs(self,0) )
         print secstruct(bps,self.N), "   ", p, "[stochastic]"
@@ -294,6 +273,9 @@ def _enumerative_backtrack( self ):
     #
     # Enumerate all structures, and track their probabilities
     #
+    print
+    print 'Doing complete enumeration of Boltzmann-weighted ensemble...'
+    print self.sequence
     p_bps = enumerative_backtrack( self )
     for (p,bps) in p_bps:
         print secstruct(bps,self.N), "   ", p, "[enumerative]"
