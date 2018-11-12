@@ -1,3 +1,5 @@
+import math
+from alphafold.parameters import KT_IN_KCAL
 def _show_results( self ):
     print 'sequence =', self.sequence
     cutpoint = ''
@@ -6,7 +8,8 @@ def _show_results( self ):
         else: cutpoint += '-'
     print 'cutpoint =', cutpoint
     print 'circle   = ', self.circle
-    print 'Z =',self.Z_final.val(0)
+    print 'Z =',self.Z
+    print 'dG =',-KT_IN_KCAL * math.log( self.Z )
 
 def _show_matrices( self ):
     output_DP( "Z_BP", self.Z_BP )

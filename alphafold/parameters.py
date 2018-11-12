@@ -1,4 +1,6 @@
-##################################################################################################
+import math
+KT_IN_KCAL = 0.61633135471  # 37 Celsius
+
 class AlphaFoldParams:
     '''
     Parameters that Define the statistical mechanical model for RNA folding
@@ -19,3 +21,22 @@ class AlphaFoldParams:
     def get_variables( self ):
         return ( self.C_init, self.l, self.Kd_BP, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.l_coax, self.C_std, self.min_loop_length, self.allow_strained_3WJ )
 
+def get_params( params = None ):
+    if params == 'devel':
+        return get_devel_params()
+    return AlphaFoldParams()
+
+
+def get_devel_params():
+    params = AlphaFoldParams()
+    params.min_loop_length = 3
+
+    dG_init = +4.09 # Turner 1999, kcal/mol
+    params.Kd_BP = params.C_std * math.exp( dG_init/ KT_IN_KCAL)
+
+    dG_CG_CG = -3.30 # Turner 1999 5'-CC-3'/5'-GG-3', kcal/mol
+    params.C_eff_stacked_pair = math.exp( -dG_CG_CG / KT_IN_KCAL ) * params.Kd_BP
+
+    params.l = exp( 0.0 )
+
+    return params

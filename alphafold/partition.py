@@ -3,10 +3,10 @@ from copy import deepcopy
 from alphafold.secstruct import *
 from alphafold.wrapped_array import WrappedArray
 from alphafold.backtrack import mfe, boltzmann_sample, enumerative_backtrack
-from alphafold.parameters import AlphaFoldParams
+from alphafold.parameters import get_params
 
 ##################################################################################################
-def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = False,  mfe = False, calc_bpp = False,
+def partition( sequences, circle = False, params = '', verbose = False,  mfe = False, calc_bpp = False,
                n_stochastic = 0, do_enumeration = False, calc_deriv = False, use_simple_recursions = False  ):
     '''
     Wrapper function into Partition() class
@@ -19,6 +19,8 @@ def partition( sequences, params = AlphaFoldParams(), circle = False, verbose = 
       p.dZ  = derivative of Z w.r.t. Kd_BP (will later generalize) (if requested by user with calc_deriv = True)
 
     '''
+    if isinstance(params,str): params = get_params( params )
+
     p = Partition( sequences, params, calc_deriv, calc_all_elements = calc_bpp )
     p.use_simple_recursions = use_simple_recursions
     p.circle  = circle
