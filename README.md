@@ -9,7 +9,7 @@ Goals:
  * Code with numerous tests built in so that extensions are _correct_
  * A package that can learn from the huge data sets our lab is collecting.
 
-A separate C++ package `alphafoldplus` with the same functionality and matching python bindings and likely up to 100x the speed is being developed separately in a private repository.
+A separate C++ package `alphafoldplus` with the same functionality and matching python bindings and likely up to 100x the speed is being developed separately in a [private repository](https://github.com/rhiju/alphafoldplus).
 
 ## Features 
 This code brings together features pioneered in (but scattered across) prior packages:
@@ -19,24 +19,24 @@ This code brings together features pioneered in (but scattered across) prior pac
  * True partition function calculations in `N^3` time
  * Base pair probability estimates
  * Gradients of predicted observables with respect to energy model parameters, to enable learning from data
- * Enumerative backtracking to get all structures and their Boltzmann weights (_coming soon_)
- * Stochastic backtracking to get Boltzmann-sampled structures (_coming soon_)
- * Minimum free energy structures (_coming soon_)
+ * Enumerative backtracking to get all structures and their Boltzmann weights
+ * Stochastic backtracking to get Boltzmann-sampled structures
+ * Minimum free energy structures
  * Generalized base pairs (e.g., both Watson-Crick and Sugar/Hoogsteen G-A pairs) (_coming soon_)
  * 'Classic' Turner2004 & ContraFold parameters (_coming soon_)
- * Modeling of ligand/protein binding to RNA hairpins and internal loops
- * Modeling of protein binding to RNA single-stranded segments
+ * Modeling of ligand/protein binding to RNA hairpins and internal loops (_coming soon_)
+ * Modeling of protein binding to RNA single-stranded segments (_coming soon_)
  
-This code will also present entirely new features, based on recent theoretical insights from R. Das & students:
+This code also presents entirely new features, based on recent theoretical insights from R. Das & students:
  * Cross-checks based on computation of the partition function `N` different ways for each RNA.
- * Loop penalties that rise like the logarithm of the number of loop nucleotides, still in `N^3` time
- * Parameters for chemically modified bases, and some modified backbones, based on Rosetta calculations
- * Linear motifs identified by Rosetta or by crystallography as having favorable energy bonuses
- * Modeling of protein binding to RNA, including proper steric exclusion effects.
- * Modeling of RNA tertiary contacts, through a novel stochastic sampling method and Rosetta-calculated properties of the contacts.
- * Tracking and propagation of estimated model uncertainties.
- * Efficient learning from large data sets through stochastic gradient-based calculations
- * Easy install through `sudo pip`
+ * Loop penalties that rise like the logarithm of the number of loop nucleotides, still in `N^3` time (_coming soon_)
+ * Parameters for chemically modified bases, and some modified backbones, based on Rosetta calculations (_coming soon_)
+ * Linear motifs identified by Rosetta or by crystallography as having favorable energy bonuses (_coming soon_)
+ * Modeling of protein binding to RNA, including proper steric exclusion effects. (_coming soon_)
+ * Modeling of RNA tertiary contacts, through a novel iterative sampling method, Rosetta-calculated properties of the contacts, and efficient C_eff calculations. (_coming soon_)
+ * Tracking and propagation of estimated model uncertainties. (_coming soon_)
+ * Efficient learning from large data sets through stochastic gradient-based calculations (_coming soon_)
+ * Easy install through `sudo pip` (_coming soon_)
  
 ## License
 This code is being released with the MIT license. So you can distribute it with your code. 
@@ -71,4 +71,4 @@ To re-run tRNA in a totally weird way:
 Should get the same answer as above linear case!
 
 ## Contributing
-More information on making contributions coming soon. For now, you can fork the repo and pull request.
+More information on making contributions coming soon.
