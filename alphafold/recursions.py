@@ -11,7 +11,7 @@ def update_Z_cut( self, i, j ):
     Useful for Z_BP and Z_final calcs below.
     Analogous to 'exterior' Z in Mathews calc & Dirks multistrand calc.
     '''
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+    (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
     for c in range( i, i+offset ):
@@ -29,7 +29,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     Relies on previous Z contributions available for subfragments, and Z_cut for this fragment i,j
     '''
 
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+    (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
 
@@ -42,7 +42,8 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     if base_pair_type.match_lowercase:
         if not ( sequence[i].islower() and sequence[j].islower() and sequence[i] == sequence[j] ): return
     else:
-        if not ( sequence[i] == base_pair_type.nt1 and sequence[j] == base_pair_type.nt2 ): return
+        if not ( sequence[i] == base_pair_type.nt1 and sequence[j] == base_pair_type.nt2 ) and \
+           not ( sequence[i] == base_pair_type.nt2 and sequence[j] == base_pair_type.nt1 ): return
 
     (Z_BPq, Kd_BPq)  = ( self.Z_BPq[ base_pair_type ], base_pair_type.Kd_BP )
 
@@ -126,7 +127,7 @@ def update_Z_BP( self, i, j ):
     All the Z_BPq (partition functions for each base pair type) must have been
     filled in already for i,j.
     '''
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+    (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
     for base_pair_type in self.base_pair_types:
@@ -138,7 +139,7 @@ def update_Z_coax( self, i, j ):
     '''
     Z_coax(i,j) is the partition function for all structures that form coaxial stacks between (i,k) and (k+1,j) for some k
     '''
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+    (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
     offset = ( j - i ) % N
 
@@ -166,7 +167,7 @@ def update_C_eff_basic( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+    (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
     exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and ligated[j]
@@ -198,7 +199,7 @@ def update_C_eff_basic( self, i, j ):
 
 ##################################################################################################
 def update_C_eff_no_coax_singlet( self, i, j ):
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+    (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
     # some helper arrays that prevent closure of any 3WJ with a single coaxial stack and single helix with not intervening loop nucleotides
@@ -207,7 +208,7 @@ def update_C_eff_no_coax_singlet( self, i, j ):
 
 ##################################################################################################
 def update_C_eff_no_BP_singlet( self, i, j ):
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+    (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
     C_eff_no_BP_singlet[i][j] += C_eff_basic[i][j]
@@ -215,7 +216,7 @@ def update_C_eff_no_BP_singlet( self, i, j ):
 
 ##################################################################################################
 def update_C_eff( self, i, j ):
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+    (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
     C_eff[i][j] += C_eff_basic[i][j]
@@ -246,7 +247,7 @@ def update_Z_linear( self, i, j ):
     '''
     offset = ( j - i ) % self.N
 
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+    (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
     # j is not base paired: Extension by one residue from j-1 to j.
@@ -293,7 +294,7 @@ def update_Z_final( self, i ):
     # Z_final is total partition function, and is computed at end of filling dynamic programming arrays
     # Get the answer (in N ways!) --> so final output is actually Z_final(i), an array.
     # Equality of the array is tested in run_cross_checks()
-    (C_init, l, Kd_BP, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
+    (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
     Z_final = self.Z_final

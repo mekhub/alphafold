@@ -225,7 +225,9 @@ def _get_bpp_matrix( self ):
     self.bpp = initialize_zero_matrix( self.N )
     for i in range( self.N ):
         for j in range( self.N ):
-            self.bpp[i][j] = self.Z_BP.val(i,j) * self.Z_BP.val(j,i) * self.params.Kd_BP / self.Z_final.val(0)
+            self.bpp[i][j] = 0.0
+            for base_pair_type in self.params.base_pair_types:
+                self.bpp[i][j] += self.Z_BPq[base_pair_type].val(i,j) * self.Z_BPq[base_pair_type].val(j,i) * base_pair_type.Kd_BP / self.Z_final.val(0)
 
 ##################################################################################################
 def _calc_mfe( self ):
@@ -302,6 +304,9 @@ def _run_cross_checks( self ):
         for i in range( self.N ):
             for j in range( self.N ):
                 bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
-        bpp_tot_based_on_deriv = -self.Z_final.deriv(0) * self.params.Kd_BP / self.Z_final.val(0)
+
+        # uh this is a hack -- only works for minimal model where all the Kd_BP are the same:
+        Kd_BP = self.params.base_pair_types[0].Kd_BP
+        bpp_tot_based_on_deriv = -self.Z_final.deriv(0) * Kd_BP / self.Z_final.val(0)
         print 'bpp_tot',bpp_tot,'bpp_tot_based_on_deriv',bpp_tot_based_on_deriv
         if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
