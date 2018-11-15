@@ -7,7 +7,7 @@ from alphafold.parameters import get_params
 
 ##################################################################################################
 def partition( sequences, circle = False, params = '', verbose = False,  mfe = False, calc_bpp = False,
-               n_stochastic = 0, do_enumeration = False, structure = None, calc_deriv = False, use_simple_recursions = False  ):
+               n_stochastic = 0, do_enumeration = False, structure = None, no_coax = False, calc_deriv = False, use_simple_recursions = False  ):
     '''
     Wrapper function into Partition() class
     Returns Partition object p which holds results like:
@@ -20,6 +20,7 @@ def partition( sequences, circle = False, params = '', verbose = False,  mfe = F
 
     '''
     if isinstance(params,str): params = get_params( params )
+    if no_coax:                params.K_coax = 0.0
 
     p = Partition( sequences, params, calc_deriv, calc_all_elements = calc_bpp )
     p.use_simple_recursions = use_simple_recursions
