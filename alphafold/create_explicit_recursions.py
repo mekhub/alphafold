@@ -4,7 +4,7 @@ with open('recursions.py') as f:
 
 
 not_data_objects = ['self.Z_BPq','sequence']
-not_2D_dynamic_programming_objects = ['all_ligated','ligated','self.Z_BPq','sequence']
+not_2D_dynamic_programming_objects = ['all_ligated','ligated','self.Z_BPq','sequence','self.force_base_pair','self.in_forced_base_pair']
 dynamic_programming_lists = ['Z_final']
 dynamic_programming_data = ['Z_seg1','Z_seg2']
 

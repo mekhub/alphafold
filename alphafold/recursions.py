@@ -35,6 +35,8 @@ def update_Z_BPq( self, i, j, base_pair_type ):
 
     ( C_eff_for_coax, C_eff_for_BP ) = (C_eff, C_eff ) if allow_strained_3WJ else (C_eff_no_BP_singlet, C_eff_no_coax_singlet )
 
+    if self.force_base_pair and not self.force_base_pair[i][j]: return
+
     # minimum loop length -- no other way to penalize short segments.
     if ( all_ligated[i][j] and ( ((j-i-1) % N)) < min_loop_length ): return
     if ( all_ligated[j][i] and ( ((i-j-1) % N)) < min_loop_length ): return
@@ -172,12 +174,6 @@ def update_C_eff_basic( self, i, j ):
 
     exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and ligated[j]
 
-    # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
-    #
-    #    i ~~~~~~ j-1 - j
-    #
-    if ligated[j-1]: C_eff_basic[i][j] += C_eff[i][j-1] * l
-
     # j is base paired, and its partner is k > i. (look below for case with i and j base paired)
     #                 ___
     #                /   \
@@ -196,6 +192,14 @@ def update_C_eff_basic( self, i, j ):
     C_eff_for_coax = C_eff_no_BP_singlet if exclude_strained_3WJ else C_eff
     for k in range( i+1, i+offset):
         if ligated[k-1]: C_eff_basic[i][j] += C_eff_for_coax[i][k-1] * Z_coax[k][j] * l * l_coax
+
+    if self.in_forced_base_pair and self.in_forced_base_pair[j]: return
+
+    # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
+    #
+    #    i ~~~~~~ j-1 - j
+    #
+    if ligated[j-1]: C_eff_basic[i][j] += C_eff[i][j-1] * l
 
 ##################################################################################################
 def update_C_eff_no_coax_singlet( self, i, j ):

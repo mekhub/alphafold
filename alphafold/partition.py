@@ -7,7 +7,7 @@ from alphafold.parameters import get_params
 
 ##################################################################################################
 def partition( sequences, circle = False, params = '', verbose = False,  mfe = False, calc_bpp = False,
-               n_stochastic = 0, do_enumeration = False, calc_deriv = False, use_simple_recursions = False  ):
+               n_stochastic = 0, do_enumeration = False, structure = None, calc_deriv = False, use_simple_recursions = False  ):
     '''
     Wrapper function into Partition() class
     Returns Partition object p which holds results like:
@@ -24,6 +24,7 @@ def partition( sequences, circle = False, params = '', verbose = False,  mfe = F
     p = Partition( sequences, params, calc_deriv, calc_all_elements = calc_bpp )
     p.use_simple_recursions = use_simple_recursions
     p.circle  = circle
+    p.structure = structure
     p.run()
     if calc_bpp:         p.get_bpp_matrix()
     if mfe:              p.calc_mfe()
@@ -57,6 +58,7 @@ class Partition:
         self.calc_all_elements     = calc_all_elements
         self.calc_bpp = False
         self.base_pair_types = params.base_pair_types
+        self.structure = None
 
         # for output:
         self.Z       = 0
@@ -74,6 +76,7 @@ class Partition:
         '''
         initialize_sequence_information( self ) # N, sequence, ligated, all_ligated
         initialize_dynamic_programming_matrices( self ) # ( Z_BP, C_eff, Z_linear, Z_cut, Z_coax, etc. )
+        initialize_force_base_pair( self )
 
         # do the dynamic programming
         for offset in range( 1, self.N ): #length of subfragment
@@ -188,10 +191,30 @@ def initialize_dynamic_programming_matrices( self ):
     self.Z_final = DynamicProgrammingList( N, update_func = update_Z_final, options = self.options  )
 
 ##################################################################################################
-def initialize_zero_matrix( N ):
+def initialize_force_base_pair( self ):
+    self.force_base_pair = None
+    self.in_forced_base_pair = None
+    if self.structure == None: return
+
+    N = self.N
+    self.force_base_pair = initialize_matrix( N, False )
+    self.in_forced_base_pair = [False] * N
+    if self.use_simple_recursions: self.in_forced_base_pair = WrappedArray( N, False )
+
+    bp_list = bps( self.structure )
+    for i,j in bp_list:
+        self.force_base_pair[ i ][ j ] = True
+        self.force_base_pair[ j ][ i ] = True
+        self.in_forced_base_pair[ i ] = True
+        self.in_forced_base_pair[ j ] = True
+
+##################################################################################################
+def initialize_matrix( N, val = None ):
     from alphafold.dynamic_programming import WrappedArray
     X = WrappedArray( N )
-    for i in range( N ): X[ i ] = WrappedArray( N )
+    for i in range( N ):
+        X[ i ] = WrappedArray( N )
+        for j in range( N ): X[ i ][ j ] = val
     return X
 
 ##################################################################################################
@@ -203,7 +226,7 @@ def initialize_all_ligated( ligated ):
           would be more analogous to pre-scanning for protein/ligand binding sites too.
     '''
     N = len( ligated )
-    all_ligated = initialize_zero_matrix( N )
+    all_ligated = initialize_matrix( N, True )
     for i in range( N ): #index of subfragment
         found_cutpoint = False
         all_ligated[ i ][ i ] = True
@@ -222,7 +245,7 @@ def _get_bpp_matrix( self ):
     So: it becomes easy to calculate partition function over all structures with base pair (i,j), and then divide by total Z.
     '''
     assert( self.calc_all_elements )
-    self.bpp = initialize_zero_matrix( self.N )
+    self.bpp = initialize_matrix( self.N, 0.0 )
     for i in range( self.N ):
         for j in range( self.N ):
             self.bpp[i][j] = 0.0
@@ -310,3 +333,4 @@ def _run_cross_checks( self ):
         bpp_tot_based_on_deriv = -self.Z_final.deriv(0) * Kd_BP / self.Z_final.val(0)
         print 'bpp_tot',bpp_tot,'bpp_tot_based_on_deriv',bpp_tot_based_on_deriv
         if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
+
