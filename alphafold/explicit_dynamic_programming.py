@@ -45,6 +45,9 @@ class DynamicProgrammingMatrix:
             self.contribs_updated[i][j] = True
         return self.contribs[i][j]
 
+    def __len__( self ):
+        return len( self.Q )
+
 class DynamicProgrammingList:
     '''
     Dynamic Programming 1-D list that automatically:
