@@ -207,6 +207,10 @@ def initialize_force_base_pair( self ):
         self.force_base_pair[ j ][ i ] = True
         self.in_forced_base_pair[ i ] = True
         self.in_forced_base_pair[ j ] = True
+        self.Z_linear.set_val( i, i, 0.0 )
+        self.Z_linear.set_val( j, j, 0.0 )
+        self.C_eff.set_val( i, i, 0.0 )
+        self.C_eff.set_val( j, j, 0.0 )
 
 ##################################################################################################
 def initialize_matrix( N, val = None ):

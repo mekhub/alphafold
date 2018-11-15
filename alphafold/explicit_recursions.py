@@ -282,12 +282,12 @@ def update_C_eff_basic( self, i, j ):
     (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
-    allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[j%N] )
 
     # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
     #
     #    i ~~~~~~ j-1 - j
     #
+    allow_loop_extension = not ( self.in_forced_base_pair and self.in_forced_base_pair[j%N] )
     if ligated[(j-1)%N] and allow_loop_extension: C_eff_basic.Q[i%N][j%N] += C_eff.Q[i%N][(j-1)%N] * l
 
     exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and ligated[j%N]
@@ -316,7 +316,7 @@ def update_C_eff_basic( self, i, j ):
         offset = ( j - i ) % self.N
         (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
          sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
-        allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[j%N] )
+        allow_loop_extension = not ( self.in_forced_base_pair and self.in_forced_base_pair[j%N] )
         if ligated[(j-1)%N] and allow_loop_extension: C_eff_basic.dQ[i%N][j%N] += C_eff.dQ[i%N][(j-1)%N] * l
         exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and ligated[j%N]
         C_eff_for_BP = C_eff_no_coax_singlet if exclude_strained_3WJ else C_eff
@@ -332,7 +332,7 @@ def update_C_eff_basic( self, i, j ):
         offset = ( j - i ) % self.N
         (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
          sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
-        allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[j%N] )
+        allow_loop_extension = not ( self.in_forced_base_pair and self.in_forced_base_pair[j%N] )
         if ligated[(j-1)%N] and allow_loop_extension: C_eff_basic.contribs[i%N][j%N] +=  [ (C_eff.Q[i%N][(j-1)%N] * l, [(C_eff,i%N,(j-1)%N)] ) ]
         exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and ligated[j%N]
         C_eff_for_BP = C_eff_no_coax_singlet if exclude_strained_3WJ else C_eff
@@ -433,12 +433,11 @@ def update_Z_linear( self, i, j ):
     (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
-    allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[j%N] )
-
     # j is not base paired: Extension by one residue from j-1 to j.
     #
     #    i ~~~~~~ j-1 - j
     #
+    allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[j%N] )
     if ligated[(j-1)%N] and allow_loop_extension: Z_linear.Q[i%N][j%N] += Z_linear.Q[i%N][(j-1)%N]
 
     # j is base paired, and its partner is i
@@ -534,10 +533,8 @@ def update_Z_final( self, i ):
         #
         #   c+1 --- i-1 - i --- c
         #               *
-        allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[i%N] )
-        if allow_loop_extension:
-            for c in range( i, i + N - 1):
-                if not ligated[c%N]: Z_final.Q[i%N] += Z_linear.Q[i%N][c%N] * Z_linear.Q[(c+1)%N][(i-1)%N]
+        for c in range( i, i + N - 1):
+            if not ligated[c%N]: Z_final.Q[i%N] += Z_linear.Q[i%N][c%N] * Z_linear.Q[(c+1)%N][(i-1)%N]
 
         # base pair forms a stacked pair with previous pair
         #
@@ -586,11 +583,9 @@ def update_Z_final( self, i ):
             Z_final.dQ[i%N] += Z_linear.dQ[i%N][(i-1)%N]
         else:
             Z_final.dQ[i%N] += C_eff_no_coax_singlet.dQ[i%N][(i-1)%N] * l / C_std
-            allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[i%N] )
-            if allow_loop_extension:
-                for c in range( i, i + N - 1):
-                    if not ligated[c%N]: Z_final.dQ[i%N] += Z_linear.dQ[i%N][c%N] * Z_linear.Q[(c+1)%N][(i-1)%N]
-                    if not ligated[c%N]: Z_final.dQ[i%N] += Z_linear.Q[i%N][c%N] * Z_linear.dQ[(c+1)%N][(i-1)%N]
+            for c in range( i, i + N - 1):
+                if not ligated[c%N]: Z_final.dQ[i%N] += Z_linear.dQ[i%N][c%N] * Z_linear.Q[(c+1)%N][(i-1)%N]
+                if not ligated[c%N]: Z_final.dQ[i%N] += Z_linear.Q[i%N][c%N] * Z_linear.dQ[(c+1)%N][(i-1)%N]
             for j in range( i+1, (i + N - 1) ):
                 if ligated[j%N]: Z_final.dQ[i%N] += C_eff_stacked_pair * Z_BP.dQ[i%N][j%N] * Z_BP.Q[(j+1)%N][(i-1)%N]
                 if ligated[j%N]: Z_final.dQ[i%N] += C_eff_stacked_pair * Z_BP.Q[i%N][j%N] * Z_BP.dQ[(j+1)%N][(i-1)%N]
@@ -615,10 +610,8 @@ def update_Z_final( self, i ):
             Z_final.contribs[i%N] +=  [ (Z_linear.Q[i%N][(i-1)%N], [(Z_linear,i%N,(i-1)%N)] ) ]
         else:
             Z_final.contribs[i%N] +=  [ (C_eff_no_coax_singlet.Q[i%N][(i-1)%N] * l / C_std, [(C_eff_no_coax_singlet,i%N,(i-1)%N)] ) ]
-            allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[i%N] )
-            if allow_loop_extension:
-                for c in range( i, i + N - 1):
-                    if not ligated[c%N]: Z_final.contribs[i%N] +=  [ (Z_linear.Q[i%N][c%N] * Z_linear.Q[(c+1)%N][(i-1)%N], [(Z_linear,i%N,c%N), (Z_linear,(c+1)%N,(i-1)%N)] ) ]
+            for c in range( i, i + N - 1):
+                if not ligated[c%N]: Z_final.contribs[i%N] +=  [ (Z_linear.Q[i%N][c%N] * Z_linear.Q[(c+1)%N][(i-1)%N], [(Z_linear,i%N,c%N), (Z_linear,(c+1)%N,(i-1)%N)] ) ]
             for j in range( i+1, (i + N - 1) ):
                 if ligated[j%N]: Z_final.contribs[i%N] +=  [ (C_eff_stacked_pair * Z_BP.Q[i%N][j%N] * Z_BP.Q[(j+1)%N][(i-1)%N], [(Z_BP,i%N,j%N), (Z_BP,(j+1)%N,(i-1)%N)] ) ]
             C_eff_for_coax = C_eff if allow_strained_3WJ else C_eff_no_BP_singlet

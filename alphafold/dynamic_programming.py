@@ -30,6 +30,7 @@ class DynamicProgrammingMatrix:
     def __len__( self ): return len( self.data )
 
     def val( self, i, j ): return self.data[i][j].Q
+    def set_val( self, i, j, val ): self.data[i][j].Q = val
     def deriv( self, i, j ): return self.data[i][j].dQ
 
     def update( self, partition, i, j ):

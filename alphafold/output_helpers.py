@@ -45,7 +45,6 @@ def output_square( tag, X ):
 def output_test( Z, Z_ref = 0, bpp = [], bpp_idx= [], bpp_expected = 0):
     print 'Z =',Z_ref,' [expected]'
     assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
-    print
     print 'bpp[%d,%d] = ' % (bpp_idx[0],bpp_idx[1]),bpp[ bpp_idx[0] ][ bpp_idx[1] ]
     print 'bpp[%d,%d] = ' % (bpp_idx[0],bpp_idx[1]),bpp_expected,' [expected]'
     if bpp_expected > 0.0:

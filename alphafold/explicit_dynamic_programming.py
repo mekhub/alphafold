@@ -29,6 +29,7 @@ class DynamicProgrammingMatrix:
         self.update_func = update_func
 
     def val( self, i, j ): return self.Q[i][j]
+    def set_val( self, i, j, val ): self.Q[i][j] = val
     def deriv( self, i, j ): return self.dQ[i][j]
 
     def update( self, partition, i, j ):

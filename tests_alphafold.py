@@ -70,8 +70,19 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     p = partition( sequence, params = test_params, calc_deriv = True, calc_bpp = True, do_enumeration = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
     output_test( p.Z, (1 + C_init * l**2 *l_BP/Kd_BP)**2  + C_init * l**5 * l_BP/Kd_BP + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax, \
                  p.bpp, [0,2], (C_init * l**2 *l_BP/Kd_BP*(1 + C_init * l**2 *l_BP/Kd_BP) + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax)/((1 + C_init * l**2 *l_BP/Kd_BP)**2  + C_init * l**5 * l_BP/Kd_BP + (C_init * l**2 *l_BP/Kd_BP)**2 * K_coax) )
-    assert( set(p.struct_enumerate) == set(['......', '(.)...', '(....)', '...(.)', '(.)(.)', '(.)(.)']) )
+    assert( set(p.struct_enumerate) == set(['......', '(.)...', '(....)', '...(.)', '(.)(.)']) )
 
+    # stringent test of structure-constrained scores.
+    Z_tot_ref = p.Z
+    Z_enumerate = []
+    structures = ['......', '(.)...', '(....)', '...(.)', '(.)(.)']
+    Z_refs     = [1, C_init * l**2 *l_BP/Kd_BP, C_init * l**5 * l_BP/Kd_BP,  C_init * l**2 *l_BP/Kd_BP, (C_init * l**2 *l_BP/Kd_BP)**2 * (1+K_coax)]
+    bpp_refs_0_2=[0,1,0,0,1]
+    for n,structure in enumerate( structures ):
+        p = partition( sequence, structure = structure, params = test_params, calc_deriv = True, calc_bpp = True, do_enumeration = False, verbose = verbose, use_simple_recursions = use_simple_recursions )
+        output_test( p.Z, Z_refs[n], p.bpp, [0,2], bpp_refs_0_2[n] )
+        Z_enumerate.append( p.Z )
+    assert( abs( sum(Z_enumerate) - Z_tot_ref )/Z_tot_ref < 1.0e-6 )
 
     # testing extended alphabet & coaxial stacks
     sequence = ['xy','yz','zx']
