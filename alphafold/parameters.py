@@ -98,16 +98,12 @@ def get_params_v0_1():
 
     base_pair_types = []
     base_pair_types.append( BasePairType( 'C', 'G', Kd_BP_CG ) )
-    base_pair_types.append( BasePairType( 'G', 'C', Kd_BP_CG ) )
     base_pair_types.append( BasePairType( 'A', 'U', Kd_BP_AU ) )
-    base_pair_types.append( BasePairType( 'U', 'A', Kd_BP_AU ) )
     base_pair_types.append( BasePairType( 'G', 'U', Kd_BP_GU ) )
-    base_pair_types.append( BasePairType( 'U', 'G', Kd_BP_GU ) )
 
 
     #Kd_BP_GA = Kd_BP_AU * 40 # fudge factor to make GU weaker.
     #base_pair_types.append( BasePairType( 'G', 'A', Kd_BP_GA ) ) # totally made up
-    #base_pair_types.append( BasePairType( 'A', 'G', Kd_BP_GA ) ) # totally made up
     #Kd_BP_AA = Kd_BP_AU * 40 # fudge factor to make GU weaker.
     #base_pair_types.append( BasePairType( 'A', 'A', Kd_BP_AA ) ) # totally made up
 
