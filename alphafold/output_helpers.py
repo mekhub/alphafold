@@ -2,6 +2,8 @@ import math
 from alphafold.parameters import KT_IN_KCAL
 def _show_results( self ):
     print 'sequence =', self.sequence
+    if self.structure != None:
+        print 'structure=',self.structure
     cutpoint = ''
     for i in range( self.N ):
         if not self.ligated[ i ]: cutpoint += 'X'
@@ -46,6 +48,9 @@ def output_test( Z, Z_ref = 0, bpp = [], bpp_idx= [], bpp_expected = 0):
     print
     print 'bpp[%d,%d] = ' % (bpp_idx[0],bpp_idx[1]),bpp[ bpp_idx[0] ][ bpp_idx[1] ]
     print 'bpp[%d,%d] = ' % (bpp_idx[0],bpp_idx[1]),bpp_expected,' [expected]'
-    assert( abs( (bpp[ bpp_idx[0] ][ bpp_idx[1] ] - bpp_expected)/bpp[ bpp_idx[0] ][ bpp_idx[1] ] )  < 1e-5 )
+    if bpp_expected > 0.0:
+        assert( abs( (bpp[ bpp_idx[0] ][ bpp_idx[1] ] - bpp_expected)/bpp_expected )  < 1e-5 )
+    else:
+        assert( bpp[ bpp_idx[0] ][ bpp_idx[1] ] == 0.0 )
     print
 

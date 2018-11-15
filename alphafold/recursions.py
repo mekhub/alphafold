@@ -172,6 +172,14 @@ def update_C_eff_basic( self, i, j ):
     (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
+    allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[j] )
+
+    # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
+    #
+    #    i ~~~~~~ j-1 - j
+    #
+    if ligated[j-1] and allow_loop_extension: C_eff_basic[i][j] += C_eff[i][j-1] * l
+
     exclude_strained_3WJ = (not allow_strained_3WJ) and (offset == N-1) and ligated[j]
 
     # j is base paired, and its partner is k > i. (look below for case with i and j base paired)
@@ -193,13 +201,6 @@ def update_C_eff_basic( self, i, j ):
     for k in range( i+1, i+offset):
         if ligated[k-1]: C_eff_basic[i][j] += C_eff_for_coax[i][k-1] * Z_coax[k][j] * l * l_coax
 
-    if self.in_forced_base_pair and self.in_forced_base_pair[j]: return
-
-    # j is not base paired or coaxially stacked: Extension by one residue from j-1 to j.
-    #
-    #    i ~~~~~~ j-1 - j
-    #
-    if ligated[j-1]: C_eff_basic[i][j] += C_eff[i][j-1] * l
 
 ##################################################################################################
 def update_C_eff_no_coax_singlet( self, i, j ):
@@ -254,11 +255,13 @@ def update_Z_linear( self, i, j ):
     (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
+    allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[j] )
+
     # j is not base paired: Extension by one residue from j-1 to j.
     #
     #    i ~~~~~~ j-1 - j
     #
-    if ligated[j-1]: Z_linear[i][j] += Z_linear[i][j-1]
+    if ligated[j-1] and allow_loop_extension: Z_linear[i][j] += Z_linear[i][j-1]
 
     # j is base paired, and its partner is i
     #     ___
@@ -293,6 +296,7 @@ def update_Z_linear( self, i, j ):
     for k in range( i+1, i+offset):
         if ligated[k-1]: Z_linear[i][j] += Z_linear[i][k-1] * Z_coax[k][j]
 
+
 ##################################################################################################
 def update_Z_final( self, i ):
     # Z_final is total partition function, and is computed at end of filling dynamic programming arrays
@@ -324,8 +328,10 @@ def update_Z_final( self, i ):
         #
         #   c+1 --- i-1 - i --- c
         #               *
-        for c in range( i, i + N - 1):
-            if not ligated[c]: Z_final[i] += Z_linear[i][c] * Z_linear[c+1][i-1]
+        allow_loop_extension = ( not self.in_forced_base_pair ) or ( not self.in_forced_base_pair[i] )
+        if allow_loop_extension:
+            for c in range( i, i + N - 1):
+                if not ligated[c]: Z_final[i] += Z_linear[i][c] * Z_linear[c+1][i-1]
 
         # base pair forms a stacked pair with previous pair
         #

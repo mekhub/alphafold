@@ -15,8 +15,6 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     output_test( p.Z, C_init  * (l**7) * (1 + (C_init * l_BP**2) / Kd_BP ) / C_std, \
                  p.bpp, [0,4], (C_init * l_BP**2/ Kd_BP) / ( 1 + C_init * l_BP**2/ Kd_BP) )
 
-    # test with fixed structure input
-    sequence = 'CNNNGNN'
     structure= '(...)..'
     p = partition( sequence, circle = True, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions, structure = structure )
     output_test( p.Z, C_init  * (l**7) * (C_init * l_BP**2) / Kd_BP / C_std, \
@@ -42,6 +40,11 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     p = partition( sequence, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose,  use_simple_recursions = use_simple_recursions )
     output_test( p.Z, 1 + C_init * l**2 *l_BP/Kd_BP * ( 2 + l ), \
                  p.bpp, [0,2], C_init*l**2*l_BP/Kd_BP /(  1+C_init*l**2*l_BP/Kd_BP * ( 2 + l )) )
+
+    structure= '(..).'
+    p = partition( sequence, params = test_params, structure = structure, calc_deriv = True, calc_bpp = True, verbose = verbose,  use_simple_recursions = use_simple_recursions )
+    output_test( p.Z,  C_init * l**2 *l_BP/Kd_BP * l, \
+                 p.bpp, [0,2], 0.0 )
 
     sequence = 'CGNCG'
     p = partition( sequence, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
