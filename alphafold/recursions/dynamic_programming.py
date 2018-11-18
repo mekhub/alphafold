@@ -1,5 +1,4 @@
-from copy import deepcopy
-from wrapped_array import WrappedArray
+from alphafold.util.wrapped_array import WrappedArray
 
 class DynamicProgrammingMatrix:
     '''

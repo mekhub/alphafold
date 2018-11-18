@@ -1,8 +1,8 @@
 #!/usr/bin/python
 import argparse
-from alphafold.output_helpers import *
 from alphafold.partition import *
 from alphafold.parameters import get_minimal_params
+from alphafold.util.output_util import *
 
 def test_alphafold( verbose = False, use_simple_recursions = False ):
     test_params = get_minimal_params()

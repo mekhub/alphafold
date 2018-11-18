@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import argparse
-import sequence_util
-import secstruct
+import util.sequence_util as sequence_util
+import util.secstruct_util as secstruct_util
 from partition import partition
 
 parser = argparse.ArgumentParser( description = "Compute nearest neighbor model partitition function for RNA sequence" )
@@ -18,8 +18,8 @@ Z = 1
 
 # Now go through each motif parsed out of the target structure
 structure = args.structure
-bps_list  = secstruct.bps( structure )
-motifs = secstruct.parse_motifs( structure )
+bps_list  = secstruct_util.bps( structure )
+motifs = secstruct_util.parse_motifs( structure )
 sequence, ligated = sequence_util.initialize_sequence_and_ligated( args.sequences, args.circle )
 
 for motif in motifs:
@@ -45,7 +45,7 @@ for motif in motifs:
         if motif_res.count( i ) == 0: continue
         if motif_res.count( j ) == 0: continue
         motif_bps_list.append( (motif_res.index(i), motif_res.index(j)) )
-    motif_structure = secstruct.secstruct( motif_bps_list, len( motif_res ) )
+    motif_structure = secstruct_util.secstruct( motif_bps_list, len( motif_res ) )
 
     p = partition( motif_sequences, circle = motif_circle, structure = motif_structure, params = args.parameters, suppress_all_output = True )
 

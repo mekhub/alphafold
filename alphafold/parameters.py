@@ -1,6 +1,6 @@
 import math
 from base_pair_types import BasePairType
-KT_IN_KCAL = 0.61633135471  # 37 Celsius
+from util.constants import KT_IN_KCAL
 
 class AlphaFoldParams:
     '''

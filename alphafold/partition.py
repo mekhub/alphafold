@@ -1,10 +1,9 @@
-from output_helpers import _show_results, _show_matrices
-from copy import deepcopy
-from secstruct import *
-from wrapped_array import WrappedArray, initialize_matrix
-from backtrack import mfe, boltzmann_sample, enumerative_backtrack
+from backtrack  import mfe, boltzmann_sample, enumerative_backtrack
 from parameters import get_params
-from sequence_util import initialize_sequence_and_ligated, initialize_all_ligated
+from util.wrapped_array  import WrappedArray, initialize_matrix
+from util.secstruct_util import *
+from util.output_util    import _show_results, _show_matrices
+from util.sequence_util  import initialize_sequence_and_ligated, initialize_all_ligated
 
 ##################################################################################################
 def partition( sequences, circle = False, params = '', mfe = False, calc_bpp = False,
@@ -140,11 +139,11 @@ def initialize_dynamic_programming_matrices( self ):
       determine the actual order of updates during dynamic programmming at each (i,j).
     '''
 
-    from explicit_recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
-    from explicit_dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
+    from recursions.explicit_recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
+    from recursions.explicit_dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
     if self.use_simple_recursions: # over-ride with simpler recursions that are easier for user to input.
-        from recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
-        from dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
+        from recursions.recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
+        from recursions.dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
 
     N = self.N
 

@@ -1,0 +1,1 @@
+KT_IN_KCAL = 0.61633135471  # 37 Celsius
