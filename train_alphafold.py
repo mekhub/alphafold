@@ -9,7 +9,7 @@ def free_energy_gap( x, sequences, structures ):
     dG_gap = 0.0
     params = get_params( suppress_all_output = True )
 
-    (params.C_eff_stacked_pair, params.C_init ) = 10.0**x
+    (params.C_eff_stacked_pair, params.C_init, params.l, params.l_BP ) = 10.0**x
 
     for sequence,structure in zip( sequences, structures ):
         p = partition( sequence, params = params, suppress_all_output = True )
@@ -29,8 +29,9 @@ loss = lambda x, sequences = sequences, structures = structures : free_energy_ga
 # simple 1-D scan
 #for x0 in range(10):  loss( [x0] )
 
-x0 = np.array( [3, 0] )
+x0 = np.array( [3, 0, 0, 0] )
 result = minimize( loss, x0, method = 'Nelder-Mead' )
 
 final_loss = loss( result.x )
+print result
 print 'Final parameters:', result.x, 'Loss:',final_loss
