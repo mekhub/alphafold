@@ -62,11 +62,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     if ( all_ligated[i%N][j%N] and ( ((j-i-1) % N)) < min_loop_length ): return
     if ( all_ligated[j%N][i%N] and ( ((i-j-1) % N)) < min_loop_length ): return
 
-    if base_pair_type.match_lowercase:
-        if not ( sequence[i].islower() and sequence[j].islower() and sequence[i] == sequence[j] ): return
-    else:
-        if not ( sequence[i] == base_pair_type.nt1 and sequence[j] == base_pair_type.nt2 ) and \
-           not ( sequence[i] == base_pair_type.nt2 and sequence[j] == base_pair_type.nt1 ): return
+    if not base_pair_type.is_match( sequence[i], sequence[j] ): return
 
     (Z_BPq, Kd_BPq)  = ( self.Z_BPq[ base_pair_type ], base_pair_type.Kd_BP )
 
@@ -151,11 +147,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         if self.force_base_pair and not self.force_base_pair[i%N][j%N]: return
         if ( all_ligated[i%N][j%N] and ( ((j-i-1) % N)) < min_loop_length ): return
         if ( all_ligated[j%N][i%N] and ( ((i-j-1) % N)) < min_loop_length ): return
-        if base_pair_type.match_lowercase:
-            if not ( sequence[i].islower() and sequence[j].islower() and sequence[i] == sequence[j] ): return
-        else:
-            if not ( sequence[i] == base_pair_type.nt1 and sequence[j] == base_pair_type.nt2 ) and \
-               not ( sequence[i] == base_pair_type.nt2 and sequence[j] == base_pair_type.nt1 ): return
+        if not base_pair_type.is_match( sequence[i], sequence[j] ): return
         (Z_BPq, Kd_BPq)  = ( self.Z_BPq[ base_pair_type ], base_pair_type.Kd_BP )
         if ligated[i%N] and ligated[(j-1)%N]:
             Z_BPq.dQ[i%N][j%N]  += (1.0/Kd_BPq ) * ( C_eff_for_BP.dQ[(i+1)%N][(j-1)%N] * l * l * l_BP)
@@ -183,11 +175,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         if self.force_base_pair and not self.force_base_pair[i%N][j%N]: return
         if ( all_ligated[i%N][j%N] and ( ((j-i-1) % N)) < min_loop_length ): return
         if ( all_ligated[j%N][i%N] and ( ((i-j-1) % N)) < min_loop_length ): return
-        if base_pair_type.match_lowercase:
-            if not ( sequence[i].islower() and sequence[j].islower() and sequence[i] == sequence[j] ): return
-        else:
-            if not ( sequence[i] == base_pair_type.nt1 and sequence[j] == base_pair_type.nt2 ) and \
-               not ( sequence[i] == base_pair_type.nt2 and sequence[j] == base_pair_type.nt1 ): return
+        if not base_pair_type.is_match( sequence[i], sequence[j] ): return
         (Z_BPq, Kd_BPq)  = ( self.Z_BPq[ base_pair_type ], base_pair_type.Kd_BP )
         if ligated[i%N] and ligated[(j-1)%N]:
             Z_BPq.contribs[i%N][j%N]  +=  [ ((1.0/Kd_BPq ) * ( C_eff_for_BP.Q[(i+1)%N][(j-1)%N] * l * l * l_BP), [(C_eff_for_BP,(i+1)%N,(j-1)%N)] ) ]
