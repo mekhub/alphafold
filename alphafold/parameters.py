@@ -34,6 +34,7 @@ def get_params( params = None, suppress_all_output = False ):
     params_object = None
     if params == None or params =='': params_object = get_latest_params()
     elif params == 'minimal':         params_object = get_minimal_params()
+    elif isinstance(params,AlphaFoldParams): return params
     else: print 'unrecognized params requested: ', params
     if not suppress_all_output: print 'Parameters: ', params_object.name, ' version', params_object.version
     return params_object

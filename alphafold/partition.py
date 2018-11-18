@@ -4,6 +4,8 @@ from util.wrapped_array  import WrappedArray, initialize_matrix
 from util.secstruct_util import *
 from util.output_util    import _show_results, _show_matrices
 from util.sequence_util  import initialize_sequence_and_ligated, initialize_all_ligated
+from util.constants import KT_IN_KCAL
+from math import log
 
 ##################################################################################################
 def partition( sequences, circle = False, params = '', mfe = False, calc_bpp = False,
@@ -65,6 +67,7 @@ class Partition:
 
         # for output:
         self.Z       = 0
+        self.dG      = None
         self.bpp     = []
         self.bps_MFE = []
         self.struct_MFE = ''
@@ -91,6 +94,7 @@ class Partition:
         for i in range( self.N): self.Z_final.update( self, i )
 
         self.Z  = self.Z_final.val(0)
+        self.dG = -KT_IN_KCAL * log( self.Z )
         self.dZ = self.Z_final.deriv(0)
 
     # boring member functions -- defined later.

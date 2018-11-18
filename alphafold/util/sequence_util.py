@@ -22,7 +22,8 @@ def initialize_sequence_and_ligated( sequences, circle, use_wrapped_array = Fals
 
 ##################################################################################################
 def get_num_strand_connections( sequences, circle ):
-    num_strand_connections = len( sequences ) - 1
+    num_strand_connections = len( sequences ) if isinstance( sequences, list ) else 1
+    num_strand_connections -= 1
     if circle: num_strand_connections -= 1
     assert( num_strand_connections >= 0 )
     return num_strand_connections

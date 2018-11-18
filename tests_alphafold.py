@@ -3,6 +3,7 @@ import argparse
 from alphafold.partition import *
 from alphafold.parameters import get_minimal_params
 from alphafold.util.output_util import *
+from alphafold.score_structure import score_structure
 
 def test_alphafold( verbose = False, use_simple_recursions = False ):
     test_params = get_minimal_params()
@@ -81,6 +82,9 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     for n,structure in enumerate( structures ):
         p = partition( sequence, structure = structure, params = test_params, calc_deriv = True, calc_bpp = True, do_enumeration = False, verbose = verbose, use_simple_recursions = use_simple_recursions )
         output_test( p.Z, Z_refs[n], p.bpp, [0,2], bpp_refs_0_2[n] )
+        # also throw in a test of score_structure here
+        dG = score_structure( sequence, structure, params = test_params )
+        if dG > 0: assert( abs( dG - p.dG )/dG < 1.0e-5 )
         Z_enumerate.append( p.Z )
     assert( abs( sum(Z_enumerate) - Z_tot_ref )/Z_tot_ref < 1.0e-6 )
 
@@ -120,6 +124,21 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     assert( parse_motifs( '(((.)(.))).'  ) == [[[0, 1], [8, 9]], [[1, 2], [4, 5], [7, 8]], [[2, 3, 4]], [[5, 6, 7]], [[9, 10, 0]]] )
     assert( parse_motifs( '.(((.)(.)))'  ) == [[[1, 2], [9, 10]], [[2, 3], [5, 6], [8, 9]], [[3, 4, 5]], [[6, 7, 8]], [[10, 0, 1]]] )
     assert( parse_motifs( '(((.)(.)))'   ) == [[[0, 1], [8, 9]], [[1, 2], [4, 5], [7, 8]], [[2, 3, 4]], [[5, 6, 7]], [[9, 0]]] )
+
+    # score_structure
+    sequence = 'GCUCAGUUGGGAGAGC'
+    structure= '((((........))))'
+    print "Testing score_structure on short sequence, full parameters: ", sequence, structure
+    dG = score_structure( sequence, structure, test_mode = True )
+
+    print
+    print "Testing score_structure on tRNA folding, full parameters"
+    sequence = 'GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA'
+    structure= '(((((((..((((........)))).(((((.......))))).....(((((.......))))))))))))....'
+    dG = score_structure( sequence, structure )
+    dG_new = score_structure( sequence+sequence, structure+structure )
+    print "Check also double-sequence and double structure get 2*Z", dG_new, 2*dG
+    assert( abs(dG_new - 2*dG)/dG_new < 1.0e-5 )
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser( description = "Test nearest neighbor model partitition function for RNA sequence" )
