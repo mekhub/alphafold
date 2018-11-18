@@ -1,5 +1,5 @@
 import math
-from alphafold.parameters import KT_IN_KCAL
+from parameters import KT_IN_KCAL
 def _show_results( self ):
     print 'sequence =', self.sequence
     if self.structure != None:

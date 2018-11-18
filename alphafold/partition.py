@@ -1,13 +1,16 @@
 from output_helpers import _show_results, _show_matrices
 from copy import deepcopy
-from alphafold.secstruct import *
-from alphafold.wrapped_array import WrappedArray
-from alphafold.backtrack import mfe, boltzmann_sample, enumerative_backtrack
-from alphafold.parameters import get_params
+from secstruct import *
+from wrapped_array import WrappedArray, initialize_matrix
+from backtrack import mfe, boltzmann_sample, enumerative_backtrack
+from parameters import get_params
+from sequence_util import initialize_sequence_and_ligated, initialize_all_ligated
 
 ##################################################################################################
-def partition( sequences, circle = False, params = '', verbose = False,  mfe = False, calc_bpp = False,
-               n_stochastic = 0, do_enumeration = False, structure = None, no_coax = False, calc_deriv = False, use_simple_recursions = False  ):
+def partition( sequences, circle = False, params = '', mfe = False, calc_bpp = False,
+               n_stochastic = 0, do_enumeration = False, structure = None, no_coax = False,
+               verbose = False,  suppress_all_output = False,
+               calc_deriv = False, use_simple_recursions = False  ):
     '''
     Wrapper function into Partition() class
     Returns Partition object p which holds results like:
@@ -19,7 +22,7 @@ def partition( sequences, circle = False, params = '', verbose = False,  mfe = F
       p.dZ  = derivative of Z w.r.t. Kd_BP (will later generalize) (if requested by user with calc_deriv = True)
 
     '''
-    if isinstance(params,str): params = get_params( params )
+    if isinstance(params,str): params = get_params( params, suppress_all_output )
     if no_coax:                params.K_coax = 0.0
 
     p = Partition( sequences, params, calc_deriv, calc_all_elements = calc_bpp )
@@ -32,7 +35,7 @@ def partition( sequences, circle = False, params = '', verbose = False,  mfe = F
     if n_stochastic > 0: p.stochastic_backtrack( n_stochastic )
     if do_enumeration:   p.enumerative_backtrack()
     if verbose:          p.show_matrices()
-    p.show_results()
+    if not suppress_all_output: p.show_results()
     p.run_cross_checks()
 
     return p
@@ -111,30 +114,13 @@ def initialize_sequence_information( self ):
 
     OUTPUT:
     sequence     = concatenated sequence (string, length N)
-    is_cutpoint  = is cut ('nick','chainbreak') or not (Array of bool, length N)
-    any_intervening_cutpoint = any cutpoint exists between i and j (N X N)
+    is_ligated   = is not a cut ('nick','chainbreak') (Array of bool, length N)
+    all_ligated  = no cutpoint exists between i and j (N X N)
     '''
     # initialize sequence
-    sequences = self.sequences
-    if isinstance( sequences, str ): self.sequence = sequences
-    else:
-        self.sequence = ''
-        for i in range( len( sequences ) ): self.sequence += sequences[i]
+    self.sequence, self.ligated = initialize_sequence_and_ligated( self.sequences, self.circle, use_wrapped_array = self.use_simple_recursions )
     self.N = len( self.sequence )
-    N = self.N
-
-    ligated = [True] * N
-    if self.use_simple_recursions: ligated = WrappedArray( N, True )
-
-    if isinstance( sequences, list ):
-        L = 0
-        for i in range( len(sequences)-1 ):
-            L = L + len( sequences[i] )
-            ligated[ L-1 ] = False
-    if not self.circle: ligated[ N-1 ] = False
-
-    self.ligated = ligated
-    self.all_ligated = initialize_all_ligated( ligated )
+    self.all_ligated = initialize_all_ligated( self.ligated )
 
 ##################################################################################################
 class PartitionOptions:
@@ -212,34 +198,6 @@ def initialize_force_base_pair( self ):
         self.Z_linear.set_val( j, j, 0.0 )
         self.C_eff.set_val( i, i, 0.0 )
         self.C_eff.set_val( j, j, 0.0 )
-
-##################################################################################################
-def initialize_matrix( N, val = None ):
-    from alphafold.dynamic_programming import WrappedArray
-    X = WrappedArray( N )
-    for i in range( N ):
-        X[ i ] = WrappedArray( N )
-        for j in range( N ): X[ i ][ j ] = val
-    return X
-
-##################################################################################################
-def initialize_all_ligated( ligated ):
-    '''
-    all_ligated is needed to keep track of whether an apical loop is long enough
-    to be 'closed' into a hairpin by base pair formation.
-    TODO: alternatively could create a 'hairpin_OK' matrix -- that
-          would be more analogous to pre-scanning for protein/ligand binding sites too.
-    '''
-    N = len( ligated )
-    all_ligated = initialize_matrix( N, True )
-    for i in range( N ): #index of subfragment
-        found_cutpoint = False
-        all_ligated[ i ][ i ] = True
-        for offset in range( N ): #length of subfragment
-            j = (i + offset) % N;  # N cyclizes
-            all_ligated[ i ][ j ] = ( not found_cutpoint )
-            if not ligated[ j ]: found_cutpoint = True
-    return all_ligated
 
 ##################################################################################################
 def _get_bpp_matrix( self ):
@@ -338,4 +296,6 @@ def _run_cross_checks( self ):
         bpp_tot_based_on_deriv = -self.Z_final.deriv(0) * Kd_BP / self.Z_final.val(0)
         print 'bpp_tot',bpp_tot,'bpp_tot_based_on_deriv',bpp_tot_based_on_deriv
         if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
+
+
 

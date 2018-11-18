@@ -27,7 +27,7 @@ def bps( secstruct ):
     bps_list.sort()
     return bps_list
 
-def motifs( secstruct, N = 0 ):
+def parse_motifs( secstruct, N = 0 ):
     '''
     Parse secstruct into its structural motifs:
       hairpins, interior loops, multiway junctions, exterior strands

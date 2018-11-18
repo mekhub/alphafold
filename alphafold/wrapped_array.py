@@ -12,3 +12,11 @@ class WrappedArray:
         self.data[idx % self.N] = item
     def __len__( self ):
         return self.N
+
+##################################################################################################
+def initialize_matrix( N, val = None ):
+    X = WrappedArray( N )
+    for i in range( N ):
+        X[ i ] = WrappedArray( N )
+        for j in range( N ): X[ i ][ j ] = val
+    return X

@@ -1,5 +1,5 @@
 import math
-from alphafold.base_pair_types import BasePairType
+from base_pair_types import BasePairType
 KT_IN_KCAL = 0.61633135471  # 37 Celsius
 
 class AlphaFoldParams:
@@ -30,12 +30,12 @@ class AlphaFoldParams:
         if self.C_init == 0.0 and self.name == 'empty': print 'WARNING! C_init not defined, and params appear empty. Look at get_minimal_params() or get_latest_params() for examples'
         return ( self.C_init, self.l, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.l_coax, self.C_std, self.min_loop_length, self.allow_strained_3WJ )
 
-def get_params( params = None ):
+def get_params( params = None, suppress_all_output = False ):
     params_object = None
     if params == None or params =='': params_object = get_latest_params()
     elif params == 'minimal':         params_object = get_minimal_params()
     else: print 'unrecognized params requested: ', params
-    print 'Parameters: ', params_object.name, ' version', params_object.version
+    if not suppress_all_output: print 'Parameters: ', params_object.name, ' version', params_object.version
     return params_object
 
 def get_latest_params():

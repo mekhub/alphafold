@@ -11,6 +11,11 @@ class BasePairType:
         self.Kd_BP = Kd_BP
         self.match_lowercase = ( nt1 == '*' and nt2 == '*' and match_lowercase )
 
+    def is_match( self, s1, s2 ):
+        if self.match_lowercase: return ( s1.islower() and s2.islower() and s1 == s2 )
+        return ( s1 == self.nt1 and s2 == self.nt2 ) or \
+               ( s1 == self.nt2 and s2 == self.nt1 )
+
 ##################################################################################################
 def initialize_base_pair_types( self ):
     self.base_pair_types = []
