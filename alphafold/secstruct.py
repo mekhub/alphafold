@@ -68,7 +68,7 @@ def parse_motifs( secstruct, N = 0 ):
                 strand.append( j )
                 while not pair_map.has_key( j ) and j != motif_start:
                     j = ( j + 1 ) % N
-                    #if j < N: strand.append( j )
+                    strand.append( j )
                 motif.append( strand )
                 strand = []
                 if j == motif_start: break

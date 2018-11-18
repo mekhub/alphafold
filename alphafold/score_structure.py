@@ -65,7 +65,7 @@ for motif in motifs:
                 Z_motif *= ( base_pair_type.Kd_BP / Kd_ref )**(0.5)
                 break
 
-    print "Motif: ", Z_motif, motif
+    print "Motif: ", Z_motif, motif, motif_sequences, motif_structure
 
     Z *= Z_motif
 
