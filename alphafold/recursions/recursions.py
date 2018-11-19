@@ -73,47 +73,48 @@ def update_Z_BPq( self, i, j, base_pair_type ):
     #
     Z_BPq[i][j] += (C_std/Kd_BPq) * Z_cut[i][j]
 
-    if ligated[i] and ligated[j-1]:
+    if K_coax > 0.0:
+        if ligated[i] and ligated[j-1]:
 
-        # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
+            # coaxial stack of bp (i,j) and (i+1,k)...  "left stack",  and closes loop on right.
+            #      ___
+            #     /   \
+            #  i+1 ... k - k+1 ~
+            #    |              ~
+            #    i ... j - j-1 ~
+            #
+            for k in range( i+2, i+offset-1 ):
+                if ligated[k]: Z_BPq[i][j] += Z_BP[i+1][k] * C_eff_for_coax[k+1][j-1] * l**2 * l_coax * K_coax / Kd_BPq
+
+            # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
+            #            ___
+            #           /   \
+            #  ~ k-1 - k ... j-1
+            # ~              |
+            #  ~ i+1 - i ... j
+            #
+            for k in range( i+2, i+offset-1 ):
+                if ligated[k-1]: Z_BPq[i][j] += C_eff_for_coax[i+1][k-1] * Z_BP[k][j-1] * l**2 * l_coax * K_coax / Kd_BPq
+
+        # "left stack" but no loop closed on right (free strands hanging off j end)
         #      ___
         #     /   \
-        #  i+1 ... k - k+1 ~
-        #    |              ~
-        #    i ... j - j-1 ~
+        #  i+1 ... k -
+        #    |
+        #    i ... j -
         #
-        for k in range( i+2, i+offset-1 ):
-            if ligated[k]: Z_BPq[i][j] += Z_BP[i+1][k] * C_eff_for_coax[k+1][j-1] * l**2 * l_coax * K_coax / Kd_BPq
+        if ligated[i]:
+            for k in range( i+2, i+offset ): Z_BPq[i][j] += Z_BP[i+1][k] * Z_cut[k][j] * C_std * K_coax / Kd_BPq
 
-        # coaxial stack of bp (i,j) and (k,j-1)...  close loop on left, and "right stack"
-        #            ___
-        #           /   \
-        #  ~ k-1 - k ... j-1
-        # ~              |
-        #  ~ i+1 - i ... j
+        # "right stack" but no loop closed on left (free strands hanging off i end)
+        #       ___
+        #      /   \
+        #   - k ... j-1
+        #           |
+        #   - i ... j
         #
-        for k in range( i+2, i+offset-1 ):
-            if ligated[k-1]: Z_BPq[i][j] += C_eff_for_coax[i+1][k-1] * Z_BP[k][j-1] * l**2 * l_coax * K_coax / Kd_BPq
-
-    # "left stack" but no loop closed on right (free strands hanging off j end)
-    #      ___
-    #     /   \
-    #  i+1 ... k -
-    #    |
-    #    i ... j -
-    #
-    if ligated[i]:
-        for k in range( i+2, i+offset ): Z_BPq[i][j] += Z_BP[i+1][k] * Z_cut[k][j] * C_std * K_coax / Kd_BPq
-
-    # "right stack" but no loop closed on left (free strands hanging off i end)
-    #       ___
-    #      /   \
-    #   - k ... j-1
-    #           |
-    #   - i ... j
-    #
-    if ligated[j-1]:
-        for k in range( i, i+offset-1 ): Z_BPq[i][j] += Z_cut[i][k] * Z_BP[k][j-1] * C_std * K_coax / Kd_BPq
+        if ligated[j-1]:
+            for k in range( i, i+offset-1 ): Z_BPq[i][j] += Z_cut[i][k] * Z_BP[k][j-1] * C_std * K_coax / Kd_BPq
 
     # key 'special sauce' for derivative w.r.t. Kd_BP
     if self.options.calc_deriv: Z_BPq[i][j].dQ += -(1.0/Kd_BPq) * Z_BPq[i][j].Q
@@ -148,8 +149,9 @@ def update_Z_coax( self, i, j ):
     #      \   :    :   /
     #       -- i    j --
     #
-    for k in range( i+1, i+offset-1 ):
-        if ligated[k]: Z_coax[i][j]  += Z_BP[i][k] * Z_BP[k+1][j] * K_coax
+    if K_coax > 0:
+        for k in range( i+1, i+offset-1 ):
+            if ligated[k]: Z_coax[i][j]  += Z_BP[i][k] * Z_BP[k+1][j] * K_coax
 
 ##################################################################################################
 def update_C_eff_basic( self, i, j ):
@@ -336,33 +338,34 @@ def update_Z_final( self, i ):
         for j in range( i+1, (i + N - 1) ):
             if ligated[j]: Z_final[i] += C_eff_stacked_pair * Z_BP[i][j] * Z_BP[j+1][i-1]
 
-        C_eff_for_coax = C_eff if allow_strained_3WJ else C_eff_no_BP_singlet
+        if K_coax > 0:
+            C_eff_for_coax = C_eff if allow_strained_3WJ else C_eff_no_BP_singlet
 
-        # New co-axial stack might form across ligation junction
-        for j in range( i + 1, i + N - 2):
-            # If the two coaxially stacked base pairs are connected by a loop.
-            #
-            #       ~~~~
-            #   -- k    j --
-            #  /   :    :   \
-            #  \   :    :   /
-            #   - i-1 - i --
-            #         *
-            for k in range( j + 2, i + N - 1):
-                if not ligated[j]: continue
-                if not ligated[k-1]: continue
-                Z_final[i] += Z_BP[i][j] * C_eff_for_coax[j+1][k-1] * Z_BP[k][i-1] * l * l * l_coax * K_coax
+            # New co-axial stack might form across ligation junction
+            for j in range( i + 1, i + N - 2):
+                # If the two coaxially stacked base pairs are connected by a loop.
+                #
+                #       ~~~~
+                #   -- k    j --
+                #  /   :    :   \
+                #  \   :    :   /
+                #   - i-1 - i --
+                #         *
+                for k in range( j + 2, i + N - 1):
+                    if not ligated[j]: continue
+                    if not ligated[k-1]: continue
+                    Z_final[i] += Z_BP[i][j] * C_eff_for_coax[j+1][k-1] * Z_BP[k][i-1] * l * l * l_coax * K_coax
 
-            # If the two stacked base pairs are in split segments
-            #
-            #      \    /
-            #   -- k    j --
-            #  /   :    :   \
-            #  \   :    :   /
-            #   - i-1 - i --
-            #         *
-            for k in range( j + 1, i + N - 1):
-                Z_final[i] += Z_BP[i][j] * Z_cut[j][k] * Z_BP[k][i-1] * K_coax
+                # If the two stacked base pairs are in split segments
+                #
+                #      \    /
+                #   -- k    j --
+                #  /   :    :   \
+                #  \   :    :   /
+                #   - i-1 - i --
+                #         *
+                for k in range( j + 1, i + N - 1):
+                    Z_final[i] += Z_BP[i][j] * Z_cut[j][k] * Z_BP[k][i-1] * K_coax
 
 
 ##################################################################################################
