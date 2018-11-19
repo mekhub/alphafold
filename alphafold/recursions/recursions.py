@@ -215,8 +215,9 @@ def update_C_eff_no_BP_singlet( self, i, j ):
     (C_init, l, l_BP, C_eff_stacked_pair, K_coax, l_coax, C_std, min_loop_length, allow_strained_3WJ, N, \
      sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
 
-    C_eff_no_BP_singlet[i][j] += C_eff_basic[i][j]
-    C_eff_no_BP_singlet[i][j] += C_init * Z_coax[i][j] * l_coax
+    if K_coax > 0.0:
+        C_eff_no_BP_singlet[i][j] += C_eff_basic[i][j]
+        C_eff_no_BP_singlet[i][j] += C_init * Z_coax[i][j] * l_coax
 
 ##################################################################################################
 def update_C_eff( self, i, j ):
@@ -234,13 +235,14 @@ def update_C_eff( self, i, j ):
     #
     C_eff[i][j] += C_init * Z_BP[i][j] * l_BP
 
-    # j is coax-stacked, and its partner is i.
-    #       ------------
-    #      /   :    :   \
-    #      \   :    :   /
-    #       -- i    j --
-    #
-    C_eff[i][j] += C_init * Z_coax[i][j] * l_coax
+    if K_coax > 0.0:
+        # j is coax-stacked, and its partner is i.
+        #       ------------
+        #      /   :    :   \
+        #      \   :    :   /
+        #       -- i    j --
+        #
+        C_eff[i][j] += C_init * Z_coax[i][j] * l_coax
 
 ##################################################################################################
 def update_Z_linear( self, i, j ):
