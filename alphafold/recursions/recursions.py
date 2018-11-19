@@ -276,23 +276,24 @@ def update_Z_linear( self, i, j ):
     for k in range( i+1, i+offset):
         if ligated[k-1]: Z_linear[i][j] += Z_linear[i][k-1] * Z_BP[k][j]
 
-    # j is coax-stacked, and its partner is i.
-    #       ------------
-    #      /   :    :   \
-    #      \   :    :   /
-    #       -- i    j --
-    #
-    Z_linear[i][j] += Z_coax[i][j]
+    if K_coax > 0.0:
+        # j is coax-stacked, and its partner is i.
+        #       ------------
+        #      /   :    :   \
+        #      \   :    :   /
+        #       -- i    j --
+        #
+        Z_linear[i][j] += Z_coax[i][j]
 
-    # j is coax-stacked, and its partner is k > i.
-    #
-    #               _______
-    #              / :   : \
-    #              \ :   : /
-    #    i ~~~~k-1 - k   j
-    #
-    for k in range( i+1, i+offset):
-        if ligated[k-1]: Z_linear[i][j] += Z_linear[i][k-1] * Z_coax[k][j]
+        # j is coax-stacked, and its partner is k > i.
+        #
+        #               _______
+        #              / :   : \
+        #              \ :   : /
+        #    i ~~~~k-1 - k   j
+        #
+        for k in range( i+1, i+offset):
+            if ligated[k-1]: Z_linear[i][j] += Z_linear[i][k-1] * Z_coax[k][j]
 
 
 ##################################################################################################
