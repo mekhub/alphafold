@@ -8,19 +8,19 @@ from util.constants import KT_IN_KCAL
 from math import log
 
 def score_structure( sequences, structure, circle = False, params = '', test_mode = False ):
-    # What we get if we parse out motifs
-    # pre-compute cost of connecting the strands into a complex
-    Z = 1.0
 
-    # Now go through each motif parsed out of the target structure
+    # What we get if we parse out motifs
+    structure = secstruct_util.get_structure_string( structure )
     bps_list  = secstruct_util.bps( structure )
     motifs = secstruct_util.parse_motifs( structure )
-    sequence, ligated = sequence_util.initialize_sequence_and_ligated( sequences, circle )
+    sequence, ligated, sequences = sequence_util.initialize_sequence_and_ligated( sequences, circle )
 
     params = get_params( params, suppress_all_output = True )
     Kd_ref = params.base_pair_types[0].Kd_BP # Kd[G-C], a la Turner rule convention
     C_std  = params.C_std
 
+    # Now go through each motif parsed out of the target structure
+    Z = 1.0
     for motif in motifs:
         motif_res = []
         motif_sequences = []
@@ -51,7 +51,7 @@ def score_structure( sequences, structure, circle = False, params = '', test_mod
         Z_motif = p.Z
 
         # Need to 'correct' for half-terminal penalties (a la Turner rules) and also remove extra costs
-        # for connecting strands together.
+        # for connecting these 'sub-strands' together.
 
         Z_motif *= ( Kd_ref / C_std ) ** sequence_util.get_num_strand_connections( motif_sequences, motif_circle )
         for i_motif, j_motif in motif_bps_list:
@@ -65,6 +65,7 @@ def score_structure( sequences, structure, circle = False, params = '', test_mod
 
         Z *= Z_motif
 
+    # Compute cost of connecting the strands into a complex
     Z_connect = ( C_std / Kd_ref ) ** sequence_util.get_num_strand_connections( sequences, circle )
     Z *= Z_connect
 

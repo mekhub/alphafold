@@ -28,8 +28,9 @@ def partition( sequences, circle = False, params = '', mfe = False, calc_bpp = F
 
     p = Partition( sequences, params, calc_deriv, calc_all_elements = calc_bpp )
     p.use_simple_recursions = use_simple_recursions
-    p.circle  = circle
-    p.structure = structure
+    p.circle    = circle
+    p.structure = get_structure_string( structure )
+    p.suppress_all_output = suppress_all_output
     p.run()
     if calc_bpp:         p.get_bpp_matrix()
     if mfe:              p.calc_mfe()
@@ -63,6 +64,7 @@ class Partition:
         self.calc_all_elements     = calc_all_elements
         self.calc_bpp = False
         self.base_pair_types = params.base_pair_types
+        self.suppress_all_output = False
         self.structure = None
 
         # for output:
@@ -121,7 +123,7 @@ def initialize_sequence_information( self ):
     all_ligated  = no cutpoint exists between i and j (N X N)
     '''
     # initialize sequence
-    self.sequence, self.ligated = initialize_sequence_and_ligated( self.sequences, self.circle, use_wrapped_array = self.use_simple_recursions )
+    self.sequence, self.ligated, self.sequences = initialize_sequence_and_ligated( self.sequences, self.circle, use_wrapped_array = self.use_simple_recursions )
     self.N = len( self.sequence )
     self.all_ligated = initialize_all_ligated( self.ligated )
 
@@ -229,17 +231,19 @@ def _calc_mfe( self ):
 
     # there are actually numerous ways to calculate MFE if we did all N^2 elements -- let's check.
     n_test = N if self.calc_all_elements else 1
-    print
-    print 'Doing backtrack to get minimum free energy structure:'
-    print self.sequence
+    if not self.suppress_all_output:
+        print
+        print 'Doing backtrack to get minimum free energy structure:'
+        print self.sequence
 
     for i in range( n_test ):
         (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final.get_contribs(self,i) )
         assert( abs( ( p_MFE[i] - p_MFE[0] ) / p_MFE[0] ) < 1.0e-5 )
         assert( bps_MFE[i] == bps_MFE[0] )
 
-    print  secstruct(bps_MFE[0],N), "   ", p_MFE[0], "[MFE]"
-    print
+    if not self.suppress_all_output:
+        print  secstruct(bps_MFE[0],N), "   ", p_MFE[0], "[MFE]"
+        print
     self.bps_MFE = bps_MFE[0]
     self.struct_MFE = secstruct( bps_MFE[0], N)
 

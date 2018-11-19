@@ -27,6 +27,11 @@ def bps( secstruct ):
     bps_list.sort()
     return bps_list
 
+def get_structure_string( structure ):
+    if structure == None: return None
+    if isinstance( structure, list ): structure = ''.join( structure )
+    return structure.replace( ' ','' ).replace('+','').replace(',','')
+
 def parse_motifs( secstruct, N = 0 ):
     '''
     Parse secstruct into its structural motifs:

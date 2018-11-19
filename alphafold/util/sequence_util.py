@@ -1,24 +1,34 @@
 from wrapped_array import *
 
 def initialize_sequence_and_ligated( sequences, circle, use_wrapped_array = False ):
+    if isinstance( sequences, str ): sequences = [sequences ]
 
-    if isinstance( sequences, str ): sequence = sequences
-    else:
-        sequence = ''
-        for i in range( len( sequences ) ): sequence += sequences[i]
+    assert( isinstance( sequences, list ) )
+    parsed_sequences = []
+    for sequence in sequences:
+        strand_delimiters = ['+',' ',',']
+        strand = ''
+        for c in sequence:
+            if c in strand_delimiters:
+                if len( strand ) > 0: parsed_sequences.append( strand )
+                strand = ''
+                continue
+            strand += c
+        if len( strand ) > 0: parsed_sequences.append( strand )
+
+    sequence = ''.join( parsed_sequences )
     N = len( sequence )
 
     ligated = [True] * N
     if use_wrapped_array: ligated = WrappedArray( N, True )
 
-    if isinstance( sequences, list ):
-        L = 0
-        for i in range( len(sequences)-1 ):
-            L = L + len( sequences[i] )
-            ligated[ L-1 ] = False
+    L = 0
+    for i in range( len(parsed_sequences)-1 ):
+        L = L + len( parsed_sequences[i] )
+        ligated[ L-1 ] = False
     if not circle: ligated[ N-1 ] = False
 
-    return sequence, ligated
+    return sequence, ligated, parsed_sequences
 
 ##################################################################################################
 def get_num_strand_connections( sequences, circle ):
