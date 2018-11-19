@@ -41,12 +41,13 @@ def get_params( params = None, suppress_all_output = False ):
     elif params == 'v0.1':  params_object = get_params_v0_1( AlphaFoldParams()  )
     elif params == 'v0.15': params_object = get_params_v0_15( AlphaFoldParams() )
     elif params == 'v0.16': params_object = get_params_v0_16( AlphaFoldParams() )
+    elif params == 'v0.17': params_object = get_params_v0_17( AlphaFoldParams() )
     else: print 'unrecognized params requested: ', params
     if not suppress_all_output: print 'Parameters: ', params_object.name, ' version', params_object.version
     return params_object
 
 def get_latest_params():
-    return get_params_v0_16( AlphaFoldParams() )
+    return get_params_v0_17( AlphaFoldParams() )
 
 def _initialize_C_eff_stack( params ):
     params.C_eff_stack = {}
@@ -76,6 +77,62 @@ def get_minimal_params():
     setup_base_pair_type( params, '*', '*', Kd_BP, match_lowercase = True  )
     setup_base_pair_type( params, 'C', 'G', Kd_BP )
     initialize_C_eff_stack( params )
+
+    return params
+
+def get_params_v0_17( params ):
+    # Starting to make use of train_alphafold.py on tRNA and P4-P6.
+    params.name     = 'alphafold'
+    params.version  = '0.17'
+
+    params.min_loop_length = 3
+
+    # Seven parameter model
+    dG_init = +4.09 # Turner 1999, kcal/mol
+    Kd_BP_CG = 1.0 * math.exp( dG_init/ KT_IN_KCAL) # 762 M
+    Kd_BP_AU = 10.0**5.0 # 100000 M
+    Kd_BP_GU = 10.0**5.0 # 100000 M
+
+    dG_terminal_AU = 0.5 # Turner 1999, kcal/mol -- NUPACK
+
+    dG_CG_CG = -3.30 # Turner 1999 5'-CC-3'/5'-GG-3', kcal/mol
+    params.C_eff_stacked_pair = 10**5.425 # about 10^5
+
+    # From nupack rna1999.params
+    #>Multiloop terms: ALPHA_1, ALPHA_2, ALPHA_3
+    #>ML penalty = ALPHA_1 + s * ALPHA_2 + u *ALPHA_3
+    #>s = # stems adjacent to ML, u = unpaired bases in ML
+    # 340   40    0
+    #>AT_PENALTY:
+    #>Penalty for non GC pairs that terminate a helix
+    #  50
+    dG_bulge = 3.4 # bulge cost is roughly 3-4 kcal/mol
+    dG_multiloop_stems = 0.40 # in kcal/mol
+    dG_multiloop_unpaired = 0.0 #0.40 # in kcal/mol -- ZERO in NUPACK -- fudging here.
+    # oops, should have been:
+    #params.C_init = 1.0 * math.exp( -(dG_bulge + dG_CG_CG)/ KT_IN_KCAL )
+    params.C_init = 10**1.0 #
+
+    params.l = math.exp( dG_multiloop_unpaired / KT_IN_KCAL )
+    params.l_BP = math.exp( dG_multiloop_stems/KT_IN_KCAL ) / params.l
+
+    setup_base_pair_type(params, 'C', 'G', Kd_BP_CG )
+    setup_base_pair_type(params, 'A', 'U', Kd_BP_AU )
+    setup_base_pair_type(params, 'G', 'U', Kd_BP_GU )
+
+    # turn off coax
+    params.K_coax = 0.0
+    params.l_coax = 1.0
+
+    _initialize_C_eff_stack( params )
+    bpts_WC = params.base_pair_types[0:4]
+    bpt_GU  = params.base_pair_types[4]
+    bpt_UG  = params.base_pair_types[5]
+    for bpt in bpts_WC:  params.C_eff_stack[bpt][bpt_GU] = 10.0**4.8
+    for bpt in bpts_WC:  params.C_eff_stack[bpt][bpt_UG] = 10.0**3.0
+    params.C_eff_stack[bpt_GU][bpt_GU] = 10.0**4.0
+    params.C_eff_stack[bpt_GU][bpt_UG] = 10.0**4.0
+    params.C_eff_stack[bpt_UG][bpt_GU] = 10.0**4.0
 
     return params
 
@@ -118,11 +175,6 @@ def get_params_v0_16( params ):
     setup_base_pair_type(params, 'C', 'G', Kd_BP_CG )
     setup_base_pair_type(params, 'A', 'U', Kd_BP_AU )
     setup_base_pair_type(params, 'G', 'U', Kd_BP_GU )
-
-    #Kd_BP_GA = Kd_BP_AU*100000  # fudge factor to make GA weaker.
-    #base_pair_types.append( BasePairType( 'G', 'A', Kd_BP_GA ) ) # totally made up
-    #Kd_BP_AA = Kd_BP_AU * 40 # fudge factor to make GU weaker.
-    #base_pair_types.append( BasePairType( 'A', 'A', Kd_BP_AA ) ) # totally made up
 
     # turn off coax!?
     params.K_coax = 0.0

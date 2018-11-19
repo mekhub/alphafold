@@ -84,8 +84,9 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         #    |     |
         #    i ... j
         #
-        # TODO: generalize C_eff_stacked_pair to be function of base pairs q (at i,j) and r (at i+1,j-1)
-        Z_BPq.Q[i%N][j%N]  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP.Q[(i+1)%N][(j-1)%N]
+        for base_pair_type2 in self.params.base_pair_types:
+            if base_pair_type2.is_match( sequence[(i+1)%N], sequence[(j-1)%N] ):
+                Z_BPq.Q[i%N][j%N]  += (1.0/Kd_BPq ) * self.params.C_eff_stack[base_pair_type][base_pair_type2] * Z_BP.Q[(i+1)%N][(j-1)%N]
 
     # base pair brings together two strands that were previously disconnected
     #
@@ -152,7 +153,9 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         (Z_BPq, Kd_BPq)  = ( self.Z_BPq[ base_pair_type ], base_pair_type.Kd_BP )
         if ligated[i%N] and ligated[(j-1)%N]:
             Z_BPq.dQ[i%N][j%N]  += (1.0/Kd_BPq ) * ( C_eff_for_BP.dQ[(i+1)%N][(j-1)%N] * l * l * l_BP)
-            Z_BPq.dQ[i%N][j%N]  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP.dQ[(i+1)%N][(j-1)%N]
+            for base_pair_type2 in self.params.base_pair_types:
+                if base_pair_type2.is_match( sequence[(i+1)%N], sequence[(j-1)%N] ):
+                    Z_BPq.dQ[i%N][j%N]  += (1.0/Kd_BPq ) * self.params.C_eff_stack[base_pair_type][base_pair_type2] * Z_BP.dQ[(i+1)%N][(j-1)%N]
         Z_BPq.dQ[i%N][j%N] += (C_std/Kd_BPq) * Z_cut.dQ[i%N][j%N]
         if K_coax > 0.0:
             if ligated[i%N] and ligated[(j-1)%N]:
@@ -181,7 +184,9 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         (Z_BPq, Kd_BPq)  = ( self.Z_BPq[ base_pair_type ], base_pair_type.Kd_BP )
         if ligated[i%N] and ligated[(j-1)%N]:
             Z_BPq.contribs[i%N][j%N]  +=  [ ((1.0/Kd_BPq ) * ( C_eff_for_BP.Q[(i+1)%N][(j-1)%N] * l * l * l_BP), [(C_eff_for_BP,(i+1)%N,(j-1)%N)] ) ]
-            Z_BPq.contribs[i%N][j%N]  +=  [ ((1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP.Q[(i+1)%N][(j-1)%N], [(Z_BP,(i+1)%N,(j-1)%N)] ) ]
+            for base_pair_type2 in self.params.base_pair_types:
+                if base_pair_type2.is_match( sequence[(i+1)%N], sequence[(j-1)%N] ):
+                    Z_BPq.contribs[i%N][j%N]  +=  [ ((1.0/Kd_BPq ) * self.params.C_eff_stack[base_pair_type][base_pair_type2] * Z_BP.Q[(i+1)%N][(j-1)%N], [(Z_BP,(i+1)%N,(j-1)%N)] ) ]
         Z_BPq.contribs[i%N][j%N] +=  [ ((C_std/Kd_BPq) * Z_cut.Q[i%N][j%N], [(Z_cut,i%N,j%N)] ) ]
         if K_coax > 0.0:
             if ligated[i%N] and ligated[(j-1)%N]:

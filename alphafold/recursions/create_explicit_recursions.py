@@ -3,8 +3,8 @@ with open('recursions.py') as f:
     lines = f.readlines()
 
 
-not_data_objects = ['self.Z_BPq','sequence']
-not_2D_dynamic_programming_objects = ['all_ligated','ligated','self.Z_BPq','sequence','self.force_base_pair','self.in_forced_base_pair']
+not_data_objects = ['self.Z_BPq','sequence','self.params.C_eff_stack']
+not_2D_dynamic_programming_objects = ['all_ligated','ligated','self.Z_BPq','sequence','self.force_base_pair','self.in_forced_base_pair','self.params.C_eff_stack']
 dynamic_programming_lists = ['Z_final']
 dynamic_programming_data = ['Z_seg1','Z_seg2']
 
@@ -107,7 +107,8 @@ for line in lines:
             args.append( arg[:-1] )
             if in_second_bracket:
                 assert( len( args ) == 2 )
-                all_args.append( (len(line_new),words[-1],args[0],args[1]) )
+                if not words[-1].replace('(','') in not_data_objects:
+                    all_args.append( (len(line_new),words[-1],args[0],args[1]) )
                 args = []
             else:
                 just_finished_first_bracket = True
@@ -159,7 +160,6 @@ for line in lines:
                 lines_deriv.append(line_deriv)
 
             # contrib line
-            #lines_new.append( ' '*num_indent + 'if self.options.calc_contrib:\n' )
             print lines_new[-1],
             line_contrib = ' '*4 + line_new[:Qpos[0]] +  '.contribs'
             line_contrib += line_new[Qpos[0]+2 : assign_pos+3]

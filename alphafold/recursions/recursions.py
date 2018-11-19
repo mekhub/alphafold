@@ -63,8 +63,9 @@ def update_Z_BPq( self, i, j, base_pair_type ):
         #    |     |
         #    i ... j
         #
-        # TODO: generalize C_eff_stacked_pair to be function of base pairs q (at i,j) and r (at i+1,j-1)
-        Z_BPq[i][j]  += (1.0/Kd_BPq ) * C_eff_stacked_pair * Z_BP[i+1][j-1]
+        for base_pair_type2 in self.params.base_pair_types:
+            if base_pair_type2.is_match( sequence[(i+1)%N], sequence[(j-1)%N] ):
+                Z_BPq[i][j]  += (1.0/Kd_BPq ) * self.params.C_eff_stack[base_pair_type][base_pair_type2] * Z_BP[i+1][j-1]
 
     # base pair brings together two strands that were previously disconnected
     #
