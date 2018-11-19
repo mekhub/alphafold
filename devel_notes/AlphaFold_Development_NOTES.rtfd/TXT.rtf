@@ -436,8 +436,9 @@ alpha fold low-coax is better, but still have central \'91ring\'92 instead of P4
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \fs22 \cf2 \cb3 \CocoaLigature0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs24 \
+\fs24 \cf2 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 \cb1 \CocoaLigature1 \
 \
@@ -541,7 +542,8 @@ Then used michelle\'92s draw_all.py to  make secondary structures & flash slide 
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f4\fs24 \cf0 \cb1 \CocoaLigature1 {{\NeXTGraphic Screen Shot 2018-11-15 at 4.54.15 PM.png \width15760 \height11840
-}¬}\
+}¬}\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
 \
 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
@@ -596,13 +598,15 @@ First train C_eff_stacked_pair = 10**x for tRNA case above, using
 [ 5.12739258] 0.299308381318\
 [ 5.12709961] 0.299308404756\
 [ 5.12731934] 0.299308367181\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs24 \
+\fs24 \cf2 \
 Looks good. 10^5 M, and free energy gap of 0.2993 kcal/mol\
 \
 Now train both C_eff_stacked_pair and C_init:\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs18 [ 3.  0.] 16.8545037725\
+\fs18 \cf2 [ 3.  0.] 16.8545037725\
 [ 3.15  0.  ] 13.378969309\
 [  3.00000000e+00   2.50000000e-04] 16.8536431378\
 [  3.15000000e+00   2.50000000e-04] 13.3781689769\
@@ -618,13 +622,15 @@ Now train both C_eff_stacked_pair and C_init:\
 [ 4.95061749 -1.81529909] \
 [ 4.95061749 -1.81529909] 0.279978475717\
 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs24 \
+\fs24 \cf2 \
 OK, C_eff_stacked_pair = 89,000 M; C_init ~ 10^-1.8 M = 15 mM.\
 \
 OK. let\'92s also try l and l_BP \'97 let\'92s see how slow this gets. Took about an hour (forgot to set \'91time\'92)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs18  \
+\fs18 \cf2  \
 [ 3.  0.  0.  0.] 18.4941094213\
 [ 3.15  0.    0.    0.  ] 14.9529909246\
 [  3.00000000e+00   2.50000000e-04   0.00000000e+00   0.00000000e+00] 18.4929927813\
@@ -660,11 +666,13 @@ Note that the numbers don\'92t really make physical sense \'97 C_init for starti
 In the future, need to include regularization based on known physical bounds.\
 \
 Running P4-P6 now. But its taking a long time because P4-P6 is big. Find a minimal case?\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs22 sequence  = 'GGAAUUGCGGGAAAGGGGUCAACAGCCGUUCAGUACCAAGUCUCAGGGGAAACUUUGAGAUGGCCUUGCAAAGGGUAUGGUAAUAAGCUGACGGACAUGGUCCUAACCACGCAGCCAAGUCCUAAGUCAACAGAUCUUCUGUUGAUAUGGAUGCAGUUCA'\
+\fs22 \cf2 sequence  = 'GGAAUUGCGGGAAAGGGGUCAACAGCCGUUCAGUACCAAGUCUCAGGGGAAACUUUGAGAUGGCCUUGCAAAGGGUAUGGUAAUAAGCUGACGGACAUGGUCCUAACCACGCAGCCAAGUCCUAAGUCAACAGAUCUUCUGUUGAUAUGGAUGCAGUUCA'\
 structure = '.....((((((...((((((.....(((.((((.(((..(((((((((....)))))))))..((.......))....)))......)))))))....))))))..)).))))((...((((...(((((((((...)))))))))..))))...))...'\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs24 \
+\fs24 \cf2 \
 \
 # P4-P6 outer junction\
 sequence  = ['GGAAUUGCGGGAAAGGGGUC','GGUCCUAACCACGCAGCCAAGUCCUAAGUCAACAGAUCUUCUGUUGAUAUGGAUGCAGUUCA']\
@@ -674,15 +682,18 @@ yup, can reconstitute the tendency to \'91zipper\'92 up outermost strands, but s
     (params.C_eff_stacked_pair, params.C_init, params.K_coax ) = 10.0**x\
 \
 does not fix:\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs22 .((((((((.....(((((()))))).....................(((((((((...))))))))).....)))))))). [ 5. -3.  1.] 17.8981685018\
+\fs22 \cf2 .((((((((.....(((((()))))).....................(((((((((...))))))))).....)))))))). [ 5. -3.  1.] 17.8981685018\
 .((((((((.....(((((()))))).....................(((((((((...))))))))).....)))))))). [ 5.25 -3.    1.  ] 17.7359154573\
 .((((((((.....(((((()))))).....................(((((((((...))))))))).....)))))))). [ 5.   -3.15  1.  ] 18.4761937832\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs24 ...\
+\fs24 \cf2 ...\
 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs22 .(((((((((((..(((((())))))...............)))...(((((((((...))))))))).....)))))))). [ 4.52781501  0.96042119  0.63628916] 8.38788694769\
+\fs22 \cf2 .(((((((((((..(((((())))))...............)))...(((((((((...))))))))).....)))))))). [ 4.52781501  0.96042119  0.63628916] 8.38788694769\
 .(((((((((((..(((((())))))...............)))...(((((((((...))))))))).....)))))))). [ 4.52784601  0.96033391  0.63639105] 8.38788694277\
 .(((((((((((..(((((())))))...............)))...(((((((((...))))))))).....)))))))). [ 4.52784565  0.96037722  0.63632185] 8.38788694256\
   status: 0\
@@ -693,16 +704,18 @@ does not fix:\
  message: 'Optimization terminated successfully.'\
      nit: 97\
 Final parameters: [ 4.52784565  0.96037722  0.63632185] Loss: 8.38788694256\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs24 \
+\fs24 \cf2 \
 Let\'92s further minimize:\
 sequence  = ['GGAAUUGCGGGAAAGG','CUAACCACGCAGCCAAGUCCUAAGUC','GAUAUGGAUGCAGUUCA']\
 structure =  '.....((((((...(())..)).))))((...((((...((()))..))))...))...'\
 \
 Let\'92s also float Kd for A-U and G\'95U .. hey this looks promising:\
 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs18 (params.C_eff_stacked_pair, params.C_init, params.K_coax, params.base_pair_types[1].Kd_BP, params.base_pair_types[2].Kd_BP ) = 10.0**x\
+\fs18 \cf2 (params.C_eff_stacked_pair, params.C_init, params.K_coax, params.base_pair_types[1].Kd_BP, params.base_pair_types[2].Kd_BP ) = 10.0**x\
 \
 .((((((((....((.))....((........)).(((.((())).))).)))))))). [ 5. -3.  1. -1. -1.] 36.9784821721\
 .((((((((....((.))....((........)).(((.((())).))).)))))))). [ 5.25 -3.    1.   -1.   -1.  ] 37.6631209563\
@@ -716,21 +729,25 @@ Let\'92s also float Kd for A-U and G\'95U .. hey this looks promising:\
 ((....(((((...(())..)).))).((...((((...((()))..))))))...)). [  5.19976301   1.55037572 -21.38153604   5.40724989   3.58633684] 5.2238514346\
 ((....(((((...(())..)).))).((...((((...((()))..))))))...)). [  5.19978603   1.55034499 -21.38160999   5.40731537   3.5863221 ] 5.22385143268\
 ((....(((((...(())..)).))).((...((((...((()))..))))))...)). [  5.19978603   1.55034499 -21.38160999   5.40731537   3.5863221 ] 5.22385143268\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f1\b .....((((((...(())..)).))))((...((((...((()))..))))...))... <\'97 target\
+\f1\b \cf2 .....((((((...(())..)).))))((...((((...((()))..))))...))... <\'97 target\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f0\b0   status: 0\
+\f0\b0 \cf2   status: 0\
     nfev: 497\
  success: True\
      fun: 5.2238514326829684\
        x: array([  5.19978603,   1.55034499, -21.38160999,   5.40731537,   3.5863221 ])\
  message: 'Optimization terminated successfully.'\
      nit: 312\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs22 \
+\fs22 \cf2 \
 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs24 OK, this is not so bad\'85 \
+\fs24 \cf2 OK, this is not so bad\'85 \
 C_eff_stacked_pair remains at 10^5\
 let\'92s make a v1.5 with above params. Only real oddball is\
 \
@@ -739,13 +756,15 @@ C_init = 10**1.55034499 M =
 \fs24 \
 \
 And also Kd\'92s shift, in M\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs22 G-C 762.071797551 \'97>    762.071797551   [not varied]\
+\fs22 \cf2 G-C 762.071797551 \'97>    762.071797551   [not varied]\
 A-U 1715.21326063 \'97> 255455 [much worse!]\
 G\'95U 17152.1326063 \'97>   3857 [brought back to be similar to usual A-U]  \
 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\fs24 And K_coax \'97> 0, but I kind of expected that for a model with only canonicals (and also consistent with initial tRNA tests above)\
+\fs24 \cf2 And K_coax \'97> 0, but I kind of expected that for a model with only canonicals (and also consistent with initial tRNA tests above)\
 \
 Update alpha fold v1.5 in accordance.\
 \
@@ -754,7 +773,8 @@ How about enter P4-P6 after optimizing junction: alpha fold v1.5 on left, NATIVE
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f4 \cf0 \cb1 \CocoaLigature1 {{\NeXTGraphic Screen Shot 2018-11-18 at 3.47.24 PM.png \width16800 \height10300
-}¬}\
+}¬}\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
@@ -783,16 +803,20 @@ Now kick off runs with both P4-P6(outer-junction) & tRNA as target secstructs\'8
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f0\fs18 \cf2 \cb3 \CocoaLigature0 (((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))).... [ 5.42543854  1.48987103  5.06205844  4.60273834] 1.24240728751\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f1\b (((((((..((((........)))).((((.........)))).....(((((.......)))))))))))).... <\'97 native
+\f1\b \cf2 (((((((..((((........)))).((((.........)))).....(((((.......)))))))))))).... <\'97 native
 \fs14 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f0\b0\fs18 .(((((((((....((....))......))..((((...((()))..))))))))))). [ 5.42543854  1.48987103  5.06205844  4.60273834] 8.09436196181
+\f0\b0\fs18 \cf2 .(((((((((....((....))......))..((((...((()))..))))))))))). [ 5.42543854  1.48987103  5.06205844  4.60273834] 8.09436196181
 \fs22 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f1\b\fs18 .....((((((...(())..)).))))((...((((...((()))..))))...))... <\'97 target\
+\f1\b\fs18 \cf2 .....((((((...(())..)).))))((...((((...((()))..))))...))... <\'97 target\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f0\b0\fs22 \
+\f0\b0\fs22 \cf2 \
   status: 0\
     nfev: 264\
  success: True\
@@ -808,14 +832,61 @@ OK, its not possible to make P4-P6 and tRNA work with the same parameters. Note 
 
 \f4\fs24 \cf0 \cb1 \CocoaLigature1 {{\NeXTGraphic Screen Shot 2018-11-18 at 4.45.46 PM.png \width6080 \height5060
 }¬}\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-
-\f0\fs22 \cf2 \cb3 \CocoaLigature0 \
+\cf0 \
 \
+\ul Nov 19, 2018\
+\ulnone Refactored so that  C_eff_stack[ bpt1][bpt2] are each accessible\
+Reran optimization as sanity check\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f0\fs22 \cf2 \cb3 \CocoaLigature0 (((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))).... [ 5.42543854  1.48987103  5.06205844  4.60273834] 1.24240728751\
+.(((((((((....((....))......))..((((...((()))..))))))))))). [ 5.42543854  1.48987103  5.06205844  4.60273834] 8.09436196181\
+\
+  status: 0\
+    nfev: 264\
+ success: True\
+     fun: 8.094361961811412\
+       x: array([ 5.42543854,  1.48987103,  5.06205844,  4.60273834])\
+ message: 'Optimization terminated successfully.'\
+     nit: 156\
+Final parameters: [ 5.42543854  1.48987103  5.06205844  4.60273834] Loss: 8.09436196181\
+\
+real	3m48.130s\
+user	3m44.920s\
+sys	0m1.235s\
+\
+\
+Let\'92s run again with default L-BFGS-B params. Hey its faster!\
+\
+(((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))).... [ 5.42539849  1.48984252  5.06201149  4.60272714] 1.24234529396\
+.(((((((((....((....))......))..((((...((()))..))))))))))). [ 5.42539849  1.48984252  5.06201149  4.60272714] 8.09436195714\
+\
+  status: 0\
+ success: True\
+    nfev: 12\
+     fun: 8.094361957136051\
+       x: array([ 5.42539849,  1.48984252,  5.06201149,  4.60272714])\
+ message: 'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'\
+     jac: array([ -2.43360887e-05,  -3.01980663e-05,   1.27897692e-05,\
+         1.06581410e-06])\
+     nit: 11\
+Final parameters: [ 5.42539849  1.48984252  5.06201149  4.60272714] Loss: 8.09436195714\
+\
+real	1m6.427s\
+user	1m4.757s\
+sys	0m0.586s\
+\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf2 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \fs24 \cf2 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f3\fs4 \
+\f3\fs4 \cf2 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf2 \
 \

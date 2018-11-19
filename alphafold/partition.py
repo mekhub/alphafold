@@ -96,7 +96,7 @@ class Partition:
         for i in range( self.N): self.Z_final.update( self, i )
 
         self.Z  = self.Z_final.val(0)
-        self.dG = -KT_IN_KCAL * log( self.Z )
+        if self.Z > 0.0: self.dG = -KT_IN_KCAL * log( self.Z )
         self.dZ = self.Z_final.deriv(0)
 
     # boring member functions -- defined later.
@@ -218,7 +218,7 @@ def _get_bpp_matrix( self ):
         for j in range( self.N ):
             self.bpp[i][j] = 0.0
             for base_pair_type in self.params.base_pair_types:
-                self.bpp[i][j] += self.Z_BPq[base_pair_type].val(i,j) * self.Z_BPq[base_pair_type].val(j,i) * base_pair_type.Kd_BP / self.Z_final.val(0)
+                self.bpp[i][j] += self.Z_BPq[base_pair_type].val(i,j) * self.Z_BPq[base_pair_type.flipped].val(j,i) * base_pair_type.Kd_BP / self.Z_final.val(0)
 
 ##################################################################################################
 def _calc_mfe( self ):
