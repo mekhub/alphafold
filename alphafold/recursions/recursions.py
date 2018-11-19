@@ -189,15 +189,16 @@ def update_C_eff_basic( self, i, j ):
     for k in range( i+1, i+offset):
         if ligated[k-1]: C_eff_basic[i][j] += C_eff_for_BP[i][k-1] * l * Z_BP[k][j] * l_BP
 
-    # j is coax-stacked, and its partner is k > i.  (look below for case with i and j coaxially stacked)
-    #               _______
-    #              / :   : \
-    #              \ :   : /
-    #    i ~~~~k-1 - k   j
-    #
-    C_eff_for_coax = C_eff_no_BP_singlet if exclude_strained_3WJ else C_eff
-    for k in range( i+1, i+offset):
-        if ligated[k-1]: C_eff_basic[i][j] += C_eff_for_coax[i][k-1] * Z_coax[k][j] * l * l_coax
+    if K_coax > 0:
+        # j is coax-stacked, and its partner is k > i.  (look below for case with i and j coaxially stacked)
+        #               _______
+        #              / :   : \
+        #              \ :   : /
+        #    i ~~~~k-1 - k   j
+        #
+        C_eff_for_coax = C_eff_no_BP_singlet if exclude_strained_3WJ else C_eff
+        for k in range( i+1, i+offset):
+            if ligated[k-1]: C_eff_basic[i][j] += C_eff_for_coax[i][k-1] * Z_coax[k][j] * l * l_coax
 
 
 ##################################################################################################
