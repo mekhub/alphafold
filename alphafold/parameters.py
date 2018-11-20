@@ -76,7 +76,7 @@ def get_minimal_params():
     Kd_BP  = 0.0002  # Kd for forming base pair (units of M )
     setup_base_pair_type( params, '*', '*', Kd_BP, match_lowercase = True  )
     setup_base_pair_type( params, 'C', 'G', Kd_BP )
-    initialize_C_eff_stack( params )
+    _initialize_C_eff_stack( params )
 
     return params
 
