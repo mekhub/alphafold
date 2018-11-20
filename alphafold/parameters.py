@@ -121,7 +121,7 @@ def get_params_v0_17( params ):
     setup_base_pair_type(params, 'G', 'U', Kd_BP_GU )
 
     # turn off coax
-    params.K_coax = 0.0
+    params.K_coax = 5.0
     params.l_coax = 1.0
 
     _initialize_C_eff_stack( params )

@@ -14,7 +14,7 @@ def free_energy_gap( x, sequence_structure_pairs, apply_params ):
         sequence, structure = sequence_structure_pair[0:2]
         force_base_pairs = None
         if len( sequence_structure_pair ) > 2: force_base_pairs = sequence_structure_pair[2]
-        p = partition( sequence, params = params, suppress_all_output = True, mfe = True )
+        p = partition( sequence, params = params, suppress_all_output = True, mfe = True, force_base_pairs = force_base_pairs )
         dG = p.dG
         dG_structure = score_structure( sequence, structure, params = params )
         dG_gap += dG_structure - dG # will be a positive number, best case zero.
@@ -114,7 +114,8 @@ def apply_params_Ceff_Cinit_KdAU_KdGU_Kcoax( params, x ):
 
 x0 = np.array( [1.56, 5.4, 5, 4, 4, 4, 4, 1] )
 apply_params_func = apply_params_Cinit_CeffSix_Kcoax
-sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
+#sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
+sequence_structure_pairs  = [ (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
 
 loss = lambda x : free_energy_gap( x, sequence_structure_pairs, apply_params_func )
 
