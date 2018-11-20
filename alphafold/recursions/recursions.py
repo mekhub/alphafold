@@ -35,7 +35,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
 
     ( C_eff_for_coax, C_eff_for_BP ) = (C_eff, C_eff ) if allow_strained_3WJ else (C_eff_no_BP_singlet, C_eff_no_coax_singlet )
 
-    if self.force_base_pair and not self.force_base_pair[i][j]: return
+    if self.allow_base_pair and not self.allow_base_pair[i][j]: return
 
     # minimum loop length -- no other way to penalize short segments.
     if ( all_ligated[i][j] and ( ((j-i-1) % N)) < min_loop_length ): return

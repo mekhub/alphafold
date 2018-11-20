@@ -9,7 +9,7 @@ from math import log
 
 ##################################################################################################
 def partition( sequences, circle = False, params = '', mfe = False, calc_bpp = False,
-               n_stochastic = 0, do_enumeration = False, structure = None, no_coax = False,
+               n_stochastic = 0, do_enumeration = False, structure = None, force_base_pairs = None, no_coax = False,
                verbose = False,  suppress_all_output = False,
                calc_deriv = False, use_simple_recursions = False  ):
     '''
@@ -30,6 +30,7 @@ def partition( sequences, circle = False, params = '', mfe = False, calc_bpp = F
     p.use_simple_recursions = use_simple_recursions
     p.circle    = circle
     p.structure = get_structure_string( structure )
+    p.force_base_pairs = get_structure_string( force_base_pairs )
     p.suppress_all_output = suppress_all_output
     p.run()
     if calc_bpp:         p.get_bpp_matrix()
@@ -66,6 +67,7 @@ class Partition:
         self.base_pair_types = params.base_pair_types
         self.suppress_all_output = False
         self.structure = None
+        self.force_base_pairs = None
 
         # for output:
         self.Z       = 0
@@ -184,25 +186,54 @@ def initialize_dynamic_programming_matrices( self ):
 
 ##################################################################################################
 def initialize_force_base_pair( self ):
-    self.force_base_pair = None
+    self.allow_base_pair     = None
     self.in_forced_base_pair = None
-    if self.structure == None: return
+    if self.structure != None:
+        assert( self.force_base_pairs == None )
+        bp_list = bps( self.structure )
+    elif self.force_base_pairs != None:
+        assert( self.structure == None )
+        bp_list = bps( self.force_base_pairs )
+    else:
+        return
 
     N = self.N
-    self.force_base_pair = initialize_matrix( N, False )
     self.in_forced_base_pair = [False] * N
     if self.use_simple_recursions: self.in_forced_base_pair = WrappedArray( N, False )
 
-    bp_list = bps( self.structure )
     for i,j in bp_list:
-        self.force_base_pair[ i ][ j ] = True
-        self.force_base_pair[ j ][ i ] = True
         self.in_forced_base_pair[ i ] = True
         self.in_forced_base_pair[ j ] = True
         self.Z_linear.set_val( i, i, 0.0 )
         self.Z_linear.set_val( j, j, 0.0 )
         self.C_eff.set_val( i, i, 0.0 )
         self.C_eff.set_val( j, j, 0.0 )
+
+    if self.structure != None:
+        self.allow_base_pair = initialize_matrix( N, False )
+        for i,j in bp_list:
+            self.allow_base_pair[ i ][ j ] = True
+            self.allow_base_pair[ j ][ i ] = True
+    else:
+        assert( self.force_base_pairs != None )
+        # allow the specified base pairs (indeed, force them), but
+        #  now disallow any base pairs that might cross with them.
+        self.allow_base_pair = initialize_matrix( N, True )
+        for i,j in bp_list:
+            # no crossing pairs
+            for m in range( i+1, j ):
+                for n in range( j+1, i+N ):
+                    if (( m - n ) % N) == 0: continue
+                    self.allow_base_pair[ m ][ n ] = False
+                    self.allow_base_pair[ n ][ m ] = False
+            # no other partners
+            for m in range( N ):
+                if m != j:
+                    self.allow_base_pair[ i ][ m ] = False
+                    self.allow_base_pair[ m ][ i ] = False
+                if m != i:
+                    self.allow_base_pair[ j ][ m ] = False
+                    self.allow_base_pair[ m ][ j ] = False
 
 ##################################################################################################
 def _get_bpp_matrix( self ):

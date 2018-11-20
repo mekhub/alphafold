@@ -56,7 +56,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
 
     ( C_eff_for_coax, C_eff_for_BP ) = (C_eff, C_eff ) if allow_strained_3WJ else (C_eff_no_BP_singlet, C_eff_no_coax_singlet )
 
-    if self.force_base_pair and not self.force_base_pair[i%N][j%N]: return
+    if self.allow_base_pair and not self.allow_base_pair[i%N][j%N]: return
 
     # minimum loop length -- no other way to penalize short segments.
     if ( all_ligated[i%N][j%N] and ( ((j-i-1) % N)) < min_loop_length ): return
@@ -146,7 +146,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
          sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
         offset = ( j - i ) % N
         ( C_eff_for_coax, C_eff_for_BP ) = (C_eff, C_eff ) if allow_strained_3WJ else (C_eff_no_BP_singlet, C_eff_no_coax_singlet )
-        if self.force_base_pair and not self.force_base_pair[i%N][j%N]: return
+        if self.allow_base_pair and not self.allow_base_pair[i%N][j%N]: return
         if ( all_ligated[i%N][j%N] and ( ((j-i-1) % N)) < min_loop_length ): return
         if ( all_ligated[j%N][i%N] and ( ((i-j-1) % N)) < min_loop_length ): return
         if not base_pair_type.is_match( sequence[i], sequence[j] ): return
@@ -177,7 +177,7 @@ def update_Z_BPq( self, i, j, base_pair_type ):
          sequence, ligated, all_ligated, Z_BP, C_eff_basic, C_eff_no_BP_singlet, C_eff_no_coax_singlet, C_eff, Z_linear, Z_cut, Z_coax ) = unpack_variables( self )
         offset = ( j - i ) % N
         ( C_eff_for_coax, C_eff_for_BP ) = (C_eff, C_eff ) if allow_strained_3WJ else (C_eff_no_BP_singlet, C_eff_no_coax_singlet )
-        if self.force_base_pair and not self.force_base_pair[i%N][j%N]: return
+        if self.allow_base_pair and not self.allow_base_pair[i%N][j%N]: return
         if ( all_ligated[i%N][j%N] and ( ((j-i-1) % N)) < min_loop_length ): return
         if ( all_ligated[j%N][i%N] and ( ((i-j-1) % N)) < min_loop_length ): return
         if not base_pair_type.is_match( sequence[i], sequence[j] ): return
