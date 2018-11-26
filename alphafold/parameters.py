@@ -84,9 +84,9 @@ def get_minimal_params():
     params.allow_strained_3WJ = False # Prevent strained three-way-junctions with two helices coaxially stacked and no spacer nucleotides to other helix.
 
     params.base_pair_types = []
-    Kd_BP  = 0.0002  # Kd for forming base pair (units of M )
-    setup_base_pair_type( params, '*', '*', Kd_BP, match_lowercase = True  )
-    setup_base_pair_type( params, 'C', 'G', Kd_BP )
+    Kd  = 0.0002  # Kd for forming base pair (units of M )
+    setup_base_pair_type( params, '*', '*', Kd, match_lowercase = True  )
+    setup_base_pair_type( params, 'C', 'G', Kd )
     _initialize_C_eff_stack( params )
 
     return params
@@ -100,9 +100,9 @@ def get_params_v0_17( params ):
 
     # Seven parameter model
     dG_init = +4.09 # Turner 1999, kcal/mol
-    Kd_BP_CG = 1.0 * math.exp( dG_init/ KT_IN_KCAL) # 762 M
-    Kd_BP_AU = 10.0**5.0 # 100000 M
-    Kd_BP_GU = 10.0**5.0 # 100000 M
+    Kd_CG = 1.0 * math.exp( dG_init/ KT_IN_KCAL) # 762 M
+    Kd_AU = 10.0**5.0 # 100000 M
+    Kd_GU = 10.0**5.0 # 100000 M
 
     dG_terminal_AU = 0.5 # Turner 1999, kcal/mol -- NUPACK
 
@@ -127,9 +127,9 @@ def get_params_v0_17( params ):
     params.l = math.exp( dG_multiloop_unpaired / KT_IN_KCAL )
     params.l_BP = math.exp( dG_multiloop_stems/KT_IN_KCAL ) / params.l
 
-    setup_base_pair_type(params, 'C', 'G', Kd_BP_CG )
-    setup_base_pair_type(params, 'A', 'U', Kd_BP_AU )
-    setup_base_pair_type(params, 'G', 'U', Kd_BP_GU )
+    setup_base_pair_type(params, 'C', 'G', Kd_CG )
+    setup_base_pair_type(params, 'A', 'U', Kd_AU )
+    setup_base_pair_type(params, 'G', 'U', Kd_GU )
 
     # turn off coax
     params.K_coax = 5.0
@@ -160,9 +160,9 @@ def get_params_v0_16( params ):
 
     # Seven parameter model
     dG_init = +4.09 # Turner 1999, kcal/mol
-    Kd_BP_CG = 1.0 * math.exp( dG_init/ KT_IN_KCAL) # 762 M
-    Kd_BP_AU = 10.0**5.0 # 100000 M
-    Kd_BP_GU = 10.0**5.0 # 100000 M
+    Kd_CG = 1.0 * math.exp( dG_init/ KT_IN_KCAL) # 762 M
+    Kd_AU = 10.0**5.0 # 100000 M
+    Kd_GU = 10.0**5.0 # 100000 M
 
     dG_terminal_AU = 0.5 # Turner 1999, kcal/mol -- NUPACK
 
@@ -187,9 +187,9 @@ def get_params_v0_16( params ):
     params.l = math.exp( dG_multiloop_unpaired / KT_IN_KCAL )
     params.l_BP = math.exp( dG_multiloop_stems/KT_IN_KCAL ) / params.l
 
-    setup_base_pair_type(params, 'C', 'G', Kd_BP_CG )
-    setup_base_pair_type(params, 'A', 'U', Kd_BP_AU )
-    setup_base_pair_type(params, 'G', 'U', Kd_BP_GU )
+    setup_base_pair_type(params, 'C', 'G', Kd_CG )
+    setup_base_pair_type(params, 'A', 'U', Kd_AU )
+    setup_base_pair_type(params, 'G', 'U', Kd_GU )
 
     # turn off coax!?
     params.K_coax = 0.0
@@ -210,15 +210,15 @@ def get_params_v0_15( params ):
 
     # Seven parameter model
     dG_init = +4.09 # Turner 1999, kcal/mol
-    Kd_BP_CG = 1.0 * math.exp( dG_init/ KT_IN_KCAL)
+    Kd_CG = 1.0 * math.exp( dG_init/ KT_IN_KCAL)
     dG_terminal_AU = 0.5 # Turner 1999, kcal/mol -- NUPACK
-    #Kd_BP_AU = 10.0**5.40731537 # 255000
-    Kd_BP_GU = 10.0**3.5863221 # 4000
-    Kd_BP_AU = 10.0**5.40731537 # 255000
-    Kd_BP_GU = 10.0**3.5863221 # 4000
+    #Kd_AU = 10.0**5.40731537 # 255000
+    Kd_GU = 10.0**3.5863221 # 4000
+    Kd_AU = 10.0**5.40731537 # 255000
+    Kd_GU = 10.0**3.5863221 # 4000
 
     dG_CG_CG = -3.30 # Turner 1999 5'-CC-3'/5'-GG-3', kcal/mol
-    params.C_eff_stacked_pair = math.exp( -dG_CG_CG / KT_IN_KCAL ) * Kd_BP_CG # about 10^5
+    params.C_eff_stacked_pair = math.exp( -dG_CG_CG / KT_IN_KCAL ) * Kd_CG # about 10^5
 
     # From nupack rna1999.params
     #>Multiloop terms: ALPHA_1, ALPHA_2, ALPHA_3
@@ -237,14 +237,14 @@ def get_params_v0_15( params ):
     params.l = math.exp( dG_multiloop_unpaired / KT_IN_KCAL )
     params.l_BP = math.exp( dG_multiloop_stems/KT_IN_KCAL ) / params.l
 
-    setup_base_pair_type(params, 'C', 'G', Kd_BP_CG )
-    setup_base_pair_type(params, 'A', 'U', Kd_BP_AU )
-    setup_base_pair_type(params, 'G', 'U', Kd_BP_GU )
+    setup_base_pair_type(params, 'C', 'G', Kd_CG )
+    setup_base_pair_type(params, 'A', 'U', Kd_AU )
+    setup_base_pair_type(params, 'G', 'U', Kd_GU )
 
-    #Kd_BP_GA = Kd_BP_AU*100000  # fudge factor to make GA weaker.
-    #base_pair_types.append( BasePairType( 'G', 'A', Kd_BP_GA ) ) # totally made up
-    #Kd_BP_AA = Kd_BP_AU * 40 # fudge factor to make GU weaker.
-    #base_pair_types.append( BasePairType( 'A', 'A', Kd_BP_AA ) ) # totally made up
+    #Kd_GA = Kd_AU*100000  # fudge factor to make GA weaker.
+    #base_pair_types.append( BasePairType( 'G', 'A', Kd_GA ) ) # totally made up
+    #Kd_AA = Kd_AU * 40 # fudge factor to make GU weaker.
+    #base_pair_types.append( BasePairType( 'A', 'A', Kd_AA ) ) # totally made up
 
     # turn off coax!?
     params.K_coax = 0.0
@@ -262,13 +262,13 @@ def get_params_v0_1( params ):
 
     # Seven parameter model
     dG_init = +4.09 # Turner 1999, kcal/mol
-    Kd_BP_CG = 1.0 * math.exp( dG_init/ KT_IN_KCAL)
+    Kd_CG = 1.0 * math.exp( dG_init/ KT_IN_KCAL)
     dG_terminal_AU = 0.5 # Turner 1999, kcal/mol -- NUPACK
-    Kd_BP_AU = Kd_BP_CG *math.exp( dG_terminal_AU/ KT_IN_KCAL )
-    Kd_BP_GU = Kd_BP_AU * 10 # fudge factor to make GU weaker.
+    Kd_AU = Kd_CG *math.exp( dG_terminal_AU/ KT_IN_KCAL )
+    Kd_GU = Kd_AU * 10 # fudge factor to make GU weaker.
 
     dG_CG_CG = -3.30 # Turner 1999 5'-CC-3'/5'-GG-3', kcal/mol
-    params.C_eff_stacked_pair = math.exp( -dG_CG_CG / KT_IN_KCAL ) * Kd_BP_CG
+    params.C_eff_stacked_pair = math.exp( -dG_CG_CG / KT_IN_KCAL ) * Kd_CG
 
     # From nupack rna1999.params
     #>Multiloop terms: ALPHA_1, ALPHA_2, ALPHA_3
@@ -285,14 +285,14 @@ def get_params_v0_1( params ):
     params.l = math.exp( dG_multiloop_unpaired / KT_IN_KCAL )
     params.l_BP = math.exp( dG_multiloop_stems/KT_IN_KCAL ) / params.l
 
-    setup_base_pair_type(params, 'C', 'G', Kd_BP_CG )
-    setup_base_pair_type(params, 'A', 'U', Kd_BP_AU )
-    setup_base_pair_type(params, 'G', 'U', Kd_BP_GU )
+    setup_base_pair_type(params, 'C', 'G', Kd_CG )
+    setup_base_pair_type(params, 'A', 'U', Kd_AU )
+    setup_base_pair_type(params, 'G', 'U', Kd_GU )
 
-    #Kd_BP_GA = Kd_BP_AU*100000  # fudge factor to make GA weaker.
-    #base_pair_types.append( BasePairType( 'G', 'A', Kd_BP_GA ) ) # totally made up
-    #Kd_BP_AA = Kd_BP_AU * 40 # fudge factor to make GU weaker.
-    #base_pair_types.append( BasePairType( 'A', 'A', Kd_BP_AA ) ) # totally made up
+    #Kd_GA = Kd_AU*100000  # fudge factor to make GA weaker.
+    #base_pair_types.append( BasePairType( 'G', 'A', Kd_GA ) ) # totally made up
+    #Kd_AA = Kd_AU * 40 # fudge factor to make GU weaker.
+    #base_pair_types.append( BasePairType( 'A', 'A', Kd_AA ) ) # totally made up
 
     params.K_coax = 10
     params.l_coax = 1
