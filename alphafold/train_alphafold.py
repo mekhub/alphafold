@@ -1,8 +1,8 @@
 #!/usr/bin/python
 from scipy.optimize import minimize
-from alphafold.parameters import get_params
-from alphafold.partition import partition
-from alphafold.score_structure import score_structure
+from parameters import get_params
+from partition import partition
+from score_structure import score_structure
 import numpy as np
 
 def free_energy_gap( x, sequence_structure_pairs, apply_params ):
@@ -42,15 +42,15 @@ P4P6_outerjunction_sequence  = 'GGAAUUGCGGGAAAGG CUAACCACGCAGCCAAGUCCUAAGUC GAUA
 P4P6_outerjunction_structure = '.....((((((...(( ))..)).))))((...((((...((( )))..))))...))...'
 P4P6_outerjunction_force_bps = '...............( )........................( )................'
 
-def apply_params_Ceff_Cinit_KdAU_KdGU( params, x ):
+def apply_params_Ceff_Cinit_KaAU_KaGU( params, x ):
     q = 10.0**x
     params.C_eff_stacked_pair = q[0]
     params.initialize_C_eff_stack()
     params.C_init = q[1]
-    params.base_pair_types[2].Kd_BP = q[2]
-    params.base_pair_types[3].Kd_BP = q[2] # A-U
-    params.base_pair_types[4].Kd_BP = q[3]
-    params.base_pair_types[5].Kd_BP = q[3] # G-U
+    params.base_pair_types[2].Ka = q[2]
+    params.base_pair_types[3].Ka = q[2] # A-U
+    params.base_pair_types[4].Ka = q[3]
+    params.base_pair_types[5].Ka = q[3] # G-U
     params.K_coax = 0.0
 
 def apply_params_Cinit_CeffSix( params, x ):
@@ -62,9 +62,13 @@ def apply_params_Cinit_CeffSix( params, x ):
     for bpt1 in bpts_WC:
         for bpt2 in bpts_WC:
             params.C_eff_stack[bpt1][bpt2] = q[1]
-    for bpt in bpts_WC:  params.C_eff_stack[bpt][bpt_GU] = q[2]
-    for bpt in bpts_WC:  params.C_eff_stack[bpt][bpt_UG] = q[3]
+    for bpt in bpts_WC:
+        params.C_eff_stack[bpt][bpt_GU] = q[2]
+        params.C_eff_stack[bpt_UG][bpt] = q[2]
+        params.C_eff_stack[bpt][bpt_UG] = q[3]
+        params.C_eff_stack[bpt_GU][bpt] = q[3]
     params.C_eff_stack[bpt_GU][bpt_GU] = q[4]
+    params.C_eff_stack[bpt_UG][bpt_UG] = q[4]
     params.C_eff_stack[bpt_GU][bpt_UG] = q[5]
     params.C_eff_stack[bpt_UG][bpt_GU] = q[6]
     params.K_coax = 0.0
@@ -79,43 +83,43 @@ def apply_params_Cinit_l_lBP_CeffSix( params, x ):
     params.l = q[1]
     params.l_BP = q[2]
 
-def apply_params_Ceff_Cinit_KdAU_KdGU_Kcoax( params, x ):
+def apply_params_Ceff_Cinit_KaAU_KaGU_Kcoax( params, x ):
     q = 10.0**x
     params.C_eff_stacked_pair = q[0]
     params.initialize_C_eff_stack()
     params.C_init = q[1]
-    params.base_pair_types[2].Kd_BP = q[2]
-    params.base_pair_types[3].Kd_BP = q[2] # A-U
-    params.base_pair_types[4].Kd_BP = q[3]
-    params.base_pair_types[5].Kd_BP = q[3] # G-U
+    params.base_pair_types[2].Ka_BP = q[2]
+    params.base_pair_types[3].Ka_BP = q[2] # A-U
+    params.base_pair_types[4].Ka_BP = q[3]
+    params.base_pair_types[5].Ka_BP = q[3] # G-U
     params.K_coax = q[4]
 
 #x0 = np.array( [5, 1, 3, 3] )
-#apply_params_func = apply_params_Ceff_Cinit_KdAU_KdGU
+#apply_params_func = apply_params_Ceff_Cinit_KaAU_KaGU
 #sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure) ]
 
 #x0 = np.array( [5, 4, 4, 3, 3, 3, 3] )
 #apply_params_func = apply_params_Cinit_CeffSix
 #sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure) ]
 
-#x0 = np.array( [1.56, 5.4, 5, 4, 4, 4, 4] )
-#apply_params_func = apply_params_Cinit_CeffSix
+x0 = np.array( [1.56, 5.4, 5, 4, 4, 4, 4] )
+apply_params_func = apply_params_Cinit_CeffSix
 #sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_sequence, P4P6_structure) ]
+sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_sequence, P4P6_structure, P4P6_outerjunction_force_bps) ]
 
 #x0 = np.array( [1.56, 0, 0, 5, 5, 4, 4, 4, 4] )
 #apply_params_func = apply_params_Cinit_l_lBP_CeffSix
 #sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure) ]
 
 #x0 = np.array( [5, 1, 3, 3, 1] )
-#apply_params_func = apply_params_Ceff_Cinit_KdAU_KdGU_Kcoax
+#apply_params_func = apply_params_Ceff_Cinit_KaAU_KaGU_Kcoax
 #sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure) ]
 #sequence_structure_pairs  = [ (P4P6_outerjunction_sequence, P4P6_outerjunction_structure) ]
 
-
-x0 = np.array( [1.56, 5.4, 5, 4, 4, 4, 4, 1] )
-apply_params_func = apply_params_Cinit_CeffSix_Kcoax
-#sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
-sequence_structure_pairs  = [ (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
+#x0 = np.array( [1.56, 5.4, 5, 4, 4, 4, 4, 1] )
+#apply_params_func = apply_params_Cinit_CeffSix_Kcoax
+##sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
+#sequence_structure_pairs  = [ (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
 
 loss = lambda x : free_energy_gap( x, sequence_structure_pairs, apply_params_func )
 
