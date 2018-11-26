@@ -1,0 +1,129 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf830
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red47\green180\blue29;\red255\green255\blue255;\red0\green0\blue0;
+}
+{\*\expandedcolortbl;;\cssrgb\c20238\c73898\c14947;\csgray\c100000;\csgray\c0;
+}
+\margl1440\margr1440\vieww22140\viewh9240\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \ul \ulc0 Nov. 26, 2018\
+\ulnone About to put in derivatives and launch optimizations from larger data sets.\
+\
+Let\'92s look ahead to C++ coding  \'97 will it be necessary?\
+\
+Can we get any speed increases? work in branch:\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f1\fs22 \cf2 \cb3 \CocoaLigature0 rhiju/speedup
+\f0\fs24 \cf0 \cb1 \CocoaLigature1 \
+\
+Use tRNA as test example [includes coax, using v0.17 parameters]:\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f1\fs22 \cf4 \cb3 \CocoaLigature0 MacBook-Pro-111:alphafold_devel rhiju$ time ./alphafold.py -s GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA  --mfe  \
+Parameters:  alphafold  version 0.17\
+\
+Doing backtrack to get minimum free energy structure:\
+GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA\
+(((((((..((((........)))).(((((.......))))).....(((((.......))))))))))))....     0.20444645702 [MFE]\
+\
+sequence = GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA\
+cutpoint = ---------------------------------------------------------------------------X\
+circle   =  False\
+Z = 6.51221428241e+18\
+dG = -26.69960446\
+\
+real	0m0.923s\
+user	0m0.865s\
+sys	0m0.025s\
+\
+\
+\
+\
+Above uses /usr/bin/python  which is the system python\
+MacBook-Pro-111:alphafold_devel rhiju$ /usr/bin/python\
+Python 2.7.10 (default, Feb  7 2017, 00:08:15) \
+[GCC 4.2.1 Compatible Apple LLVM 8.0.0 (clang-800.0.34)] on darwin\
+\
+If we instead use anaconda python:\
+MacBook-Pro-111:alphafold_devel rhiju$ python\
+Python 2.7.14 |Anaconda, Inc.| (default, Dec  7 2017, 11:07:58) \
+[GCC 4.2.1 Compatible Clang 4.0.1 (tags/RELEASE_401/final)] on darwin\
+\
+we get \ul slower\ulnone  runs by about 2x!:\
+\
+time python ./alphafold.py -s GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA  --mfe  \
+Parameters:  alphafold  version 0.17\
+\
+Doing backtrack to get minimum free energy structure:\
+GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA\
+(((((((..((((........)))).(((((.......))))).....(((((.......))))))))))))....     0.20444645702 [MFE]\
+\
+sequence = GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA\
+cutpoint = ---------------------------------------------------------------------------X\
+circle   =  False\
+Z = 6.51221428241e+18\
+dG = -26.69960446\
+\
+real	0m1.677s\
+user	0m1.606s\
+sys	0m0.030s\
+\
+Now let\'92s also try pypy:\
+\
+pypy --version\
+Python 2.7.13 (ab0b9caf307d, Apr 24 2018, 18:05:02)\
+[PyPy 6.0.0 with GCC 4.2.1 Compatible Apple LLVM 9.1.0 (clang-902.0.39.1)]\
+\
+\
+Cool. Let\'92s also run \'92simple\'92 which actually uses a bunch of functions hidden inside the DynamicProgrammning classes to simplify recursions.py, but at the expense of speed.\
+\
+Build a table of \'91real\'92 time (in seconds):\
+                            explicit   simple\
+system   python (2.7.10)    0.923      20.088\
+anaconda python (2.7.14)    1.677      23.160\
+pypy                        0.810       1.423\
+\
+Big improvement  in \'91simple\'92 case \'97 ~14x \'96 really gets into those classes and figures out how to speed up! But not a big boon for \'91explicit_recursions\'92, only 10% \'97 I guess I already did a good job of speeding that up.\
+\
+\
+check with -cProfile and order by what\'92s slowest\'85\
+\
+time /usr/bin/python -m cProfile ./alphafold.py -s GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA  > cprofile_output.txt\
+sort -nk2 cprofile_output.txt \
+\
+\
+    39976    0.020    0.000    0.020    0.000 parameters.py:29(get_variables)\
+     2850    0.031    0.000    0.035    0.000 explicit_recursions.py:203(update_Z_BP)\
+    39976    0.033    0.000    0.053    0.000 explicit_recursions.py:641(unpack_variables)\
+       14    0.037    0.003    0.046    0.003 explicit_dynamic_programming.py:10(__init__)\
+    39900    0.041    0.000    0.513    0.000 explicit_dynamic_programming.py:35(update)\
+     2850    0.043    0.000    0.048    0.000 explicit_recursions.py:231(update_Z_coax)\
+     2850    0.082    0.000    0.088    0.000 explicit_recursions.py:433(update_Z_linear)\
+     2850    0.090    0.000    0.096    0.000 explicit_recursions.py:268(update_C_eff_basic)\
+    17100    0.119    0.000    0.161    0.000 explicit_recursions.py:47(update_Z_BPq)\
+       76    0.283    0.004    0.289    0.004 explicit_recursions.py:517(update_Z_final)\
+\
+Total time is 0.998 s. \
+a little weird that Z-final is slowest \'97 presumably could optimize that to be close to zero. Ah, yes, it\'92s because, by default, we\'92re running it N times to get Z-final all N ways and to check identity.\
+\
+Still should be able to make it all a lot faster\'85 just compare to other packages that are written in C:\
+\
+              tRNA tRNAtRNA tRNA4\
+alphafold    0.902    5.977 43.73\
+alphafold    0.395    1.876 10.39   [-no_coax]\
+NUPACK 3.2.2 0.043    0.210 1.763   [-dangles none]\
+RNAstruct6.1 0.369    0.415 0.767   [--disablecoax]\
+Vienna 2.4.3 0.022    0.072 0.262   [similar numbers with or without dangles -d0]\
+\
+alpha fold is 30x slower than Vienna, even when turning off coax to speed up alpha fold!\
+\
+\'95\'a0Oops, also noticed a bug \'97 need to fix how C_eff_stacked_pair is set up at end (force check through bpp)\
+\'95\'a0should also be able to get acceleration by using Ka instead of Kd (multiplication faster than repeated division)\
+\
+\
+\
+}

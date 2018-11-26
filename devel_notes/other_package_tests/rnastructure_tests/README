@@ -1,0 +1,3 @@
+time partition tRNA.seq tRNA.pfs --disablecoax
+time partition tRNAtRNA.seq tRNAtRNA.pfs --disablecoax
+time partition tRNA4.seq tRNA4.pfs --disablecoax

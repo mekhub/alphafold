@@ -1,0 +1,41 @@
+% NUPACK 3.2.2
+% Program: mfe
+% Start time: Mon Nov 12 06:01:37 2018
+% Command: mfe -material rna1999 -dangles none tRNA 
+% Sequence:  GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA
+% v(pi): 1
+% Parameters: RNA, 1999
+% Dangles setting: 0
+% Temperature (C): 37.0
+% Sodium concentration: 1.0000 M
+% Magnesium concentration: 0.0000 M
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% %
+76
+-20.100
+((((((((.(......((((.((((((..((((...........))))..))))))..))))).))))))))....
+1	72
+2	71
+3	70
+4	69
+5	68
+6	67
+7	66
+8	65
+10	63
+17	62
+18	61
+19	60
+20	59
+22	56
+23	55
+24	54
+25	53
+26	52
+27	51
+30	48
+31	47
+32	46
+33	45
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% %
+

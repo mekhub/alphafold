@@ -1,0 +1,60 @@
+#double WaterDensity(double T) {
+#
+#   double a1 = -3.983035;
+#   double a2 = 301.797;
+#   double a3 = 522528.9;
+#   double a4 = 69.34881;
+#   double a5 = 999.974950;
+#
+#
+#   return a5 * (1 - (T+a1)*(T+a1)*(T+a2)/a3/(T+a4)) / 18.0152;
+#
+# Gives 55.1383806323 M
+#
+# kT ==>
+# 1.98722*(273.15+37)/1000
+# .61633628300000000000
+
+energy CG_3WJ  -multi -dangles none  -material rna1999
+energy CG_4WJ  -multi -dangles none  -material rna1999
+energy CG  -multi -dangles none -material rna1999
+energy CCCC_GGGG  -multi -dangles none -material rna1999
+energy CAG_CG_CG_3WJ  -multi -dangles none -material rna1999
+energy CAG_CAG_CG_3WJ  -multi -dangles none -material rna1999
+energy CUG_CUG_CG_3WJ  -multi -dangles none -material rna1999
+
+# Check:
+# CG energy should be:
+#  4.09 + kT * log(1/WaterDensity)
+#  1.6185863982331243
+
+# and what do I get from NUPACK?
+#  1.61864858092054
+# close enough!
+
+
+# How about
+# Sequence:  CG+CG+CG
+# Structure: ((+)(+))
+# NUPACK: 7.83729716184108
+# Yes that equals:
+# 1.61864858092054 + 1.61864858092054 +3.40 + 0.4*3 =  7.83729716184108
+#
+
+
+# Sequence:  CAG+CG+CG
+# Structure: (.(+)(+))
+# Energy (kcal/mol):
+# 7.83729716184108
+# Yup, A doesn't count -- no dangle/mismatch -- so same as above.
+
+# Sequence:  CAG+CAG+CG
+# Structure: (.(+).(+))
+# Energy (kcal/mol):
+#7.83729716184108
+# Ditto.
+
+
+time pfunc tRNA -dangles none -material rna1999
+time pfunc tRNAtRNA -dangles none -material rna1999
+time pfunc tRNA4 -dangles none -material rna1999
