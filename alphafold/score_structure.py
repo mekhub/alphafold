@@ -16,7 +16,7 @@ def score_structure( sequences, structure, circle = False, params = '', test_mod
     sequence, ligated, sequences = sequence_util.initialize_sequence_and_ligated( sequences, circle )
 
     params = get_params( params, suppress_all_output = True )
-    Kd_ref = params.base_pair_types[0].Kd_BP # Kd[G-C], a la Turner rule convention
+    Kd_ref = params.base_pair_types[0].Kd # Kd[G-C], a la Turner rule convention
     C_std  = params.C_std
 
     # Now go through each motif parsed out of the target structure
@@ -58,7 +58,7 @@ def score_structure( sequences, structure, circle = False, params = '', test_mod
             # what kind of base pair is this?
             for base_pair_type in p.params.base_pair_types:
                 if base_pair_type.is_match( motif_sequence[ i_motif ], motif_sequence[ j_motif ] ):
-                    Z_motif *= ( base_pair_type.Kd_BP / Kd_ref )**(0.5)
+                    Z_motif *= ( base_pair_type.Kd / Kd_ref )**(0.5)
                     break
 
         if test_mode: print "Motif: ", Z_motif, motif, motif_sequences, motif_structure

@@ -20,7 +20,7 @@ def partition( sequences, circle = False, params = '', mfe = False, calc_bpp = F
       p.bpp = matrix of base pair probabilities (if requested by user with calc_bpp = True)
       p.struct_MFE = minimum free energy secondary structure in dot-parens notation
       p.bps_MFE  = minimum free energy secondary structure as sorted list of base pairs
-      p.dZ  = derivative of Z w.r.t. Kd_BP (will later generalize) (if requested by user with calc_deriv = True)
+      p.dZ  = derivative of Z w.r.t. Kd (will later generalize) (if requested by user with calc_deriv = True)
 
     '''
     if isinstance(params,str): params = get_params( params, suppress_all_output )
@@ -47,7 +47,7 @@ def partition( sequences, circle = False, params = '', mfe = False, calc_bpp = F
 class Partition:
     '''
     Statistical mechanical model for RNA folding, testing a bunch of extensions and with lots of cross-checks.
-    TODO: complete expressions for derivatives (only doing derivatives w.r.t. Kd_BP right now)
+    TODO: complete expressions for derivatives (only doing derivatives w.r.t. Kd right now)
     TODO: replace dynamic programming matrices with a class that auto-updates derivatives, caches each contribution for backtracking, and automatically does the modulo N wrapping
     (C) R. Das, Stanford University, 2018
     '''
@@ -251,7 +251,7 @@ def _get_bpp_matrix( self ):
         for j in range( self.N ):
             self.bpp[i][j] = 0.0
             for base_pair_type in self.params.base_pair_types:
-                self.bpp[i][j] += self.Z_BPq[base_pair_type].val(i,j) * self.Z_BPq[base_pair_type.flipped].val(j,i) * base_pair_type.Kd_BP / self.Z_final.val(0)
+                self.bpp[i][j] += self.Z_BPq[base_pair_type].val(i,j) * self.Z_BPq[base_pair_type.flipped].val(j,i) * base_pair_type.Kd / self.Z_final.val(0)
 
 ##################################################################################################
 def _calc_mfe( self ):
@@ -324,16 +324,16 @@ def _run_cross_checks( self ):
         for i in range( self.N ):
             assert( self.Z_final.deriv(0) == 0 or  abs( ( self.Z_final.deriv(i) - self.Z_final.deriv(0) ) / self.Z_final.deriv(0) ) < 1.0e-5 )
 
-    # calculate bpp_tot = -dlog Z_final /dlog Kd_BP in two ways! wow cool test
+    # calculate bpp_tot = -dlog Z_final /dlog Kd in two ways! wow cool test
     if self.options.calc_deriv and len(self.bpp)>0:
         bpp_tot = 0.0
         for i in range( self.N ):
             for j in range( self.N ):
                 bpp_tot += self.bpp[i][j]/2.0 # to avoid double counting (i,j) and (j,i)
 
-        # uh this is a hack -- only works for minimal model where all the Kd_BP are the same:
-        Kd_BP = self.params.base_pair_types[0].Kd_BP
-        bpp_tot_based_on_deriv = -self.Z_final.deriv(0) * Kd_BP / self.Z_final.val(0)
+        # uh this is a hack -- only works for minimal model where all the Kd are the same:
+        Kd = self.params.base_pair_types[0].Kd
+        bpp_tot_based_on_deriv = -self.Z_final.deriv(0) * Kd / self.Z_final.val(0)
         print 'bpp_tot',bpp_tot,'bpp_tot_based_on_deriv',bpp_tot_based_on_deriv
         if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
 
