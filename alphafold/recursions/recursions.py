@@ -341,7 +341,16 @@ def update_Z_final( self, i ):
         #   - i-1 - i -
         #         *
         for j in range( i+1, (i + N - 1) ):
-            if ligated[j]: Z_final[i] += C_eff_stacked_pair * Z_BP[i][j] * Z_BP[j+1][i-1]
+            if ligated[j]:
+                if Z_BP.val(i,j) > 0.0 and Z_BP.val(j+1,i-1) > 0.0:
+                    for base_pair_type in self.params.base_pair_types:
+                        if self.Z_BPq[base_pair_type].val(i,j) == 0.0: continue
+                        for base_pair_type2 in self.params.base_pair_types:
+                            if self.Z_BPq[base_pair_type2].val(j+1,i-1) == 0.0: continue
+                            Z_BPq1 = self.Z_BPq[base_pair_type]
+                            Z_BPq2 = self.Z_BPq[base_pair_type2]
+                            # could also use self.params.C_eff_stack[base_pair_type.flipped][base_pair_type2]  -- should be the same as below.
+                            Z_final[i] += self.params.C_eff_stack[base_pair_type2.flipped][base_pair_type] * Z_BPq2[j+1][i-1] * Z_BPq1[i][j]
 
         if K_coax > 0:
             C_eff_for_coax = C_eff if allow_strained_3WJ else C_eff_no_BP_singlet

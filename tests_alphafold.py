@@ -37,6 +37,17 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     output_test( p.Z, (C_std/Kd_BP)*(2 + l**2 * l_BP**2 *C_init/Kd_BP + C_eff_stacked_pair/Kd_BP ), \
                  p.bpp, [0,3], (1 + l**2 * l_BP**2 * C_init/Kd_BP + C_eff_stacked_pair/Kd_BP )/(2 + l**2 * l_BP**2 *C_init/Kd_BP + C_eff_stacked_pair/Kd_BP ) )
 
+    # silly test -- what if C_eff_stacked_pair is not uniform
+    sequences = ['Ga','aC']
+    test_params_C_eff_stack = get_minimal_params()
+    cross_C_eff_stacked_pair = 1.0  # default is 1.0e4. Now havnig the aa base pair next to the G-C base pair is worth 10,000-fold less.
+    for base_pair_type_GC in test_params_C_eff_stack.base_pair_types[1:3]:
+        test_params_C_eff_stack.C_eff_stack[ base_pair_type_GC ][  test_params_C_eff_stack.base_pair_types[0] ]= cross_C_eff_stacked_pair
+        test_params_C_eff_stack.C_eff_stack[  test_params_C_eff_stack.base_pair_types[0] ][ base_pair_type_GC ] = cross_C_eff_stacked_pair
+    p = partition( sequences, params = test_params_C_eff_stack, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
+    output_test( p.Z, (C_std/Kd_BP)*(2 + l**2 * l_BP**2 *C_init/Kd_BP + cross_C_eff_stacked_pair/Kd_BP ), \
+                 p.bpp, [0,3], (1 + l**2 * l_BP**2 * C_init/Kd_BP + cross_C_eff_stacked_pair/Kd_BP )/(2 + l**2 * l_BP**2 *C_init/Kd_BP + cross_C_eff_stacked_pair/Kd_BP ) )
+
     sequence = 'CNGGC'
     p = partition( sequence, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose,  use_simple_recursions = use_simple_recursions )
     output_test( p.Z, 1 + C_init * l**2 *l_BP/Kd_BP * ( 2 + l ), \

@@ -32,6 +32,8 @@ class AlphaFoldParams:
 
     def initialize_C_eff_stack( self ): _initialize_C_eff_stack( self )
 
+    def check_C_eff_stack( self ): _check_C_eff_stack( self )
+
 def get_params( params = None, suppress_all_output = False ):
     params_object = None
 
@@ -55,6 +57,15 @@ def _initialize_C_eff_stack( params ):
         params.C_eff_stack[ bpt1 ] = {}
         for bpt2 in params.base_pair_types:
             params.C_eff_stack[ bpt1 ][ bpt2 ] = params.C_eff_stacked_pair
+
+def _check_C_eff_stack( params ):
+    for bpt1 in params.base_pair_types:
+        for bpt2 in params.base_pair_types:
+            if ( params.C_eff_stack[ bpt1 ][ bpt2 ] != params.C_eff_stack[ bpt2.flipped ][ bpt1.flipped ] ):
+                print "PROBLEM with C_eff_stacked pair!!!", bpt1.nt1, bpt1.nt2, " to ", bpt2.nt1, bpt2.nt2, params.C_eff_stack[ bpt1 ][ bpt2 ], \
+                    ' does not match ' , \
+                    bpt2.flipped.nt1, bpt2.flipped.nt2, " to ", bpt1.flipped.nt1, bpt1.flipped.nt2, params.C_eff_stack[ bpt2.flipped ][ bpt1.flipped ]
+            assert( params.C_eff_stack[ bpt1 ][ bpt2 ] == params.C_eff_stack[ bpt2.flipped ][ bpt1.flipped ] )
 
 def get_minimal_params():
     params = AlphaFoldParams()
@@ -128,11 +139,15 @@ def get_params_v0_17( params ):
     bpts_WC = params.base_pair_types[0:4]
     bpt_GU  = params.base_pair_types[4]
     bpt_UG  = params.base_pair_types[5]
-    for bpt in bpts_WC:  params.C_eff_stack[bpt][bpt_GU] = 10.0**4.8
-    for bpt in bpts_WC:  params.C_eff_stack[bpt][bpt_UG] = 10.0**3.0
+    for bpt in bpts_WC:
+        params.C_eff_stack[bpt   ][bpt_GU] = 10.0**4.8
+        params.C_eff_stack[bpt_UG][bpt   ] = 10.0**4.8
+        params.C_eff_stack[bpt   ][bpt_UG] = 10.0**3.0
+        params.C_eff_stack[bpt_GU][bpt   ] = 10.0**3.0
     params.C_eff_stack[bpt_GU][bpt_GU] = 10.0**4.0
-    params.C_eff_stack[bpt_GU][bpt_UG] = 10.0**4.0
+    params.C_eff_stack[bpt_UG][bpt_UG] = 10.0**4.0 # must be same as above!
     params.C_eff_stack[bpt_UG][bpt_GU] = 10.0**4.0
+    params.C_eff_stack[bpt_GU][bpt_UG] = 10.0**4.0
 
     return params
 

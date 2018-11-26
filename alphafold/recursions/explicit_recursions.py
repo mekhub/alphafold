@@ -555,7 +555,16 @@ def update_Z_final( self, i ):
         #   - i-1 - i -
         #         *
         for j in range( i+1, (i + N - 1) ):
-            if ligated[j%N]: Z_final.Q[i%N] += C_eff_stacked_pair * Z_BP.Q[i%N][j%N] * Z_BP.Q[(j+1)%N][(i-1)%N]
+            if ligated[j%N]:
+                if Z_BP.val(i,j) > 0.0 and Z_BP.val(j+1,i-1) > 0.0:
+                    for base_pair_type in self.params.base_pair_types:
+                        if self.Z_BPq[base_pair_type].val(i,j) == 0.0: continue
+                        for base_pair_type2 in self.params.base_pair_types:
+                            if self.Z_BPq[base_pair_type2].val(j+1,i-1) == 0.0: continue
+                            Z_BPq1 = self.Z_BPq[base_pair_type]
+                            Z_BPq2 = self.Z_BPq[base_pair_type2]
+                            # could also use self.params.C_eff_stack[base_pair_type.flipped][base_pair_type2]  -- should be the same as below.
+                            Z_final.Q[i%N] += self.params.C_eff_stack[base_pair_type2.flipped][base_pair_type] * Z_BPq2.Q[(j+1)%N][(i-1)%N] * Z_BPq1.Q[i%N][j%N]
 
         if K_coax > 0:
             C_eff_for_coax = C_eff if allow_strained_3WJ else C_eff_no_BP_singlet
@@ -599,8 +608,16 @@ def update_Z_final( self, i ):
                 if not ligated[c%N]: Z_final.dQ[i%N] += Z_linear.dQ[i%N][c%N] * Z_linear.Q[(c+1)%N][(i-1)%N]
                 if not ligated[c%N]: Z_final.dQ[i%N] += Z_linear.Q[i%N][c%N] * Z_linear.dQ[(c+1)%N][(i-1)%N]
             for j in range( i+1, (i + N - 1) ):
-                if ligated[j%N]: Z_final.dQ[i%N] += C_eff_stacked_pair * Z_BP.dQ[i%N][j%N] * Z_BP.Q[(j+1)%N][(i-1)%N]
-                if ligated[j%N]: Z_final.dQ[i%N] += C_eff_stacked_pair * Z_BP.Q[i%N][j%N] * Z_BP.dQ[(j+1)%N][(i-1)%N]
+                if ligated[j%N]:
+                    if Z_BP.val(i,j) > 0.0 and Z_BP.val(j+1,i-1) > 0.0:
+                        for base_pair_type in self.params.base_pair_types:
+                            if self.Z_BPq[base_pair_type].val(i,j) == 0.0: continue
+                            for base_pair_type2 in self.params.base_pair_types:
+                                if self.Z_BPq[base_pair_type2].val(j+1,i-1) == 0.0: continue
+                                Z_BPq1 = self.Z_BPq[base_pair_type]
+                                Z_BPq2 = self.Z_BPq[base_pair_type2]
+                                Z_final.dQ[i%N] += self.params.C_eff_stack[base_pair_type2.flipped][base_pair_type] * Z_BPq2.dQ[(j+1)%N][(i-1)%N] * Z_BPq1.Q[i%N][j%N]
+                                Z_final.dQ[i%N] += self.params.C_eff_stack[base_pair_type2.flipped][base_pair_type] * Z_BPq2.Q[(j+1)%N][(i-1)%N] * Z_BPq1.dQ[i%N][j%N]
             if K_coax > 0:
                 C_eff_for_coax = C_eff if allow_strained_3WJ else C_eff_no_BP_singlet
                 for j in range( i + 1, i + N - 2):
@@ -626,7 +643,15 @@ def update_Z_final( self, i ):
             for c in range( i, i + N - 1):
                 if not ligated[c%N]: Z_final.contribs[i%N] +=  [ (Z_linear.Q[i%N][c%N] * Z_linear.Q[(c+1)%N][(i-1)%N], [(Z_linear,i%N,c%N), (Z_linear,(c+1)%N,(i-1)%N)] ) ]
             for j in range( i+1, (i + N - 1) ):
-                if ligated[j%N]: Z_final.contribs[i%N] +=  [ (C_eff_stacked_pair * Z_BP.Q[i%N][j%N] * Z_BP.Q[(j+1)%N][(i-1)%N], [(Z_BP,i%N,j%N), (Z_BP,(j+1)%N,(i-1)%N)] ) ]
+                if ligated[j%N]:
+                    if Z_BP.val(i,j) > 0.0 and Z_BP.val(j+1,i-1) > 0.0:
+                        for base_pair_type in self.params.base_pair_types:
+                            if self.Z_BPq[base_pair_type].val(i,j) == 0.0: continue
+                            for base_pair_type2 in self.params.base_pair_types:
+                                if self.Z_BPq[base_pair_type2].val(j+1,i-1) == 0.0: continue
+                                Z_BPq1 = self.Z_BPq[base_pair_type]
+                                Z_BPq2 = self.Z_BPq[base_pair_type2]
+                                Z_final.contribs[i%N] +=  [ (self.params.C_eff_stack[base_pair_type2.flipped][base_pair_type] * Z_BPq2.Q[(j+1)%N][(i-1)%N] * Z_BPq1.Q[i%N][j%N], [(Z_BPq2,(j+1)%N,(i-1)%N), (Z_BPq1,i%N,j%N)] ) ]
             if K_coax > 0:
                 C_eff_for_coax = C_eff if allow_strained_3WJ else C_eff_no_BP_singlet
                 for j in range( i + 1, i + N - 2):

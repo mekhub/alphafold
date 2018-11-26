@@ -28,9 +28,9 @@ class DynamicProgrammingMatrix:
         if DPlist != None: DPlist.append( self )
         self.update_func = update_func
 
-    def val( self, i, j ): return self.Q[i][j]
-    def set_val( self, i, j, val ): self.Q[i][j] = val
-    def deriv( self, i, j ): return self.dQ[i][j]
+    def val( self, i, j ): return self.Q[i%self.N][j%self.N]
+    def set_val( self, i, j, val ): self.Q[i%self.N][j%self.N] = val
+    def deriv( self, i, j ): return self.dQ[i%self.N][j%self.N]
 
     def update( self, partition, i, j ):
         self.Q[ i ][ j ] = 0

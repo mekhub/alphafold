@@ -184,6 +184,8 @@ def initialize_dynamic_programming_matrices( self ):
     # Last DP 1-D list (not a 2-D N x N matrix)
     self.Z_final = DynamicProgrammingList( N, update_func = update_Z_final, options = self.options  )
 
+    self.params.check_C_eff_stack()
+
 ##################################################################################################
 def initialize_force_base_pair( self ):
     self.allow_base_pair     = None
