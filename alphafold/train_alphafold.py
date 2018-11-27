@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from __future__ import print_function
 from scipy.optimize import minimize
 from parameters import get_params
 from partition import partition
@@ -20,15 +21,15 @@ def calc_dG_gap( sequence_structure_params_tuple ):
     dG = p.dG
 
     dG_gap = dG_structure - dG # will be a positive number, best case zero.
-    print p.struct_MFE, dG_gap
+    print(p.struct_MFE, dG_gap)
     return dG_gap
 
 def free_energy_gap( x, sequence_structure_pairs, apply_params ):
     dG_gap = 0.0
     params = get_params( suppress_all_output = True )
     apply_params( params, x )
-    print
-    print x
+    print()
+    print(x)
 
     sequence_structure_params_tuples = map( lambda y: y+tuple([params]), sequence_structure_pairs )
     #all_dG_gap = map( calc_dG_gap, sequence_structure_params_tuples )
@@ -151,5 +152,5 @@ pool = Pool( 4 )
 result = minimize( loss, x0, method = 'L-BFGS-B' )
 
 final_loss = loss( result.x )
-print result
-print 'Final parameters:', result.x, 'Loss:',final_loss
+print(result)
+print('Final parameters:', result.x, 'Loss:',final_loss)
