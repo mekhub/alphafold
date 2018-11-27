@@ -1,5 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+from __future__ import print_function
+
 import argparse
+
+from alphafold.output_helpers import *
 from alphafold.partition import *
 from alphafold.parameters import get_minimal_params
 from alphafold.util.output_util import *
@@ -74,9 +78,9 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     for base_pair_type in params_perturb.base_pair_types: base_pair_type.Kd += delta
     p_perturb = partition( sequence, params = params_perturb ) # note that Z sums over only base pair (not dissociated strands!)
     dZ_numerical = (p_perturb.Z - p.Z)/delta
-    print "dZ_dKd (numerical) =",dZ_numerical, ";  dZ_dKd (analytic) =",p.dZ
+    print("dZ_dKd (numerical) =",dZ_numerical, ";  dZ_dKd (analytic) =",p.dZ)
     assert( abs( dZ_numerical - p.dZ )/ abs( p.dZ ) < 1.0e-5 )
-    print
+    print()
 
     sequence = 'CNGCNG'
     p = partition( sequence, params = test_params, calc_deriv = True, calc_bpp = True, do_enumeration = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
