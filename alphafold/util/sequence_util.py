@@ -1,4 +1,4 @@
-from wrapped_array import *
+from .wrapped_array import *
 
 def initialize_sequence_and_ligated( sequences, circle, use_wrapped_array = False ):
     if isinstance( sequences, str ): sequences = [sequences ]

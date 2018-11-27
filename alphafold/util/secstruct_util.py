@@ -60,7 +60,7 @@ def parse_motifs( secstruct, N = 0 ):
             continue
         # continue down a strand until we hit a base pair
         strand.append( i )
-        if i != strand[ 0 ] and pair_map.has_key( i ):
+        if i != strand[ 0 ] and i in pair_map.keys():
             # OK found a base pair, first strand is defined
             motif.append( strand )
             motif_start = strand[0]
@@ -71,7 +71,7 @@ def parse_motifs( secstruct, N = 0 ):
                 strand.append( j )
                 j = (j + 1) % N
                 strand.append( j )
-                while not pair_map.has_key( j ) and j != motif_start:
+                while not j in pair_map.keys() and j != motif_start:
                     j = ( j + 1 ) % N
                     strand.append( j )
                 motif.append( strand )

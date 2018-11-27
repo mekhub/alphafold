@@ -1,4 +1,4 @@
-from recursions.explicit_recursions import *
+from .recursions.explicit_recursions import *
 import random
 
 def get_random_contrib( contribs ):
@@ -9,13 +9,22 @@ def get_random_contrib( contribs ):
     for (idx,psum) in enumerate( contrib_cumsum ):
         if r < psum: return contribs[idx]
 
+def max_contrib(contribs):
+    max_contrib_val = None
+    tracker = None
+    for c in contribs:
+        if max_contrib_val is None or c[0] > max_contrib_val:
+            tracker = c
+            max_contrib_val = c[0]
+    return tracker
+
 ##################################################################################################
 def backtrack( self, contribs_input, mode = 'mfe' ):
     if len( contribs_input ) == 0: return []
     contrib_sum = sum( contrib[0] for contrib in contribs_input )
     if   mode == 'enumerative':
         contribs = [ contrib for contrib in contribs_input ] # like a deepcopy
-    elif mode == 'mfe':         contribs = [ max( contribs_input ) ]
+    elif mode == 'mfe':         contribs = [ max_contrib(contribs_input) ]
     elif mode == 'stochastic' : contribs = [ get_random_contrib( contribs_input ) ]
     p_bps = [] # list of tuples of (p_structure, bps_structure) for each structure
     N = self.N
