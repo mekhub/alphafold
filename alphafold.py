@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 import argparse
 from alphafold.partition import *
 from tests_alphafold import test_alphafold

@@ -1,3 +1,4 @@
+from __future__ import print_function
 from .backtrack  import mfe, boltzmann_sample, enumerative_backtrack
 from .parameters import get_params
 from .util.wrapped_array  import WrappedArray, initialize_matrix
