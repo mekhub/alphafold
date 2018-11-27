@@ -1,10 +1,10 @@
-from backtrack  import mfe, boltzmann_sample, enumerative_backtrack
-from parameters import get_params
-from util.wrapped_array  import WrappedArray, initialize_matrix
-from util.secstruct_util import *
-from util.output_util    import _show_results, _show_matrices
-from util.sequence_util  import initialize_sequence_and_ligated, initialize_all_ligated
-from util.constants import KT_IN_KCAL
+from .backtrack  import mfe, boltzmann_sample, enumerative_backtrack
+from .parameters import get_params
+from .util.wrapped_array  import WrappedArray, initialize_matrix
+from .util.secstruct_util import *
+from .util.output_util    import _show_results, _show_matrices
+from .util.sequence_util  import initialize_sequence_and_ligated, initialize_all_ligated
+from .util.constants import KT_IN_KCAL
 from math import log
 
 ##################################################################################################
@@ -147,11 +147,11 @@ def initialize_dynamic_programming_matrices( self ):
       determine the actual order of updates during dynamic programmming at each (i,j).
     '''
 
-    from recursions.explicit_recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
-    from recursions.explicit_dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
+    from .recursions.explicit_recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
+    from .recursions.explicit_dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
     if self.use_simple_recursions: # over-ride with simpler recursions that are easier for user to input.
-        from recursions.recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
-        from recursions.dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
+        from .recursions.recursions import update_Z_BPq, update_Z_BP, update_Z_cut, update_Z_coax, update_C_eff_basic, update_C_eff_no_BP_singlet, update_C_eff_no_coax_singlet, update_C_eff, update_Z_final, update_Z_linear
+        from .recursions.dynamic_programming import DynamicProgrammingMatrix, DynamicProgrammingList
 
     N = self.N
 
@@ -265,9 +265,9 @@ def _calc_mfe( self ):
     # there are actually numerous ways to calculate MFE if we did all N^2 elements -- let's check.
     n_test = N if self.calc_all_elements else 1
     if not self.suppress_all_output:
-        print
-        print 'Doing backtrack to get minimum free energy structure:'
-        print self.sequence
+        print()
+        print('Doing backtrack to get minimum free energy structure:')
+        print(self.sequence)
 
     for i in range( n_test ):
         (bps_MFE[i], p_MFE[i] ) = mfe( self, self.Z_final.get_contribs(self,i) )
@@ -275,8 +275,8 @@ def _calc_mfe( self ):
         assert( bps_MFE[i] == bps_MFE[0] )
 
     if not self.suppress_all_output:
-        print  secstruct(bps_MFE[0],N), "   ", p_MFE[0], "[MFE]"
-        print
+        print( secstruct(bps_MFE[0],N), "   ", p_MFE[0], "[MFE]")
+        print()
     self.bps_MFE = bps_MFE[0]
     self.struct_MFE = secstruct( bps_MFE[0], N)
 
@@ -285,14 +285,14 @@ def _stochastic_backtrack( self, N_backtrack ):
     #
     # Get stochastic, Boltzmann-weighted structural samples from partition function
     #
-    print
-    print 'Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble'
-    print self.sequence
+    print()
+    print('Doing',N_backtrack,'stochastic backtracks to get Boltzmann-weighted ensemble')
+    print(self.sequence)
     for i in range( N_backtrack ):
         bps, p = boltzmann_sample( self, self.Z_final.get_contribs(self,0) )
-        print secstruct(bps,self.N), "   ", p, "[stochastic]"
+        print(secstruct(bps,self.N), "   ", p, "[stochastic]")
         self.struct_stochastic.append( secstruct(bps,self.N) )
-    print
+    print()
 
     return
 
@@ -301,15 +301,15 @@ def _enumerative_backtrack( self ):
     #
     # Enumerate all structures, and track their probabilities
     #
-    print
-    print 'Doing complete enumeration of Boltzmann-weighted ensemble...'
-    print self.sequence
+    print()
+    print('Doing complete enumeration of Boltzmann-weighted ensemble...')
+    print(self.sequence)
     p_bps = enumerative_backtrack( self )
     for (p,bps) in p_bps:
-        print secstruct(bps,self.N), "   ", p, "[enumerative]"
+        print(secstruct(bps,self.N), "   ", p, "[enumerative]")
         self.struct_enumerate.append( secstruct(bps,self.N) )
     p_tot = sum( p_bp[0] for p_bp in p_bps )
-    print 'p_tot = ',p_tot
+    print('p_tot = ',p_tot)
     assert( abs(p_tot - 1.0) < 1.0e-5 )
     return
 
@@ -334,7 +334,7 @@ def _run_cross_checks( self ):
         # uh this is a hack -- only works for minimal model where all the Kd are the same:
         Kd = self.params.base_pair_types[0].Kd
         bpp_tot_based_on_deriv = -self.Z_final.deriv(0) * Kd / self.Z_final.val(0)
-        print 'bpp_tot',bpp_tot,'bpp_tot_based_on_deriv',bpp_tot_based_on_deriv
+        print('bpp_tot',bpp_tot,'bpp_tot_based_on_deriv',bpp_tot_based_on_deriv)
         if bpp_tot > 0: assert( abs( ( bpp_tot - bpp_tot_based_on_deriv )/bpp_tot ) < 1.0e-5 )
 
 

@@ -1,7 +1,7 @@
 import math
-from base_pair_types import BasePairType, setup_base_pair_type
-from util.constants import KT_IN_KCAL
-from old_parameters import *
+from .base_pair_types import BasePairType, setup_base_pair_type
+from .util.constants import KT_IN_KCAL
+from .old_parameters import *
 
 class AlphaFoldParams:
     '''
@@ -27,7 +27,7 @@ class AlphaFoldParams:
         self.allow_strained_3WJ = False # Prevent strained three-way-junctions with two helices coaxially stacked and no spacer nucleotides to other helix.
 
     def get_variables( self ):
-        if self.C_init == 0.0 and self.name == 'empty': print 'WARNING! C_init not defined, and params appear empty. Look at get_minimal_params() or get_latest_params() for examples'
+        if self.C_init == 0.0 and self.name == 'empty': print('WARNING! C_init not defined, and params appear empty. Look at get_minimal_params() or get_latest_params() for examples')
         return ( self.C_init, self.l, self.l_BP, self.C_eff_stacked_pair, self.K_coax, self.l_coax, self.C_std, self.min_loop_length, self.allow_strained_3WJ )
 
     def initialize_C_eff_stack( self ): _initialize_C_eff_stack( self )
@@ -45,8 +45,8 @@ def get_params( params = None, suppress_all_output = False ):
     elif params == 'v0.16': params_object = get_params_v0_16( AlphaFoldParams() )
     elif params == 'v0.17': params_object = get_params_v0_17( AlphaFoldParams() )
     elif params == 'v0.171': params_object = get_params_v0_171( AlphaFoldParams() )
-    else: print 'unrecognized params requested: ', params
-    if not suppress_all_output: print 'Parameters: ', params_object.name, ' version', params_object.version
+    else: print('unrecognized params requested: ', params)
+    if not suppress_all_output: print('Parameters: ', params_object.name, ' version', params_object.version)
     return params_object
 
 def get_latest_params():
@@ -63,9 +63,9 @@ def _check_C_eff_stack( params ):
     for bpt1 in params.base_pair_types:
         for bpt2 in params.base_pair_types:
             if ( params.C_eff_stack[ bpt1 ][ bpt2 ] != params.C_eff_stack[ bpt2.flipped ][ bpt1.flipped ] ):
-                print "PROBLEM with C_eff_stacked pair!!!", bpt1.nt1, bpt1.nt2, " to ", bpt2.nt1, bpt2.nt2, params.C_eff_stack[ bpt1 ][ bpt2 ], \
+                print("PROBLEM with C_eff_stacked pair!!!", bpt1.nt1, bpt1.nt2, " to ", bpt2.nt1, bpt2.nt2, params.C_eff_stack[ bpt1 ][ bpt2 ], 
                     ' does not match ' , \
-                    bpt2.flipped.nt1, bpt2.flipped.nt2, " to ", bpt1.flipped.nt1, bpt1.flipped.nt2, params.C_eff_stack[ bpt2.flipped ][ bpt1.flipped ]
+                    bpt2.flipped.nt1, bpt2.flipped.nt2, " to ", bpt1.flipped.nt1, bpt1.flipped.nt2, params.C_eff_stack[ bpt2.flipped ][ bpt1.flipped ] )
             assert( params.C_eff_stack[ bpt1 ][ bpt2 ] == params.C_eff_stack[ bpt2.flipped ][ bpt1.flipped ] )
 
 def get_minimal_params():

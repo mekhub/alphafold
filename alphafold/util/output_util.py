@@ -1,6 +1,6 @@
 from __future__ import print_function
 import math
-from constants import KT_IN_KCAL
+from .constants import KT_IN_KCAL
 
 def _show_results( self ):
     print('sequence =', self.sequence)

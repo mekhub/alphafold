@@ -1,10 +1,12 @@
 #!/usr/bin/python
 import argparse
-from partition import partition
-from parameters import get_params
-import util.sequence_util as sequence_util
-import util.secstruct_util as secstruct_util
-from util.constants import KT_IN_KCAL
+from .partition import partition
+from .parameters import get_params
+from alphafold.util import sequence_util
+from alphafold.util import secstruct_util
+#from .util.sequence_util import sequence_util
+#from .util.secstruct_util import secstruct_util
+from .util.constants import KT_IN_KCAL
 from math import log
 
 def score_structure( sequences, structure, circle = False, params = '', test_mode = False ):
@@ -61,7 +63,7 @@ def score_structure( sequences, structure, circle = False, params = '', test_mod
                     Z_motif *= ( base_pair_type.Kd / Kd_ref )**(0.5)
                     break
 
-        if test_mode: print "Motif: ", Z_motif, motif, motif_sequences, motif_structure
+        if test_mode: print("Motif: ", Z_motif, motif, motif_sequences, motif_structure)
 
         Z *= Z_motif
 
@@ -70,13 +72,13 @@ def score_structure( sequences, structure, circle = False, params = '', test_mod
     Z *= Z_connect
 
     if test_mode:
-        print "Connect strands: ", Z_connect
-        print 'Product of motif Z      :', Z
+        print("Connect strands: ", Z_connect)
+        print('Product of motif Z      :', Z)
 
     if test_mode:
         # Reference value from 'hacked' dynamic programming, which takes a while.
         p = partition( sequences, circle = circle, structure = structure, params = params, suppress_all_output = True )
-        print 'From dynamic programming:', p.Z
+        print('From dynamic programming:', p.Z)
         assert( abs( p.Z - Z )/Z < 1.0e-5 )
 
     dG = -KT_IN_KCAL * log( Z )
@@ -93,4 +95,4 @@ if __name__=='__main__':
     args     = parser.parse_args()
 
     dG = score_structure( args.sequences, args.structure, circle = args.circle, params = args.parameters, test_mode = args.test_mode )
-    print 'dG = ',dG
+    print('dG = ',dG)
