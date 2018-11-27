@@ -1057,19 +1057,21 @@ Alternatively, later discovered (see below) that C_eff_stack was not being set s
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf2 \
 \
-\ul November 26, 2018\
-\ulnone Realized that there was a major bug in setting the C_eff_stack parameters \'97 not being symmetrized properly. Put in cross-checks. \
-\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf2 \cb3 unfortunately, with bug fix, current parameters (which includes K_coax) breaks P4-P6:\
+\cf2 \ul November 26, 2018\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf2 \ulnone Realized that there was a major bug in setting the C_eff_stack parameters \'97 not being symmetrized properly. Put in cross-checks. \
+\
+unfortunately, with bug fix, current parameters (which includes K_coax) breaks P4-P6:\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f4 \cf0 \cb1 \CocoaLigature1 \
-{{\NeXTGraphic Screen Shot 2018-11-26 at 4.00.05 PM.png \width16600 \height7240
-}¬}
-\f0 \cf2 \cb3 \CocoaLigature0 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf2 \
+\cf0 {{\NeXTGraphic Screen Shot 2018-11-26 at 4.00.05 PM.png \width16600 \height7240
+}¬}\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0 \cf2 \cb3 \CocoaLigature0 \
+\
 Now if we re-optimize for C_eff, we get a better energy gap for P4-P6 outerjunction:\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
@@ -1080,8 +1082,7 @@ Now if we re-optimize for C_eff, we get a better energy gap for P4-P6 outerjunct
 apply_params_func = apply_params_Cinit_CeffSix\
 sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]\
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf2 [  0.03134381   5.46451326   2.77876574   6.88624741 -24.68647755\
+[  0.03134381   5.46451326   2.77876574   6.88624741 -24.68647755\
    3.99952729   1.30349406]\
 -20.0811410094\
 (((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))).... 0.807426796102\
@@ -1142,7 +1143,7 @@ Final parameters: [ 0.67208433  5.34240618  4.05495496  5.62414695  4.9503824   
 \fs24 \
 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf2 \cb3 Unfortunately exterior loops in P4-P6 exterior junction still look very base-paired\cf2 \cb3 \
+\cf2 Unfortunately exterior loops in P4-P6 exterior junction still look very base-paired\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf2 \
 How about including K_coax? \
@@ -1158,18 +1159,16 @@ sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P5abc_sequence,
 .....((((((...(())..)).))))((...((((...((()))..))))))...... 4.07791396836\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f1\b \cf2 \cb3 .....((((((...(())..)).))))((...((((...((()))..))))...))... <\'97 TARGET NATIVE P4-P6 exterior junction
-\f0\b0 \cf2 \cb3 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf2 ((((.((((((((.(((((((((....))))))))).((((......)))).)))).....)))))))) 5.37655891947\
+\f1\b \cf2 .....((((((...(())..)).))))((...((((...((()))..))))...))... <\'97 TARGET NATIVE P4-P6 exterior junction
+\f0\b0 \
+((((.((((((((.(((((((((....))))))))).((((......)))).)))).....)))))))) 5.37655891947\
 (((.((((.(((..(((((((((....)))))))))..((.......))....)))......))))))) 
-\f1\b \cf2 \cb3  <\'97 TARGET NATIVE P5abc
-\f0\b0 \cf2 \cb3 \
+\f1\b  <\'97 TARGET NATIVE P5abc
+\f0\b0 \
 (((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))).... 0.785405718693\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\cf2 (((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))).... 
-\f1\b \cf2 \cb3 <\'97 TARGET NATIVE tRNA
-\f0\b0 \cf2 \cb3 \
+(((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))).... 
+\f1\b <\'97 TARGET NATIVE tRNA
+\f0\b0 \
   status: 0\
  success: True\
     nfev: 18\
@@ -1201,7 +1200,37 @@ Darn, tried on full P4-P6 and got wrong structure:\
 \cf0 \
 \
 \
+Tried to also include adenine riboswitch as a \'91regularizer\'92 \'97 doesn\'92t look so great:\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\fs18 \cf0 \
+[ 0.47965826  5.46199035  4.55067509  5.58537254  4.85932226  3.98212814\
+ -0.67795508  0.31995761]\
+.(((((((.((...(())..))..........((((...((()))..))))))))))). 4.60728571424\
+((((.((((((((.(((((((((....))))))))).((((......)))).)))).....)))))))) 5.52311956944\
+(((((((((...((((((.........))))))........((((((.......))))))..))))))))) 1.19184957714\
+(((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))).... 0.46855606447\
+  status: 0\
+ success: True\
+    nfev: 41\
+     fun: 11.790810925297958\
+       x: array([ 0.47965826,  5.46199035,  4.55067509,  5.58537254,  4.85932226,\
+        3.98212814, -0.67795508,  0.31995761])\
+ message: 'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'\
+     jac: array([  1.39621648e-04,  -7.42517159e-05,   7.85149723e-05,\
+        -2.66453526e-04,  -1.48858703e-04,   2.84217094e-06,\
+         0.00000000e+00,  -1.16173737e-04])\
+     nit: 34\
+Final parameters: [ 0.47965826  5.46199035  4.55067509  5.58537254  4.85932226  3.98212814\
+ -0.67795508  0.31995761] Loss: 11.7908109253
+\fs24 \
 \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 Probably need to just run with full P4-P6 \'97 and get going on G-A params, etc. \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f0 \cf2 \cb3 \CocoaLigature0 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
