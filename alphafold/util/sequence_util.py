@@ -32,10 +32,16 @@ def initialize_sequence_and_ligated( sequences, circle, use_wrapped_array = Fals
 
 ##################################################################################################
 def get_num_strand_connections( sequences, circle ):
+    '''
+    Number of extra connections that form between strands to ensure a bound complex
+    Note that for pure circles, this number is -1
+    For pure linear,            this number is 0
+    For multiple strands,       this number is the (number of strands - 1).
+    '''
     num_strand_connections = len( sequences ) if isinstance( sequences, list ) else 1
     num_strand_connections -= 1
     if circle: num_strand_connections -= 1
-    assert( num_strand_connections >= 0 )
+    assert( num_strand_connections >= -1 )
     return num_strand_connections
 
 ##################################################################################################

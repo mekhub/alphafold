@@ -3,7 +3,7 @@ from parameters import get_params
 from util.wrapped_array  import WrappedArray, initialize_matrix
 from util.secstruct_util import *
 from util.output_util    import _show_results, _show_matrices
-from util.sequence_util  import initialize_sequence_and_ligated, initialize_all_ligated
+from util.sequence_util  import initialize_sequence_and_ligated, initialize_all_ligated, get_num_strand_connections
 from util.constants import KT_IN_KCAL
 from derivatives import _get_log_derivs
 from math import log
@@ -111,6 +111,7 @@ class Partition:
     def show_matrices( self ): _show_matrices( self )
     def get_log_derivs( self, parameters ): return _get_log_derivs( self, parameters )
     def run_cross_checks( self ): _run_cross_checks( self )
+    def num_strand_connections( self ):  return get_num_strand_connections( self.sequences, self.circle)
 
 ##################################################################################################
 def initialize_sequence_information( self ):
