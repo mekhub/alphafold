@@ -15,7 +15,9 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     p = partition( sequence, circle = True, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
     Z_ref   = C_init  * (l**7) * (1 + (C_init * l_BP**2) / Kd ) / C_std
     bpp_ref = (C_init * l_BP**2/ Kd) / ( 1 + C_init * l_BP**2/ Kd)
-    output_test( p.Z, Z_ref, p.bpp, [0,4], bpp_ref, p.get_log_derivs( ('Kd','Kd_match_lowercase','Kd_GC' ,'Kd_CG') ), [bpp_ref,0,bpp_ref,bpp_ref] )
+    deriv_parameters = ('Kd','Kd_match_lowercase','Kd_GC' ,'Kd_CG') #,'l','l_BP','C_init')
+    log_derivs_ref   = (bpp_ref,0,bpp_ref,bpp_ref)
+    output_test( p.Z, Z_ref, p.bpp, [0,4], bpp_ref, p.get_log_derivs( deriv_parameters ), log_derivs_ref, deriv_parameters )
 
     structure= '(...)..'
     p = partition( sequence, circle = True, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions, structure = structure )

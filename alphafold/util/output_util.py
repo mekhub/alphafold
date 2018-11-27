@@ -44,12 +44,15 @@ def output_square( tag, X ):
             print ' %9.3f' % X[i][j],
         print
 
-def output_test( Z, Z_ref = 0, bpp = [], bpp_idx= [], bpp_expected = 0, log_derivs = None, log_derivs_ref = None ):
+def output_test( Z, Z_ref = 0, bpp = [], bpp_idx= [], bpp_expected = 0, log_derivs = None, log_derivs_ref = None, deriv_parameters = None ):
     print 'Z =',Z_ref,' [expected]'
     assert_equal( Z, Z_ref )
-    print 'bpp[%d,%d] = ' % (bpp_idx[0],bpp_idx[1]),bpp[ bpp_idx[0] ][ bpp_idx[1] ]
+    print 'bpp[%d,%d] = ' % (bpp_idx[0],bpp_idx[1]),bpp[ bpp_idx[0] ][ bpp_idx[1] ],' [calc]'
     print 'bpp[%d,%d] = ' % (bpp_idx[0],bpp_idx[1]),bpp_expected,' [expected]'
     assert_equal( bpp[ bpp_idx[0] ][ bpp_idx[1] ], bpp_expected )
+    if deriv_parameters != None:
+        print 'd(logZ)/d(log parameter)'
+        for i,parameter in enumerate(deriv_parameters): print parameter,':', log_derivs[i],'[calc] ',log_derivs_ref[i],'[expected]'
     if log_derivs != None:
         for log_deriv,log_deriv_ref in zip(log_derivs,log_derivs_ref):  assert_equal( log_deriv, log_deriv_ref )
     print
