@@ -108,7 +108,7 @@ def get_params_v0_171( params ):
     dG_terminal_AU = 0.5 # Turner 1999, kcal/mol -- NUPACK
 
     dG_CG_CG = -3.30 # Turner 1999 5'-CC-3'/5'-GG-3', kcal/mol
-    params.C_eff_stacked_pair = 10**5.425 # about 10^5
+    params.C_eff_stacked_pair = 10**5.2 # about 10^5
 
     # From nupack rna1999.params
     #>Multiloop terms: ALPHA_1, ALPHA_2, ALPHA_3
@@ -123,7 +123,7 @@ def get_params_v0_171( params ):
     dG_multiloop_unpaired = 0.0 #0.40 # in kcal/mol -- ZERO in NUPACK -- fudging here.
     # oops, should have been:
     #params.C_init = 1.0 * math.exp( -(dG_bulge + dG_CG_CG)/ KT_IN_KCAL )
-    params.C_init = 10**1.0 #
+    params.C_init = 10**0.5 #
 
     params.l = math.exp( dG_multiloop_unpaired / KT_IN_KCAL )
     params.l_BP = math.exp( dG_multiloop_stems/KT_IN_KCAL ) / params.l
@@ -133,7 +133,7 @@ def get_params_v0_171( params ):
     setup_base_pair_type(params, 'G', 'U', Kd_GU )
 
     # turn off coax
-    params.K_coax = 5.0
+    params.K_coax = 10.0**0.42
     params.l_coax = 1.0
 
     _initialize_C_eff_stack( params )
@@ -141,12 +141,12 @@ def get_params_v0_171( params ):
     bpt_GU  = params.base_pair_types[4]
     bpt_UG  = params.base_pair_types[5]
     for bpt in bpts_WC:
-        params.C_eff_stack[bpt   ][bpt_GU] = 10.0**4.8
-        params.C_eff_stack[bpt_UG][bpt   ] = 10.0**4.8
-        params.C_eff_stack[bpt   ][bpt_UG] = 10.0**3.0
-        params.C_eff_stack[bpt_GU][bpt   ] = 10.0**3.0
-    params.C_eff_stack[bpt_GU][bpt_GU] = 10.0**4.0
-    params.C_eff_stack[bpt_UG][bpt_UG] = 10.0**4.0 # must be same as above!
+        params.C_eff_stack[bpt   ][bpt_GU] = 10.0**4.1
+        params.C_eff_stack[bpt_UG][bpt   ] = 10.0**4.1
+        params.C_eff_stack[bpt   ][bpt_UG] = 10.0**5.6
+        params.C_eff_stack[bpt_GU][bpt   ] = 10.0**5.6
+    params.C_eff_stack[bpt_GU][bpt_GU] = 10.0**4.9
+    params.C_eff_stack[bpt_UG][bpt_UG] = 10.0**4.9 # must be same as above!
     params.C_eff_stack[bpt_UG][bpt_GU] = 10.0**4.0
     params.C_eff_stack[bpt_GU][bpt_UG] = 10.0**4.0
 

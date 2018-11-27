@@ -37,8 +37,6 @@ def free_energy_gap( x, sequence_structure_pairs, apply_params ):
 
     return sum( all_dG_gap )
 
-pool = Pool( 3 )
-
 tRNA_sequence  = 'GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA'
 tRNA_structure = '(((((((..((((........)))).(((((.......))))).....(((((.......))))))))))))....'
 
@@ -54,14 +52,14 @@ P5abc_structure = '(((.((((.(((..(((((((((....)))))))))..((.......))....))).....
 #sequence  = ['GGAAUUGCGGGAAAGGGGUC','GGUCCUAACCACGCAGCCAAGUCCUAAGUCAACAGAUCUUCUGUUGAUAUGGAUGCAGUUCA']
 #structure = '.....((((((...(((((())))))..)).))))((...((((...(((((((((...)))))))))..))))...))...'
 
-# P4-P6 outer junction -- further minimized
-#sequence  = ['GGAAUUGCGGGAAAGG','CUAACCACGCAGCCAAGUCCUAAGUC','GAUAUGGAUGCAGUUCA']
-#structure =  '.....((((((...(())..)).))))((...((((...((()))..))))...))...'
 
-# P4-P6 outer junction -- easier to read input
+# P4-P6 outer junction -- further minimized -- easier to read input
 P4P6_outerjunction_sequence  = 'GGAAUUGCGGGAAAGG CUAACCACGCAGCCAAGUCCUAAGUC GAUAUGGAUGCAGUUCA'
 P4P6_outerjunction_structure = '.....((((((...(( ))..)).))))((...((((...((( )))..))))...))...'
 P4P6_outerjunction_force_bps = '...............( )........................( )................'
+
+add_sequence  = 'CGCUUCAUAUAAUCCUAAUGAUAUGGUUUGGGAGUUUCUACCAAGAGCCUUAAACUCUUGAUUAUGAAGUG'
+add_structure = '(((((((((...((((((.........))))))........((((((.......))))))..)))))))))'
 
 def apply_params_Ceff_Cinit_KdAU_KdGU( params, x ):
     q = 10.0**x
@@ -123,10 +121,10 @@ def apply_params_Ceff_Cinit_KdAU_KdGU_Kcoax( params, x ):
 #apply_params_func = apply_params_Cinit_CeffSix
 #sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure) ]
 
-x0 = np.array( [1.56, 5.4, 5, 4, 4, 4, 4] )
-apply_params_func = apply_params_Cinit_CeffSix
-#sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_sequence, P4P6_structure) ]
-sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P5abc_sequence, P5abc_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
+#x0 = np.array( [1.56, 5.4, 5, 4, 4, 4, 4] )
+#apply_params_func = apply_params_Cinit_CeffSix
+##sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_sequence, P4P6_structure) ]
+#sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P5abc_sequence, P5abc_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
 
 #x0 = np.array( [1.56, 0, 0, 5, 5, 4, 4, 4, 4] )
 #apply_params_func = apply_params_Cinit_l_lBP_CeffSix
@@ -137,12 +135,14 @@ sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P5abc_sequence,
 #sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure) ]
 #sequence_structure_pairs  = [ (P4P6_outerjunction_sequence, P4P6_outerjunction_structure) ]
 
-#x0 = np.array( [1.56, 5.4, 5, 4, 4, 4, 4, 1] )
-#apply_params_func = apply_params_Cinit_CeffSix_Kcoax
-##sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
-#sequence_structure_pairs  = [ (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps) ]
+x0 = np.array( [0.5, 5.3, 4.1, 5.6, 4.9, 4, 4, 0.5] )
+apply_params_func = apply_params_Cinit_CeffSix_Kcoax
+sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P5abc_sequence, P5abc_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure, P4P6_outerjunction_force_bps), (add_sequence, add_structure) ]
+#sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_sequence, P4P6_structure) ]
 
 loss = lambda x : free_energy_gap( x, sequence_structure_pairs, apply_params_func )
+
+pool = Pool( 4 )
 
 # simple 1-D scan
 #for x0 in range(10):  loss( [x0] )
