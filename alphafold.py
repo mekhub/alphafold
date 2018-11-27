@@ -3,7 +3,7 @@ import argparse
 from alphafold.partition import *
 from tests_alphafold import test_alphafold
 
-if __name__=='__main__':
+if __name__ =='__main__':
 
     parser = argparse.ArgumentParser( description = "Compute nearest neighbor model partitition function for RNA sequence" )
     parser.add_argument( "-s","-seq","--sequences",help="RNA sequences (separate by space)",nargs='*')

@@ -1,5 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+from __future__ import print_function
+
 import argparse
+
+#from alphafold.output_helpers import *
 from alphafold.partition import *
 from alphafold.parameters import get_minimal_params
 from alphafold.util.output_util import *
@@ -77,9 +81,9 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     for base_pair_type in params_perturb.base_pair_types: base_pair_type.Kd += delta
     p_perturb = partition( sequence, params = params_perturb ) # note that Z sums over only base pair (not dissociated strands!)
     dZ_numerical = (p_perturb.Z - p.Z)/delta
-    print "dZ_dKd (numerical) =",dZ_numerical, ";  dZ_dKd (analytic) =",p.dZ
+    print("dZ_dKd (numerical) =",dZ_numerical, ";  dZ_dKd (analytic) =",p.dZ)
     assert( abs( dZ_numerical - p.dZ )/ abs( p.dZ ) < 1.0e-5 )
-    print
+    print()
 
     sequence = 'CNGCNG'
     p = partition( sequence, params = test_params, calc_deriv = True, calc_bpp = True, do_enumeration = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
@@ -142,16 +146,16 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     # score_structure
     sequence = 'GCUCAGUUGGGAGAGC'
     structure= '((((........))))'
-    print "Testing score_structure on short sequence, full parameters: ", sequence, structure
+    print("Testing score_structure on short sequence, full parameters: ", sequence, structure)
     dG = score_structure( sequence, structure, test_mode = True )
 
-    print
-    print "Testing score_structure on tRNA folding, full parameters"
+    print()
+    print("Testing score_structure on tRNA folding, full parameters")
     sequence = 'GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA'
     structure= '(((((((..((((........)))).(((((.......))))).....(((((.......))))))))))))....'
     dG = score_structure( sequence, structure )
     dG_new = score_structure( sequence+sequence, structure+structure )
-    print "Check also double-sequence and double structure get 2*Z", dG_new, 2*dG
+    print("Check also double-sequence and double structure get 2*Z", dG_new, 2*dG)
     assert( abs(dG_new - 2*dG)/dG_new < 1.0e-5 )
 
 if __name__=='__main__':
