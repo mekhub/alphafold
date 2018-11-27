@@ -13,8 +13,9 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     # test of sequences where we know the final partition function.
     sequence = 'CNNNGNN'
     p = partition( sequence, circle = True, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
-    output_test( p.Z, C_init  * (l**7) * (1 + (C_init * l_BP**2) / Kd ) / C_std, \
-                 p.bpp, [0,4], (C_init * l_BP**2/ Kd) / ( 1 + C_init * l_BP**2/ Kd) )
+    Z_ref   = C_init  * (l**7) * (1 + (C_init * l_BP**2) / Kd ) / C_std
+    bpp_ref = (C_init * l_BP**2/ Kd) / ( 1 + C_init * l_BP**2/ Kd)
+    output_test( p.Z, Z_ref, p.bpp, [0,4], bpp_ref, p.get_log_derivs( ('Kd','Kd_match_lowercase','Kd_GC' ,'Kd_CG') ), [bpp_ref,0,bpp_ref,bpp_ref] )
 
     structure= '(...)..'
     p = partition( sequence, circle = True, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions, structure = structure )

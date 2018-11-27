@@ -1,5 +1,6 @@
 import math
 from constants import KT_IN_KCAL
+from assert_equal import assert_equal
 
 def _show_results( self ):
     print 'sequence =', self.sequence
@@ -43,14 +44,13 @@ def output_square( tag, X ):
             print ' %9.3f' % X[i][j],
         print
 
-def output_test( Z, Z_ref = 0, bpp = [], bpp_idx= [], bpp_expected = 0):
+def output_test( Z, Z_ref = 0, bpp = [], bpp_idx= [], bpp_expected = 0, log_derivs = None, log_derivs_ref = None ):
     print 'Z =',Z_ref,' [expected]'
-    assert( abs( (Z - Z_ref)/Z_ref )  < 1e-5 )
+    assert_equal( Z, Z_ref )
     print 'bpp[%d,%d] = ' % (bpp_idx[0],bpp_idx[1]),bpp[ bpp_idx[0] ][ bpp_idx[1] ]
     print 'bpp[%d,%d] = ' % (bpp_idx[0],bpp_idx[1]),bpp_expected,' [expected]'
-    if bpp_expected > 0.0:
-        assert( abs( (bpp[ bpp_idx[0] ][ bpp_idx[1] ] - bpp_expected)/bpp_expected )  < 1e-5 )
-    else:
-        assert( bpp[ bpp_idx[0] ][ bpp_idx[1] ] == 0.0 )
+    assert_equal( bpp[ bpp_idx[0] ][ bpp_idx[1] ], bpp_expected )
+    if log_derivs != None:
+        for log_deriv,log_deriv_ref in zip(log_derivs,log_derivs_ref):  assert_equal( log_deriv, log_deriv_ref )
     print
 
