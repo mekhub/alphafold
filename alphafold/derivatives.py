@@ -13,17 +13,7 @@ def _get_log_derivs( self, parameters ):
     # Derivatives with respect to each Kd
     N = self.N
     for n,parameter in enumerate(parameters):
-        if len(parameter)>1 and  parameter[:2] == 'Kd':
-            if parameter == 'Kd':
-                derivs[ n ] = get_bpp_tot( self )
-            else:
-                Kd_tag = parameter[3:]
-                for base_pair_type in self.params.base_pair_types:
-                    if (Kd_tag == 'match_lowercase' and base_pair_type.match_lowercase) or \
-                       (Kd_tag == base_pair_type.nt1 + base_pair_type.nt2 ):
-                        derivs[ n ] = get_bpp_tot_for_base_pair_type( self, base_pair_type )
-                        break
-        elif parameter == 'l':
+        if parameter == 'l':
             # Derivatives with respect to loop closure parameters
             num_internal_linkages = 0.0
             for i in range( N ): num_internal_linkages += self.params.l * self.C_eff.val( i+1, i )
@@ -39,8 +29,20 @@ def _get_log_derivs( self, parameters ):
         elif parameter == 'C_init':
             num_closed_loops = get_bpp_tot( self ) - self.num_strand_connections()
             derivs[ n ] = num_closed_loops
-        else:
+        elif len(parameter)>=2 and  parameter[:2] == 'Kd':
+            if parameter == 'Kd':
+                derivs[ n ] = get_bpp_tot( self )
+            else:
+                Kd_tag = parameter[3:]
+                for base_pair_type in self.params.base_pair_types:
+                    if (Kd_tag == 'match_lowercase' and base_pair_type.match_lowercase) or \
+                       (Kd_tag == base_pair_type.nt1 + base_pair_type.nt2 ):
+                        derivs[ n ] = get_bpp_tot_for_base_pair_type( self, base_pair_type )
+                        break
+        elif len(parameter)>=4 and parameter[:4] == 'C_eff':
             # Derivatives with respect to motifs (stacked pairs first)
+            pass
+        else:
             pass
 
     return derivs
