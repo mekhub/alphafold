@@ -1226,10 +1226,41 @@ Final parameters: [ 0.47965826  5.46199035  4.55067509  5.58537254  4.85932226  
 \fs24 \
 \
 \
+Probably need to just run with full P4-P6 \'97 and get going on G-A params, etc. \
+\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 Probably need to just run with full P4-P6 \'97 and get going on G-A params, etc. \
+\cf0 \ul Nov. 28, 2018\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\cf0 \ulnone \
+About to include derivatives in L-BFGS.   Set up a very simple jobs that takes <1 minute even without derivatives. Let\'92s see if we can get a speedup.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f0\fs20 \cf2 \cb3 \CocoaLigature0 x0 = np.array( [1, 3, 3] )\
+apply_params_func = apply_params_Cinit_KdAU_KdGU\
+deriv_parameters = ['C_init','Kd_AU','Kd_GU']\
+sequence_structure_pairs  = [ (tRNA_sequence , tRNA_structure), (P4P6_outerjunction_sequence, P4P6_outerjunction_structure) ]\
+\
+[ 1.07210079  4.83279421  4.15519529]\
+.(((((((.((...((....))......))..((((...((()))..))))))))))). 4.64490094587\
+(((((((..((((........)))).(((((.......))))).....(((((.......)))))))))))).... 1.20623798017\
+  status: 0\
+ success: True\
+    nfev: 11\
+     fun: 5.851138926036226\
+       x: array([ 1.07210079,  4.83279421,  4.15519529])\
+ message: 'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'\
+     jac: array([ -2.66453526e-07,  -2.04281037e-06,   2.22044605e-06])\
+     nit: 9\
+Final parameters: [ 1.07210079  4.83279421  4.15519529] Loss: 5.85113892604\
+\
+real	0m30.469s\
+user	0m46.644s\
+sys	0m0.402s\
+
+\fs22 \
+
+\f4\fs24 \cf0 \cb1 \CocoaLigature1 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f0 \cf2 \cb3 \CocoaLigature0 \
