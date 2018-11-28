@@ -32,7 +32,7 @@ def output_DP( tag, X, X_final = []):
     for i in range( N ):
         for q in range( i ): print('          ', end='')# padding to line up)
         for j in range( N ):
-            print(' %9.3f' % X[i][(i+j) % N], end='')
+            print(' %9.3f' % X.val(i,i+j), end='')
         if len( X_final ) > 0: print('==> %9.3f' % X_final.val(i), end='')
         print()
 
