@@ -47,9 +47,10 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     p = partition( sequences, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
     Z_ref = (C_std/Kd)*(2 + l**2 * l_BP**2 *C_init/Kd + C_eff_stacked_pair/Kd )
     bpp_ref = (1 + l**2 * l_BP**2 * C_init/Kd + C_eff_stacked_pair/Kd )/(2 + l**2 * l_BP**2 *C_init/Kd + C_eff_stacked_pair/Kd )
-    deriv_parameters = ('l','l_BP')
     log_deriv_l = 2 * (l**2 * l_BP**2 * C_init/Kd ) / (2 + (l**2 * l_BP**2 *C_init/Kd) + C_eff_stacked_pair/Kd )
-    log_derivs_ref =  [ log_deriv_l, log_deriv_l ]
+    log_deriv_C_eff_stacked_pair = (C_eff_stacked_pair/Kd) / (2 + (l**2 * l_BP**2 *C_init/Kd) + C_eff_stacked_pair/Kd )
+    deriv_parameters = ('l','l_BP','C_eff_stacked_pair')
+    log_derivs_ref =  [ log_deriv_l, log_deriv_l, log_deriv_C_eff_stacked_pair ]
     output_test( p.Z, Z_ref, p.bpp, [0,3], bpp_ref, p.get_log_derivs( deriv_parameters ), log_derivs_ref, deriv_parameters )
 
     # silly test -- what if C_eff_stacked_pair is not uniform

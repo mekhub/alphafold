@@ -43,18 +43,18 @@ def _get_log_derivs( self, parameters ):
         elif len(parameter)>=5 and parameter[:5] == 'C_eff':
             # Derivatives with respect to motifs (stacked pairs first)
             if parameter == 'C_eff_stacked_pair':
-                print( 'YOOOO!' )
                 motif_prob = 0.0
                 for i in range( N ):
                     for j in range( N ):
-                        if self.Z_BP.val(i,j) > 0.0 and self.Z_BP.val(j-1,i+1)>0:
+                        if ( j - i ) % N < 3: continue
+                        if self.Z_BP.val(j,i) > 0.0 and self.Z_BP.val(i+1,j-1)>0:
                             for base_pair_type in self.params.base_pair_types:
-                                if self.Z_BPq[base_pair_type].val(i,j) == 0.0: continue
+                                if self.Z_BPq[base_pair_type].val(j,i) == 0.0: continue
                                 for base_pair_type2 in self.params.base_pair_types:
-                                    if self.Z_BPq[base_pair_type2].val(j-1,i+1) == 0.0: continue
+                                    if self.Z_BPq[base_pair_type2].val(i+1,j-1) == 0.0: continue
                                     Z_BPq1 = self.Z_BPq[base_pair_type]
                                     Z_BPq2 = self.Z_BPq[base_pair_type2]
-                                    motif_prob += self.params.C_eff_stack[base_pair_type][base_pair_type2.flipped] * Z_BPq1[i][j] * Z_BPq2[j-1][i+1] / self.Z
+                                    motif_prob += self.params.C_eff_stack[base_pair_type.flipped][base_pair_type2] * Z_BPq1.val(j,i) * Z_BPq2.val(i+1,j-1) / 2.0 / self.Z
                 derivs[n] = motif_prob
             else:
                 #TODO
