@@ -35,30 +35,21 @@ def _get_log_derivs( self, parameters ):
                 derivs[ n ] = get_bpp_tot( self )
             else:
                 Kd_tag = parameter[3:]
-                for base_pair_type in self.params.base_pair_types:
-                    if (Kd_tag == 'match_lowercase' and base_pair_type.match_lowercase) or \
-                       (Kd_tag == base_pair_type.nt1 + base_pair_type.nt2 ):
-                        derivs[ n ] = get_bpp_tot_for_base_pair_type( self, base_pair_type )
-                        break
-        elif len(parameter)>=5 and parameter[:5] == 'C_eff':
+                derivs[ n ] = get_bpp_tot_for_base_pair_type( self, get_base_pair_type_for_tag( self, Kd_tag ) )
+
+        elif len(parameter)>=11 and parameter[:11] == 'C_eff_stack':
             # Derivatives with respect to motifs (stacked pairs first)
             if parameter == 'C_eff_stacked_pair':
                 motif_prob = 0.0
-                for i in range( N ):
-                    for j in range( N ):
-                        if ( j - i ) % N < 3: continue
-                        if self.Z_BP.val(j,i) > 0.0 and self.Z_BP.val(i+1,j-1)>0:
-                            for base_pair_type in self.params.base_pair_types:
-                                if self.Z_BPq[base_pair_type].val(j,i) == 0.0: continue
-                                for base_pair_type2 in self.params.base_pair_types:
-                                    if self.Z_BPq[base_pair_type2].val(i+1,j-1) == 0.0: continue
-                                    Z_BPq1 = self.Z_BPq[base_pair_type]
-                                    Z_BPq2 = self.Z_BPq[base_pair_type2]
-                                    motif_prob += self.params.C_eff_stack[base_pair_type.flipped][base_pair_type2] * Z_BPq1.val(j,i) * Z_BPq2.val(i+1,j-1) / 2.0 / self.Z
+                for base_pair_type in self.params.base_pair_types:
+                    for base_pair_type2 in self.params.base_pair_types:
+                        motif_prob += get_motif_prob( self, base_pair_type, base_pair_type2 )
                 derivs[n] = motif_prob
             else:
-                #TODO
-                pass
+                assert( len(parameter) > 11 )
+                tags = parameter[12:].split('_')
+                assert( len( tags ) == 2 )
+                derivs[ n ] = get_motif_prob( self, get_base_pair_type_for_tag( self, tags[0] ), get_base_pair_type_for_tag( self, tags[1] ) )
         else:
             #TODO some kind of informative error message that parameters is not a 'legitimate' one
             pass
@@ -80,3 +71,32 @@ def get_bpp_tot( self ):
     for base_pair_type in self.params.base_pair_types: bpp_tot.append( get_bpp_tot_for_base_pair_type( self, base_pair_type ) )
     return sum( bpp_tot ) / 2.0
 
+def get_base_pair_type_for_tag( self, tag ):
+    for base_pair_type in self.params.base_pair_types:
+        if (tag == 'matchlowercase' and base_pair_type.match_lowercase) or \
+           (tag == base_pair_type.nt1 + base_pair_type.nt2 ):
+            return base_pair_type
+    print 'Could not figure out base_pair_type for ', tag
+    return None
+
+def get_motif_prob( self, base_pair_type, base_pair_type2 ):
+    # base pair forms a stacked pair with previous pair
+    #
+    #      bp2
+    #  i+1 ... j-1
+    #    |     |
+    #    i ... j
+    #      bp1
+    #
+    motif_prob = 0.0
+    Z_BPq1 = self.Z_BPq[base_pair_type.flipped]
+    Z_BPq2 = self.Z_BPq[base_pair_type2]
+    N = self.N
+    for i in range( N ):
+        for j in range( N ):
+            if ( j - i ) % N < 3: continue
+            print i, j, Z_BPq1.val(j,i), Z_BPq2.val(i+1,j-1)
+            if Z_BPq1.val(j  ,  i) == 0: continue
+            if Z_BPq2.val(i+1,j-1) == 0: continue
+            motif_prob += self.params.C_eff_stack[base_pair_type][base_pair_type2] * Z_BPq1.val(j,i) * Z_BPq2.val(i+1,j-1) / self.Z / 2.0
+    return motif_prob

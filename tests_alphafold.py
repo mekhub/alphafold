@@ -19,7 +19,7 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     p = partition( sequence, circle = True, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
     Z_ref   = C_init  * (l**7) * (1 + (C_init * l_BP**2) / Kd ) / C_std
     bpp_ref = (C_init * l_BP**2/ Kd) / ( 1 + C_init * l_BP**2/ Kd)
-    deriv_parameters = ('Kd','Kd_match_lowercase','Kd_GC' ,'Kd_CG','l','l_BP','C_init','C_eff_stacked_pair')
+    deriv_parameters = ('Kd','Kd_matchlowercase','Kd_GC' ,'Kd_CG','l','l_BP','C_init','C_eff_stacked_pair')
     log_derivs_ref   = (bpp_ref,0,bpp_ref,bpp_ref, 7, 2*bpp_ref, 1 + bpp_ref, 0 )
     output_test( p.Z, Z_ref, p.bpp, [0,4], bpp_ref, p.get_log_derivs( deriv_parameters ), log_derivs_ref, deriv_parameters )
 
@@ -27,7 +27,7 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     p = partition( sequence, circle = True, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions, structure = structure )
     Z_ref = C_init  * (l**7) * (C_init * l_BP**2) / Kd / C_std
     bpp_ref = 1.0
-    deriv_parameters = ('Kd','Kd_match_lowercase','Kd_GC' ,'Kd_CG','l','l_BP','C_init','C_eff_stacked_pair')
+    deriv_parameters = ('Kd','Kd_matchlowercase','Kd_GC' ,'Kd_CG','l','l_BP','C_init','C_eff_stacked_pair')
     log_derivs_ref   = (1, 0, 1, 1, 7, 2, 2, 0 )
     output_test( p.Z, Z_ref, p.bpp, [0,4], bpp_ref, p.get_log_derivs( deriv_parameters ), log_derivs_ref, deriv_parameters )
 
@@ -49,11 +49,11 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     bpp_ref = (1 + l**2 * l_BP**2 * C_init/Kd + C_eff_stacked_pair/Kd )/(2 + l**2 * l_BP**2 *C_init/Kd + C_eff_stacked_pair/Kd )
     log_deriv_l = 2 * (l**2 * l_BP**2 * C_init/Kd ) / (2 + (l**2 * l_BP**2 *C_init/Kd) + C_eff_stacked_pair/Kd )
     log_deriv_C_eff_stacked_pair = (C_eff_stacked_pair/Kd) / (2 + (l**2 * l_BP**2 *C_init/Kd) + C_eff_stacked_pair/Kd )
-    deriv_parameters = ('l','l_BP','C_eff_stacked_pair')
-    log_derivs_ref =  [ log_deriv_l, log_deriv_l, log_deriv_C_eff_stacked_pair ]
+    deriv_parameters = ('l','l_BP','C_eff_stacked_pair','C_eff_stack_GC_GC','C_eff_stack_CG_CG','C_eff_stack_CG_GC','C_eff_stack_GC_CG')
+    log_derivs_ref =  [ log_deriv_l, log_deriv_l, log_deriv_C_eff_stacked_pair, 0,0,0, log_deriv_C_eff_stacked_pair ]
     output_test( p.Z, Z_ref, p.bpp, [0,3], bpp_ref, p.get_log_derivs( deriv_parameters ), log_derivs_ref, deriv_parameters )
 
-    # silly test -- what if C_eff_stacked_pair is not uniform
+    # what if C_eff_stacked_pair is not uniform
     sequences = ['Ga','aC']
     test_params_C_eff_stack = get_minimal_params()
     cross_C_eff_stacked_pair = 1.0  # default is 1.0e4. Now havnig the aa base pair next to the G-C base pair is worth 10,000-fold less.
@@ -61,8 +61,9 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
         test_params_C_eff_stack.C_eff_stack[ base_pair_type_GC ][  test_params_C_eff_stack.base_pair_types[0] ]= cross_C_eff_stacked_pair
         test_params_C_eff_stack.C_eff_stack[  test_params_C_eff_stack.base_pair_types[0] ][ base_pair_type_GC ] = cross_C_eff_stacked_pair
     p = partition( sequences, params = test_params_C_eff_stack, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
-    output_test( p.Z, (C_std/Kd)*(2 + l**2 * l_BP**2 *C_init/Kd + cross_C_eff_stacked_pair/Kd ), \
-                 p.bpp, [0,3], (1 + l**2 * l_BP**2 * C_init/Kd + cross_C_eff_stacked_pair/Kd )/(2 + l**2 * l_BP**2 *C_init/Kd + cross_C_eff_stacked_pair/Kd ) )
+    Z_ref = (C_std/Kd)*(2 + l**2 * l_BP**2 *C_init/Kd + cross_C_eff_stacked_pair/Kd )
+    bpp_ref = (1 + l**2 * l_BP**2 * C_init/Kd + cross_C_eff_stacked_pair/Kd )/(2 + l**2 * l_BP**2 *C_init/Kd + cross_C_eff_stacked_pair/Kd )
+    output_test( p.Z, Z_ref, p.bpp, [0,3], bpp_ref )
 
     sequence = 'CNGGC'
     p = partition( sequence, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose,  use_simple_recursions = use_simple_recursions )
