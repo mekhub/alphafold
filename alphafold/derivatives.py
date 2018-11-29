@@ -76,7 +76,7 @@ def get_base_pair_type_for_tag( self, tag ):
         if (tag == 'matchlowercase' and base_pair_type.match_lowercase) or \
            (tag == base_pair_type.nt1 + base_pair_type.nt2 ):
             return base_pair_type
-    print 'Could not figure out base_pair_type for ', tag
+    print( 'Could not figure out base_pair_type for ', tag )
     return None
 
 def get_motif_prob( self, base_pair_type, base_pair_type2 ):
@@ -95,7 +95,6 @@ def get_motif_prob( self, base_pair_type, base_pair_type2 ):
     for i in range( N ):
         for j in range( N ):
             if ( j - i ) % N < 3: continue
-            print i, j, Z_BPq1.val(j,i), Z_BPq2.val(i+1,j-1)
             if Z_BPq1.val(j  ,  i) == 0: continue
             if Z_BPq2.val(i+1,j-1) == 0: continue
             motif_prob += self.params.C_eff_stack[base_pair_type][base_pair_type2] * Z_BPq1.val(j,i) * Z_BPq2.val(i+1,j-1) / self.Z / 2.0

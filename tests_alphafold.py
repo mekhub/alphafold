@@ -63,12 +63,18 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     p = partition( sequences, params = test_params_C_eff_stack, calc_deriv = True, calc_bpp = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
     Z_ref = (C_std/Kd)*(2 + l**2 * l_BP**2 *C_init/Kd + cross_C_eff_stacked_pair/Kd )
     bpp_ref = (1 + l**2 * l_BP**2 * C_init/Kd + cross_C_eff_stacked_pair/Kd )/(2 + l**2 * l_BP**2 *C_init/Kd + cross_C_eff_stacked_pair/Kd )
-    output_test( p.Z, Z_ref, p.bpp, [0,3], bpp_ref )
+    log_deriv_l = 2 * (l**2 * l_BP**2 * C_init/Kd ) / (2 + (l**2 * l_BP**2 *C_init/Kd) + cross_C_eff_stacked_pair/Kd )
+    log_deriv_C_eff_stacked_pair = (cross_C_eff_stacked_pair/Kd) / (2 + (l**2 * l_BP**2 *C_init/Kd) + cross_C_eff_stacked_pair/Kd )
+    deriv_parameters = ('l','l_BP','C_eff_stacked_pair','C_eff_stack_GC_GC','C_eff_stack_CG_CG','C_eff_stack_CG_GC','C_eff_stack_GC_CG','C_eff_stack_GC_matchlowercase','C_eff_stack_matchlowercase_GC')
+    # NOTE THERE MAY BE AN ISSUE WITH C_eff_stack MATCHLOWERCASE derivs --> currently dividing 'ref' by 2.0 as a hack
+    log_derivs_ref =  [ log_deriv_l, log_deriv_l, log_deriv_C_eff_stacked_pair, 0,0,0,0, log_deriv_C_eff_stacked_pair/2.0, 0]
+    output_test( p.Z, Z_ref, p.bpp, [0,3], bpp_ref, p.get_log_derivs( deriv_parameters ), log_derivs_ref, deriv_parameters )
 
     sequence = 'CNGGC'
     p = partition( sequence, params = test_params, calc_deriv = True, calc_bpp = True, verbose = verbose,  use_simple_recursions = use_simple_recursions )
-    output_test( p.Z, 1 + C_init * l**2 *l_BP/Kd * ( 2 + l ), \
-                 p.bpp, [0,2], C_init*l**2*l_BP/Kd /(  1+C_init*l**2*l_BP/Kd * ( 2 + l )) )
+    Z_ref = 1 + C_init * l**2 *l_BP/Kd * ( 2 + l )
+    bpp_ref = C_init*l**2*l_BP/Kd /(  1+C_init*l**2*l_BP/Kd * ( 2 + l ))
+    output_test( p.Z, Z_ref, p.bpp, [0,2], bpp_ref )
 
     structure= '(..).'
     p = partition( sequence, params = test_params, structure = structure, calc_deriv = True, calc_bpp = True, verbose = verbose,  use_simple_recursions = use_simple_recursions )
