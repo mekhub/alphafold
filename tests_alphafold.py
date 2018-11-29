@@ -103,8 +103,12 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
 
     sequence = 'CNGCNG'
     p = partition( sequence, params = test_params, calc_deriv = True, calc_bpp = True, do_enumeration = True, verbose = verbose, use_simple_recursions = use_simple_recursions )
-    output_test( p, (1 + C_init * l**2 *l_BP/Kd)**2  + C_init * l**5 * l_BP/Kd + (C_init * l**2 *l_BP/Kd)**2 * K_coax, \
-                 [0,2], (C_init * l**2 *l_BP/Kd*(1 + C_init * l**2 *l_BP/Kd) + (C_init * l**2 *l_BP/Kd)**2 * K_coax)/((1 + C_init * l**2 *l_BP/Kd)**2  + C_init * l**5 * l_BP/Kd + (C_init * l**2 *l_BP/Kd)**2 * K_coax) )
+    Z_ref = (1 + C_init * l**2 *l_BP/Kd)**2  + C_init * l**5 * l_BP/Kd + (C_init * l**2 *l_BP/Kd)**2 * K_coax
+    bpp_ref = (C_init * l**2 *l_BP/Kd*(1 + C_init * l**2 *l_BP/Kd) + (C_init * l**2 *l_BP/Kd)**2 * K_coax) / Z_ref
+    deriv_parameters = ('C_eff_stacked_pair','Kd')
+    log_deriv_Kd = ( 2*C_init * l**2 *l_BP/Kd + 2*(C_init * l**2 *l_BP/Kd)**2  + C_init * l**5 * l_BP/Kd + 2*(C_init * l**2 *l_BP/Kd)**2 * K_coax ) / Z_ref
+    log_deriv_ref    = (0, log_deriv_Kd)
+    output_test( p, Z_ref,[0,2], bpp_ref, deriv_parameters, log_deriv_ref )
     assert( set(p.struct_enumerate) == set(['......', '(.)...', '(....)', '...(.)', '(.)(.)']) )
 
     # stringent test of structure-constrained scores.

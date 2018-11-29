@@ -54,6 +54,7 @@ def output_test( p, Z_ref = 0, bpp_idx= [], bpp_expected = 0,  deriv_parameters 
     assert_equal( p.bpp[ bpp_idx[0] ][ bpp_idx[1] ], bpp_expected )
 
     if deriv_parameters != None:
+        print()
         print( 'd(logZ)/d(log parameter)' )
         log_derivs = p.get_log_derivs( deriv_parameters )
         for i,parameter in enumerate(deriv_parameters): print( parameter,':', log_derivs[i],'[calc] ',log_derivs_ref[i],'[expected]' )
