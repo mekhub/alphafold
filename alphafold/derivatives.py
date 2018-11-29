@@ -32,6 +32,8 @@ def _get_log_derivs( self, parameters ):
             derivs[ n ] = num_closed_loops
         elif len(parameter)>=2 and  parameter[:2] == 'Kd':
             if parameter == 'Kd':
+                # currently can only handle case where Kd controls *all* of the base pair types
+                for base_pair_type in self.params.base_pair_types: assert( base_pair_type.Kd == self.params.base_pair_types[0].Kd )
                 derivs[ n ] = - get_bpp_tot( self )
             else:
                 Kd_tag = parameter[3:]
@@ -42,6 +44,8 @@ def _get_log_derivs( self, parameters ):
                 motif_prob = 0.0
                 for base_pair_type in self.params.base_pair_types:
                     for base_pair_type2 in self.params.base_pair_types:
+                        # currently can only handle case where C_eff_stacked_pair controls *all* of the stacked pairs
+                        assert( self.params.C_eff_stack[base_pair_type][base_pair_type2] == self.params.C_eff_stack[self.params.base_pair_types[0]][self.params.base_pair_types[0]])
                         motif_prob += get_motif_prob( self, base_pair_type, base_pair_type2 )
                 derivs[n] = motif_prob
             else:
