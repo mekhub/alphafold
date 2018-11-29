@@ -20,7 +20,7 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     Z_ref   = C_init  * (l**7) * (1 + (C_init * l_BP**2) / Kd ) / C_std
     bpp_ref = (C_init * l_BP**2/ Kd) / ( 1 + C_init * l_BP**2/ Kd)
     deriv_parameters = ('Kd','Kd_matchlowercase','Kd_GC' ,'Kd_CG','l','l_BP','C_init','C_eff_stacked_pair')
-    log_derivs_ref   = (bpp_ref,0,bpp_ref,bpp_ref, 7, 2*bpp_ref, 1 + bpp_ref, 0 )
+    log_derivs_ref   = (-bpp_ref,0,-bpp_ref,-bpp_ref, 7, 2*bpp_ref, 1 + bpp_ref, 0 )
     output_test( p, Z_ref, [0,4], bpp_ref, deriv_parameters, log_derivs_ref )
 
     structure= '(...)..'
@@ -28,7 +28,7 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     Z_ref = C_init  * (l**7) * (C_init * l_BP**2) / Kd / C_std
     bpp_ref = 1.0
     deriv_parameters = ('Kd','Kd_matchlowercase','Kd_GC' ,'Kd_CG','l','l_BP','C_init','C_eff_stacked_pair')
-    log_derivs_ref   = (1, 0, 1, 1, 7, 2, 2, 0 )
+    log_derivs_ref   = (-1, 0, -1, -1, 7, 2, 2, 0 )
     output_test( p, Z_ref, [0,4], bpp_ref, deriv_parameters, log_derivs_ref )
 
     sequence = 'CNG'
@@ -106,7 +106,7 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     Z_ref = (1 + C_init * l**2 *l_BP/Kd)**2  + C_init * l**5 * l_BP/Kd + (C_init * l**2 *l_BP/Kd)**2 * K_coax
     bpp_ref = (C_init * l**2 *l_BP/Kd*(1 + C_init * l**2 *l_BP/Kd) + (C_init * l**2 *l_BP/Kd)**2 * K_coax) / Z_ref
     deriv_parameters = ('C_eff_stacked_pair','Kd')
-    log_deriv_Kd = ( 2*C_init * l**2 *l_BP/Kd + 2*(C_init * l**2 *l_BP/Kd)**2  + C_init * l**5 * l_BP/Kd + 2*(C_init * l**2 *l_BP/Kd)**2 * K_coax ) / Z_ref
+    log_deriv_Kd = -( 2*C_init * l**2 *l_BP/Kd + 2*(C_init * l**2 *l_BP/Kd)**2  + C_init * l**5 * l_BP/Kd + 2*(C_init * l**2 *l_BP/Kd)**2 * K_coax ) / Z_ref
     log_deriv_ref    = (0, log_deriv_Kd)
     output_test( p, Z_ref,[0,2], bpp_ref, deriv_parameters, log_deriv_ref )
     assert( set(p.struct_enumerate) == set(['......', '(.)...', '(....)', '...(.)', '(.)(.)']) )
