@@ -56,7 +56,7 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     # what if C_eff_stacked_pair is not uniform
     sequences = ['Ga','aC']
     test_params_C_eff_stack = get_minimal_params()
-    cross_C_eff_stacked_pair = 1.0  # default is 1.0e4. Now havnig the aa base pair next to the G-C base pair is worth 10,000-fold less.
+    cross_C_eff_stacked_pair = 1.0  # default is 1.0e4. Now having the aa base pair next to the G-C base pair is worth 10,000-fold less.
     for base_pair_type_GC in test_params_C_eff_stack.base_pair_types[1:3]:
         test_params_C_eff_stack.C_eff_stack[ base_pair_type_GC ][  test_params_C_eff_stack.base_pair_types[0] ]= cross_C_eff_stacked_pair
         test_params_C_eff_stack.C_eff_stack[  test_params_C_eff_stack.base_pair_types[0] ][ base_pair_type_GC ] = cross_C_eff_stacked_pair
@@ -137,7 +137,12 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     bpp_ref = ( 2 * (C_std/Kd)**2 * (1 + K_coax) + \
                 (C_std/Kd)**2 * (C_init/Kd) * l**3 * l_BP**3 + \
                 3*(C_std/Kd)**2 * (C_init/Kd) * K_coax * l_coax*l**2 * l_BP ) / Z_ref
-    output_test( p, Z_ref, [1,2], bpp_ref  )
+    deriv_parameters = [ 'l', 'K_coax' ]
+    log_derivs_ref = [ ( 3*(C_std/Kd)**2 * (C_init/Kd) * l**3 * l_BP**3  + \
+                         2* 3*(C_std/Kd)**2 * (C_init/Kd) * K_coax * l_coax*l**2 * l_BP) / Z_ref,\
+                       ( 3*(C_std/Kd)**2 * K_coax  +  \
+                         3*(C_std/Kd)**2 * (C_init/Kd) * K_coax * l_coax*l**2 * l_BP ) / Z_ref ]
+    output_test( p, Z_ref, [1,2], bpp_ref, deriv_parameters, log_derivs_ref  )
 
     # testing extended alphabet & coaxial stacks
     sequence = ['xy','yz','zx']

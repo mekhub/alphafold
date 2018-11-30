@@ -18,7 +18,7 @@ def _get_log_derivs( self, parameters ):
             num_internal_linkages = 0.0
             for i in range( N ):
                 if not self.ligated[i]: continue
-                num_internal_linkages += self.params.l * self.C_eff_no_coax_singlet.val( i+1, i ) / self.Z
+                num_internal_linkages += self.params.l * self.C_eff_no_coax_singlet.val( i+1, i ) / self.params.C_std / self.Z
             derivs[ n ] = num_internal_linkages
         elif parameter == 'l_BP':
             num_base_pairs_closed_by_loops = 0.0
@@ -53,8 +53,16 @@ def _get_log_derivs( self, parameters ):
                 tags = parameter[12:].split('_')
                 assert( len( tags ) == 2 )
                 derivs[ n ] = get_motif_prob( self, get_base_pair_type_for_tag( self, tags[0] ), get_base_pair_type_for_tag( self, tags[1] ) )
+        elif parameter == 'K_coax':
+            coax_prob = 0.0
+            for i in range( N ):
+                for j in range( N ):
+                    C_eff_for_coax = self.C_eff if self.params.allow_strained_3WJ else self.C_eff_no_BP_singlet
+                    coax_prob += self.Z_coax.val(i,j) * self.params.l_coax * self.params.l**2 * C_eff_for_coax.val(j+1,i-1) / self.Z
+                    coax_prob += self.Z_coax.val(i,j) * self.Z_cut.val(j,i) / self.Z
+            derivs[ n ] = coax_prob
         else:
-            #TODO some kind of informative error message that parameters is not a 'legitimate' one
+            print "Did not recognize parameter ", parameter
             pass
 
     return derivs
