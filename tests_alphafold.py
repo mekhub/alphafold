@@ -137,11 +137,12 @@ def test_alphafold( verbose = False, use_simple_recursions = False ):
     bpp_ref = ( 2 * (C_std/Kd)**2 * (1 + K_coax) + \
                 (C_std/Kd)**2 * (C_init/Kd) * l**3 * l_BP**3 + \
                 3*(C_std/Kd)**2 * (C_init/Kd) * K_coax * l_coax*l**2 * l_BP ) / Z_ref
-    deriv_parameters = [ 'l', 'K_coax' ]
+    deriv_parameters = [ 'l', 'K_coax', 'l_coax' ]
     log_derivs_ref = [ ( 3*(C_std/Kd)**2 * (C_init/Kd) * l**3 * l_BP**3  + \
                          2* 3*(C_std/Kd)**2 * (C_init/Kd) * K_coax * l_coax*l**2 * l_BP) / Z_ref,\
                        ( 3*(C_std/Kd)**2 * K_coax  +  \
-                         3*(C_std/Kd)**2 * (C_init/Kd) * K_coax * l_coax*l**2 * l_BP ) / Z_ref ]
+                         3*(C_std/Kd)**2 * (C_init/Kd) * K_coax * l_coax*l**2 * l_BP ) / Z_ref,\
+                       3*(C_std/Kd)**2 * (C_init/Kd) * K_coax * l_coax*l**2 * l_BP / Z_ref ]
     output_test( p, Z_ref, [1,2], bpp_ref, deriv_parameters, log_derivs_ref  )
 
     # testing extended alphabet & coaxial stacks

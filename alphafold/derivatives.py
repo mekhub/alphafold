@@ -55,11 +55,18 @@ def _get_log_derivs( self, parameters ):
                 derivs[ n ] = get_motif_prob( self, get_base_pair_type_for_tag( self, tags[0] ), get_base_pair_type_for_tag( self, tags[1] ) )
         elif parameter == 'K_coax':
             coax_prob = 0.0
+            C_eff_for_coax = self.C_eff if self.params.allow_strained_3WJ else self.C_eff_no_BP_singlet
             for i in range( N ):
                 for j in range( N ):
-                    C_eff_for_coax = self.C_eff if self.params.allow_strained_3WJ else self.C_eff_no_BP_singlet
                     coax_prob += self.Z_coax.val(i,j) * self.params.l_coax * self.params.l**2 * C_eff_for_coax.val(j+1,i-1) / self.Z
                     coax_prob += self.Z_coax.val(i,j) * self.Z_cut.val(j,i) / self.Z
+            derivs[ n ] = coax_prob
+        elif parameter == 'l_coax':
+            coax_prob = 0.0
+            C_eff_for_coax = self.C_eff if self.params.allow_strained_3WJ else self.C_eff_no_BP_singlet
+            for i in range( N ):
+                for j in range( N ):
+                    coax_prob += self.Z_coax.val(i,j) * self.params.l_coax * self.params.l**2 * C_eff_for_coax.val(j+1,i-1) / self.Z
             derivs[ n ] = coax_prob
         else:
             print "Did not recognize parameter ", parameter
